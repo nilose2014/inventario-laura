@@ -16,8 +16,8 @@ button:hover{background:#0056b3}
 .sin-stock{background:#ffe5e5 !important}
 .stock-bajo{background:#fff3cd !important}
 input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:12px}
-#nombre{width:300px !important;font-size:16px;padding:10px !important} /* 🎯 MAS LARGO */
-#stock-input{width:80px;font-size:16px;padding:8px !important;text-align:center}
+#nombre{width:300px !important;font-size:16px;padding:10px !important}
+#stock{width:80px;font-size:16px;padding:8px !important;text-align:center}
 #buscar{width:200px;padding:8px;font-size:14px}
 #ordenar{width:200px;padding:8px;font-size:14px}
 #status{padding:15px;margin-bottom:20px;border-radius:8px;text-align:center;font-weight:bold;font-size:16px}
@@ -35,6 +35,10 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 .vendidos{font-weight:bold;color:#28a745}
 .filtros{display:flex;gap:15px;align-items:center;margin-bottom:15px}
 select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
+
+/* 🎯 BOTÓN STOCK EN TABLA */
+.stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
+.stock-editable{background:#fff3cd !important}
 
 /* 🎯 BOTÓN SCROLL ARRIBA */
 #scrollTopBtn {
@@ -90,9 +94,7 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 <div class="card">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
 Producto <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
-Stock 
-<input id="stock-input" type="number" id="stock" placeholder="0" readonly> 
-<button id="stockBtn" onclick="toggleStockEdit()" style="font-size:10px;padding:2px 6px;margin-left:5px">✏️</button><br>
+Stock <input id="stock" type="number" placeholder="0"><br>
 Precio Bea <input id="bea" type="number" step="0.01" placeholder="0.00"><br>
 Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br><br>
 <button onclick="guardar()" id="guardarBtn">💾 Guardar Nuevo</button>
@@ -184,6 +186,7 @@ let productos = {};
 let editId = null;
 let currentUser = null;
 let userRole = null;
+let editingStockId = null;
 
 // 🔥 EMAILJS CONFIGURADO CON TUS CREDENCIALES
 const EMAILJS_CONFIG = {
@@ -250,38 +253,13 @@ window.resetLogin = () => {
   document.getElementById('userPass').value = '';
 };
 
-// 🎯 FUNCIÓN EDITAR STOCK SOLO ADMIN
-window.toggleStockEdit = () => {
-  if (userRole !== 'admin') {
-    alert('❌ Solo ADMIN puede modificar stock');
-    return;
-  }
-  const stockInput = document.getElementById('stock-input');
-  const stockBtn = document.getElementById('stockBtn');
-  
-  if (stockInput.readOnly) {
-    stockInput.readOnly = false;
-    stockInput.style.background = '#fff3cd';
-    stockBtn.textContent = '✅';
-    stockBtn.style.background = '#28a745';
-  } else {
-    stockInput.readOnly = true;
-    stockInput.style.background = 'white';
-    stockBtn.textContent = '✏️';
-    stockBtn.style.background = '#007bff';
-  }
-};
-
 function checkUserRole() {
   if(currentUser.email === 'nilose2014@gmail.com') {
     userRole = 'admin';
-    document.getElementById('stockBtn').style.display = 'inline-block';
   } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
     userRole = 'user';
-    document.getElementById('stockBtn').style.display = 'none';
   } else {
     userRole = 'user';
-    document.getElementById('stockBtn').style.display = 'none';
   }
   updateUI();
   loadData();
@@ -363,6 +341,29 @@ function ordenarProductos(productosObj) {
     return dir === 'asc' ? valorA - valorB : valorB - valorA;
   });
 }
+
+// 🎯 FUNCIÓN EDITAR STOCK EN TABLA (SOLO ADMIN)
+window.modificarStock = (id) => {
+  if (userRole !== 'admin') {
+    alert('❌ Solo ADMIN puede modificar stock');
+    return;
+  }
+  
+  const nuevoStock = prompt('📦 Nuevo stock:', productos[id]?.stock || '0');
+  if (nuevoStock === null) return;
+  
+  const stock = Math.max(0, Number(nuevoStock));
+  if (isNaN(stock)) return alert('❌ Stock inválido');
+  
+  update(ref(db, 'productos/'+id), { stock: stock })
+    .then(() => {
+      alert(`✅ Stock actualizado: ${stock}`);
+      // Si pasa de >0 a 0, resetear alerta agotado
+      if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
+        update(ref(db, 'productos/'+id), { emailAgotadoEnviado: false });
+      }
+    });
+};
 
 window.guardar = () => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede crear/editar');
@@ -458,10 +459,6 @@ window.editar = id => {
   document.getElementById('laura').value = p.laura||0;
   editId = id;
   document.getElementById('cancelBtn').style.display = 'inline-block';
-  document.getElementById('stock-input').readOnly = false;
-  document.getElementById('stock-input').style.background = '#fff3cd';
-  document.getElementById('stockBtn').textContent = '✅';
-  document.getElementById('stockBtn').style.background = '#28a745';
 };
 
 window.borrar = id => {
@@ -496,13 +493,9 @@ function limpiarFormulario() {
   document.getElementById('laura').value = '';
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
-  document.getElementById('stock-input').readOnly = true;
-  document.getElementById('stock-input').style.background = 'white';
-  document.getElementById('stockBtn').textContent = '✏️';
-  document.getElementById('stockBtn').style.background = '#007bff';
-}
+};
 
-// 🔥 FUNCIÓN RENDER
+// 🔥 FUNCIÓN RENDER CON STOCK EDITABLE PARA ADMIN
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
@@ -519,11 +512,15 @@ window.render = () => {
     totalVendidos += Number(p.vendidos||0);
     
     const stockClass = (p.stock||0)<=0 ? 'sin-stock' : (p.stock||0)<=5 ? 'stock-bajo' : '';
+    const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
     
     tabla.innerHTML += `
     <tr class="${stockClass}">
       <td style="font-weight:bold;text-align:left">${p.nombre}</td>
-      <td>${p.stock||0}</td>
+      <td class="${stockCellClass}">
+        ${p.stock||0}
+        ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
+      </td>
       <td class="vendidos">${p.vendidos||0}</td>
       <td>${Number(p.bea||0).toFixed(2)}</td>
       <td class="editable">
@@ -566,6 +563,7 @@ window.render = () => {
 </script>
 </body>
 </html>
+
 
 
 
