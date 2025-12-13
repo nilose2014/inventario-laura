@@ -153,11 +153,11 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <div class="card">
 <div class="filtros">
 🔍 <div style="position:relative;display:inline-block">
-  <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();render()">
+  <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
   <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
 </div>
 🆚 Ordenar: 
-<select id="ordenar" onchange="render()">
+<select id="ordenar" onchange="renderTablaSolo()">
   <option value="nombre-asc">A → Z</option>
   <option value="nombre-desc">Z → A</option>
   <option value="stock-asc">Stock ↓</option>
@@ -239,6 +239,7 @@ const auth = getAuth(app);
 const productosRef = ref(db, "productos");
 
 let productos = {};
+let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 }; // 🎯 TOTALES FIJOS
 let editId = null;
 let currentUser = null;
 let userRole = null;
@@ -264,7 +265,57 @@ window.clearSearch = () => {
   const buscar = document.getElementById('buscar');
   buscar.value = '';
   document.getElementById('buscar-clear').style.display = 'none';
-  render();
+  renderTablaSolo(); // 🎯 Solo tabla, totales NO cambian
+};
+
+// 🎯 NUEVA FUNCIÓN: Renderizar SOLO tabla (totales fijos)
+window.renderTablaSolo = () => {
+  const filtro = document.getElementById('buscar').value.toLowerCase();
+  const productosOrdenados = ordenarProductos(productos);
+  const tabla = document.getElementById('tabla');
+  tabla.innerHTML = '';
+
+  productosOrdenados.forEach(([id,p]) => {
+    if(!p?.nombre?.toLowerCase().includes(filtro)) return;
+    
+    const stockDisponible = (p.stock||0);
+    const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo' : '';
+    const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
+    const filaClass = (p.reservados||0)>0 ? 'reservado' : stockClass;
+    
+    tabla.innerHTML += `
+    <tr class="${filaClass}">
+      <td style="font-weight:bold;text-align:left">${p.nombre}</td>
+      <td class="${stockCellClass}">
+        ${stockDisponible}
+        ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
+      </td>
+      <td class="reservados">
+        ${(p.reservados||0)}
+        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
+      </td>
+      <td class="vendidos">${p.vendidos||0}
+        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
+      </td>
+      <td>${Number(p.bea||0).toFixed(2)}</td>
+      <td class="editable">
+        <strong>${Number(p.laura||0).toFixed(2)}</strong>
+        <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
+      </td>
+      <td>
+        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+        <button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
+      </td>
+      <td>
+        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+        <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
+      </td>
+      <td>
+        <button onclick="editar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>✏️</button>
+        <button class="red" onclick="borrar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>🗑️</button>
+      </td>
+    </tr>`;
+  });
 };
 
 async function enviarEmail(datos) {
@@ -349,7 +400,22 @@ function updateUI() {
 function loadData() {
   onValue(productosRef, (snap) => {
     productos = snap.val() || {};
-    render();
+    
+    // 🎯 CALCULAR TOTALES GLOBALES UNA SOLA VEZ (NO cambian con filtro)
+    totalesGlobales.bea = 0;
+    totalesGlobales.laura = 0;
+    totalesGlobales.vendidos = 0;
+    totalesGlobales.reservados = 0;
+    
+    Object.values(productos).forEach(p => {
+      totalesGlobales.bea += Number(p.vBea || 0);
+      totalesGlobales.laura += Number(p.vLaura || 0);
+      totalesGlobales.vendidos += Number(p.vendidos || 0);
+      totalesGlobales.reservados += Number(p.reservados || 0);
+    });
+    
+    actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
+    renderTablaSolo(); // 🎯 Mostrar tabla completa al cargar
   }, (error) => {
     document.getElementById('status').textContent = '❌ Error de conexión';
     document.getElementById('status').className = 'error';
@@ -389,7 +455,7 @@ function ordenarProductos(productosObj) {
   });
 }
 
-// 🎯 ACTUALIZAR TOTALES SUPERIORES E INFERIORES
+// 🎯 ACTUALIZAR TOTALES (USANDO TOTALES GLOBALES FIJOS)
 function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados) {
   // Superiores
   document.getElementById('tBeaSup').textContent = `€${totalBea.toFixed(2)}`;
@@ -438,7 +504,7 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   }
 }
 
-// 🎯 FUNCIONES RESERVA (sin cambios)
+// Resto de funciones SIN CAMBIOS (reservar, vender, etc.)
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -512,7 +578,6 @@ window.cancelarReserva = async (id, cant) => {
   alert(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`);
 };
 
-// Resto de funciones sin cambios...
 window.eliminarUnaVenta = async (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede eliminar ventas');
   const p = productos[id];
@@ -679,67 +744,10 @@ function limpiarFormulario() {
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 };
-
-window.render = () => {
-  const filtro = document.getElementById('buscar').value.toLowerCase();
-  const productosOrdenados = ordenarProductos(productos);
-  
-  let totalBea = 0, totalLaura = 0, totalVendidos = 0, totalReservados = 0;
-  const tabla = document.getElementById('tabla');
-  tabla.innerHTML = '';
-
-  productosOrdenados.forEach(([id,p]) => {
-    if(!p?.nombre?.toLowerCase().includes(filtro)) return;
-    
-    totalBea += Number(p.vBea||0);
-    totalLaura += Number(p.vLaura||0);
-    totalVendidos += Number(p.vendidos||0);
-    totalReservados += Number(p.reservados||0);
-    
-    const stockDisponible = (p.stock||0);
-    const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo' : '';
-    const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
-    const filaClass = (p.reservados||0)>0 ? 'reservado' : stockClass;
-    
-    tabla.innerHTML += `
-    <tr class="${filaClass}">
-      <td style="font-weight:bold;text-align:left">${p.nombre}</td>
-      <td class="${stockCellClass}">
-        ${stockDisponible}
-        ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
-      </td>
-      <td class="reservados">
-        ${(p.reservados||0)}
-        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
-      </td>
-      <td class="vendidos">${p.vendidos||0}
-        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
-      </td>
-      <td>${Number(p.bea||0).toFixed(2)}</td>
-      <td class="editable">
-        <strong>${Number(p.laura||0).toFixed(2)}</strong>
-        <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
-      </td>
-      <td>
-        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
-        <button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
-      </td>
-      <td>
-        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
-        <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
-      </td>
-      <td>
-        <button onclick="editar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>✏️</button>
-        <button class="red" onclick="borrar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>🗑️</button>
-      </td>
-    </tr>`;
-  });
-
-  actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados);
-};
 </script>
 </body>
 </html>
+
 
 
 
