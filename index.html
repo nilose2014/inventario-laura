@@ -16,9 +16,10 @@ button:hover{background:#0056b3}
 .sin-stock{background:#ffe5e5}
 input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px}
 #buscar{width:200px}
-#status{padding:10px;margin-bottom:10px;border-radius:5px}
+#status{padding:10px;margin-bottom:10px;border-radius:5px;text-align:center;font-weight:bold}
 .connected{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
 .disconnected{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+.public{background:#fff3cd;color:#856404;border:1px solid #ffeaa7}
 .hidden{display:none}
 </style>
 </head>
@@ -26,7 +27,7 @@ input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px}
 
 <h2>Inventario y Ventas</h2>
 
-<div id="status" class="disconnected">Conectando...</div>
+<div id="status" class="disconnected">Iniciando...</div>
 
 <div class="card">
 Producto <input id="nombre"><br><br>
@@ -34,7 +35,7 @@ Stock <input id="stock" type="number"><br><br>
 Precio Bea <input id="bea" type="number"><br><br>
 Precio Laura <input id="laura" type="number"><br><br>
 <button onclick="guardar()">Guardar</button>
-<button class="red" onclick="cancelarEdit()">Cancelar</button>
+<button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">Cancelar</button>
 </div>
 
 <div class="card">
@@ -57,7 +58,7 @@ Venta Laura: €<span id="tLaura">0</span><br>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -74,47 +75,63 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
-const statusRef = ref(db, "status/online");
 
 let productos = {};
 let editId = null;
 let totalBea = 0;
 let totalLaura = 0;
-let userId = null;
+let isAuthenticated = false;
+let authReady = false;
 
-// Autenticación anónima
-signInAnonymously(auth).catch(console.error);
-onAuthStateChanged(auth, user => {
-  userId = user ? user.uid : null;
-  updateStatus();
-  if(user) {
-    // Marcar como conectado
-    onDisconnect(statusRef).remove();
-  }
-});
-
-// Estado de conexión
-function updateStatus() {
-  const status = document.getElementById('status');
-  if(userId) {
-    status.textContent = 'Conectado como usuario anónimo';
-    status.className = 'connected';
-  } else {
-    status.textContent = 'Conectando...';
-    status.className = 'disconnected';
-  }
+// Intento de autenticación anónima
+try {
+  signInAnonymously(auth);
+} catch(e) {
+  console.error('Auth error:', e);
 }
 
-onValue(productosRef, snap => {
+onAuthStateChanged(auth, (user) => {
+  isAuthenticated = !!user;
+  authReady = true;
+  updateStatus();
+  console.log('Auth state:', user ? 'Conectado' : 'Desconectado');
+});
+
+function updateStatus() {
+  const status = document.getElementById('status');
+  const cancelBtn = document.getElementById('cancelBtn');
+  
+  if (!authReady) {
+    status.textContent = 'Iniciando...';
+    status.className = 'disconnected';
+    return;
+  }
+  
+  if (isAuthenticated) {
+    status.textContent = '✅ Conectado - Modo seguro';
+    status.className = 'connected';
+  } else {
+    status.textContent = '🔓 Modo público (solo lectura)';
+    status.className = 'public';
+  }
+  
+  cancelBtn.style.display = editId ? 'inline-block' : 'none';
+}
+
+onValue(productosRef, (snap) => {
   productos = snap.val() || {};
   render();
+}, (error) => {
+  console.error('Error DB:', error);
+  document.getElementById('status').textContent = 'Error de conexión: ' + error.message;
 });
 
 window.guardar = () => {
-  if(!userId) return alert('Esperando conexión...');
+  const nombre = document.getElementById('nombre').value.trim();
+  if(!nombre) return alert('Nombre requerido');
   
   const data = {
-    nombre: document.getElementById('nombre').value.trim(),
+    nombre: nombre,
     stock: Number(document.getElementById('stock').value)||0,
     bea: Number(document.getElementById('bea').value)||0,
     laura: Number(document.getElementById('laura').value)||0,
@@ -122,23 +139,17 @@ window.guardar = () => {
     vLaura: 0
   };
 
-  if(!data.nombre) return alert('Nombre requerido');
-
   if(editId){
-    update(ref(db,'productos/'+editId), data);
+    update(ref(db,'productos/'+editId), data).catch(e => alert('Error al actualizar: ' + e.message));
     editId = null;
   } else {
-    push(productosRef, data);
+    push(productosRef, data).catch(e => alert('Error al guardar: ' + e.message));
   }
 
-  document.getElementById('nombre').value = 
-  document.getElementById('stock').value = 
-  document.getElementById('bea').value = 
-  document.getElementById('laura').value = '';
+  limpiarFormulario();
 };
 
 window.vender = (id, cant) => {
-  if(!userId) return;
   const p = productos[id];
   cant = Number(cant);
   if(cant <= 0 || p.stock < cant) return alert('Stock insuficiente');
@@ -147,39 +158,45 @@ window.vender = (id, cant) => {
     stock: p.stock - cant,
     vBea: (p.vBea||0) + p.bea * cant,
     vLaura: (p.vLaura||0) + p.laura * cant
-  });
+  }).catch(e => alert('Error al vender: ' + e.message));
 };
 
-window.editar = id => {
+window.editar = (id) => {
   const p = productos[id];
   document.getElementById('nombre').value = p.nombre;
   document.getElementById('stock').value = p.stock;
   document.getElementById('bea').value = p.bea;
   document.getElementById('laura').value = p.laura;
   editId = id;
+  document.getElementById('cancelBtn').style.display = 'inline-block';
 };
 
-window.borrar = id => {
-  if(!userId) return;
+window.borrar = (id) => {
   if(confirm('¿Borrar este producto permanentemente?')) {
-    remove(ref(db, 'productos/' + id));
+    remove(ref(db, 'productos/' + id)).catch(e => alert('Error al borrar: ' + e.message));
   }
 };
 
 window.cancelarEdit = () => {
   editId = null;
+  limpiarFormulario();
+  document.getElementById('cancelBtn').style.display = 'none';
+};
+
+window.resetear = () => {
+  if(!confirm('¿Resetear TODAS las ventas?')) return;
+  Object.entries(productos).forEach(([id]) => {
+    update(ref(db,'productos/'+id), {vBea: 0, vLaura: 0}).catch(console.error);
+  });
+};
+
+function limpiarFormulario() {
   document.getElementById('nombre').value = 
   document.getElementById('stock').value = 
   document.getElementById('bea').value = 
   document.getElementById('laura').value = '';
-};
-
-window.resetear = () => {
-  if(!userId || !confirm('¿Resetear TODAS las ventas?')) return;
-  Object.entries(productos).forEach(([id]) => {
-    update(ref(db,'productos/'+id), {vBea: 0, vLaura: 0});
-  });
-};
+  document.getElementById('cancelBtn').style.display = 'none';
+}
 
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
@@ -189,7 +206,7 @@ window.render = () => {
   tabla.innerHTML = '';
 
   Object.entries(productos).forEach(([id, p]) => {
-    if(!p.nombre || !p.nombre.toLowerCase().includes(filtro)) return;
+    if(!p?.nombre?.toLowerCase().includes(filtro)) return;
     
     totalBea += p.vBea || 0;
     totalLaura += p.vLaura || 0;
@@ -213,7 +230,11 @@ window.render = () => {
 
   document.getElementById('tBea').innerText = totalBea.toFixed(2);
   document.getElementById('tLaura').innerText = totalLaura.toFixed(2);
+  updateStatus();
 };
+
+// Cargar inicial
+setTimeout(render, 1000);
 </script>
 
 </body>
