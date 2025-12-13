@@ -496,15 +496,7 @@ function updateUI() {
 }
 
 function loadData() {
-  console.log('🔍 === DEBUG LOAD DATA INICIADO ===');
-  console.log('👤 Usuario actual:', currentUser?.email);
-  console.log('🎭 Rol detectado:', userRole);
-  console.log('🌐 URL Database:', productosRef.toString());
-  console.log('🔗 Reglas esperadas: auth != null');
-  
   onValue(productosRef, (snap) => {
-    console.log('✅ SNAPSHOT RECIBIDO:', snap.val() ? Object.keys(snap.val()).length + ' productos' : 'VACÍO');
-    
     productos = snap.val() || {};
     
     totalesGlobales.bea = 0;
@@ -519,19 +511,12 @@ function loadData() {
       totalesGlobales.reservados += Number(p.reservados || 0);
     });
     
-    console.log('💰 Totales calculados:', totalesGlobales);
     actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
     renderTablaSolo();
-    
   }, (error) => {
-    console.error('❌ ERROR DETALLADO:', error);
-    console.error('📍 Código:', error.code);
-    console.error('📄 Mensaje:', error.message);
-    document.getElementById('status').textContent = `❌ Error: ${error.code} - ${error.message}`;
+    document.getElementById('status').textContent = '❌ Error de conexión';
     document.getElementById('status').className = 'error';
   });
-  
-  console.log('🔍 === DEBUG LOAD DATA FINALIZADO ===');
 }
 
 
@@ -824,6 +809,9 @@ function limpiarFormulario() {
 </script>
 </body>
 </html>
+
+
+
 
 
 
