@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - MultiUsuario</title>
+<title>Inventario Laura Online - Precio Laura Editable</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1200px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -17,30 +17,16 @@ button:hover{background:#0056b3}
 input{padding:8px;border-radius:5px;border:1px solid #ccc;width:120px;display:block;margin:5px 0;font-size:14px}
 #buscar{width:250px;padding:10px;font-size:16px}
 #status{padding:15px;margin-bottom:20px;border-radius:8px;text-align:center;font-weight:bold;font-size:16px}
-.admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
-.user{background:#d1ecf1;color:#0c5460;border:2px solid #bee5eb}
+.connected{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
 .error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb}
-.login-card{background:#fff3cd;border:2px solid #ffeaa7}
-.hidden{display:none}
-.disabled{background:#ccc !important;cursor:not-allowed !important}
+.editable{background:#fff3cd !important}
 </style>
 </head>
 <body>
 
 <h2>🛒 Inventario Laura Online</h2>
 
-<!-- LOGIN -->
-<div class="card login-card" id="loginDiv">
-  <h3>🔐 Iniciar Sesión</h3>
-  <input id="userEmail" type="email" placeholder="nilose2014@gmail.com" value="nilose2014@gmail.com"><br>
-  <input id="userPass" type="password" placeholder="Tu contraseña"><br><br>
-  <button onclick="login()">🚀 Entrar</button>
-  <button class="red" onclick="logout()">❌ Salir</button>
-</div>
-
-<div id="mainApp" style="display:none">
-
-<div id="status" class="error">Cargando...</div>
+<div id="status" class="error">🔄 Conectando...</div>
 
 <div class="card">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
@@ -48,7 +34,7 @@ Producto <input id="nombre" placeholder="Nombre del producto"><br>
 Stock <input id="stock" type="number" placeholder="0"><br>
 Precio Bea <input id="bea" type="number" step="0.01" placeholder="0.00"><br>
 Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br><br>
-<button onclick="guardar()" id="guardarBtn">💾 Guardar Nuevo</button>
+<button onclick="guardar()">💾 Guardar Nuevo</button>
 <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
 </div>
 
@@ -67,16 +53,13 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <div class="card" style="text-align:center;font-size:18px;font-weight:bold">
 💰 <strong>Totales:</strong><br>
 Venta Bea: €<span id="tBea">0.00</span> | Venta Laura: €<span id="tLaura">0.00</span><br><br>
-<button class="red" onclick="resetear()" id="resetBtn">🔄 Resetear TODAS las ventas</button>
-<button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
-</div>
-
+<button class="red" onclick="resetear()">🔄 Resetear TODAS las ventas</button>
+<button onclick="modificarPrecioLauraGlobal()">💲 Ajustar Precio Laura Global</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -90,87 +73,23 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app);
 const productosRef = ref(db, "productos");
 
 let productos = {};
 let editId = null;
-let currentUser = null;
-let userRole = null;
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    document.getElementById('loginDiv').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
-    checkUserRole();
-  } else {
-    document.getElementById('mainApp').style.display = 'none';
-    document.getElementById('loginDiv').style.display = 'block';
-  }
+// ✅ CONEXIÓN DIRECTA
+onValue(productosRef, (snap) => {
+  productos = snap.val() || {};
+  document.getElementById('status').textContent = `✅ CONECTADO - ${Object.keys(productos).length} productos`;
+  document.getElementById('status').className = 'connected';
+  render();
+}, (error) => {
+  document.getElementById('status').textContent = '❌ ' + error.message;
+  document.getElementById('status').className = 'error';
 });
 
-window.login = () => {
-  const email = document.getElementById('userEmail').value.trim();
-  const pass = document.getElementById('userPass').value;
-  
-  if(!email || !pass) return alert('❌ Email y contraseña requeridos');
-  
-  signInWithEmailAndPassword(auth, email, pass)
-    .then((userCredential) => {
-      // Automáticamente maneja el estado con onAuthStateChanged
-    })
-    .catch(e => alert('❌ Error de login: ' + e.message));
-};
-
-window.logout = () => {
-  signOut(auth).catch(e => alert('❌ Error: ' + e.message));
-};
-
-function checkUserRole() {
-  // ✅ nilose2014@gmail.com = ADMIN
-  // Otros usuarios = Solo ventas
-  userRole = currentUser.email === 'nilose2014@gmail.com' ? 'admin' : 'user';
-  updateUI();
-  loadData();
-}
-
-function updateUI() {
-  const status = document.getElementById('status');
-  const guardarBtn = document.getElementById('guardarBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  
-  if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN:</strong> ${currentUser.email} - Todos los permisos`;
-    status.className = 'admin';
-    guardarBtn.className = '';
-    guardarBtn.disabled = false;
-    resetBtn.className = '';
-    resetBtn.disabled = false;
-  } else {
-    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email} - Solo ventas`;
-    status.className = 'user';
-    guardarBtn.disabled = true;
-    guardarBtn.className = 'disabled';
-    resetBtn.disabled = true;
-    resetBtn.className = 'disabled';
-  }
-}
-
-function loadData() {
-  onValue(productosRef, (snap) => {
-    productos = snap.val() || {};
-    render();
-  }, (error) => {
-    console.error('Error:', error);
-    document.getElementById('status').textContent = '❌ Error de conexión';
-    document.getElementById('status').className = 'error';
-  });
-}
-
 window.guardar = () => {
-  if(userRole !== 'admin') return alert('❌ Solo administradores pueden crear/editar');
-  
   const nombre = document.getElementById('nombre').value.trim();
   if(!nombre) return alert('❌ Nombre requerido');
   
@@ -186,12 +105,41 @@ window.guardar = () => {
   if(editId) {
     update(ref(db, 'productos/' + editId), data)
       .then(() => { limpiarFormulario(); alert('✅ Actualizado'); })
-      .catch(e => alert('❌ Error: ' + e.message));
+      .catch(e => alert('❌ ' + e.message));
   } else {
     push(productosRef, data)
       .then(() => { limpiarFormulario(); alert('✅ Guardado'); })
-      .catch(e => alert('❌ Error: ' + e.message));
+      .catch(e => alert('❌ ' + e.message));
   }
+};
+
+// ✅ NUEVA FUNCIÓN: Solo modifica PRECIO LAURA
+window.modificarPrecioLaura = (id) => {
+  const nuevoPrecio = prompt('💰 Nuevo precio Laura para este producto:', productos[id]?.laura || '0');
+  if(nuevoPrecio === null) return;
+  
+  const precio = Math.max(0, Number(nuevoPrecio));
+  if(isNaN(precio)) return alert('❌ Precio inválido');
+  
+  update(ref(db, 'productos/' + id), { laura: precio })
+    .then(() => alert(`✅ Precio Laura actualizado a €${precio.toFixed(2)}`));
+};
+
+// ✅ NUEVA FUNCIÓN: Modifica precio Laura GLOBAL
+window.modificarPrecioLauraGlobal = () => {
+  const nuevoPrecio = prompt('💰 Nuevo precio Laura para TODOS los productos:', '0');
+  if(nuevoPrecio === null) return;
+  
+  const precio = Math.max(0, Number(nuevoPrecio));
+  if(isNaN(precio)) return alert('❌ Precio inválido');
+  
+  const updates = {};
+  Object.entries(productos).forEach(([id]) => {
+    updates[`productos/${id}/laura`] = precio;
+  });
+  
+  update(ref(db), updates)
+    .then(() => alert(`✅ Precio Laura actualizado GLOBAL a €${precio.toFixed(2)}`));
 };
 
 window.vender = (id, cant) => {
@@ -207,7 +155,6 @@ window.vender = (id, cant) => {
 };
 
 window.editar = (id) => {
-  if(userRole !== 'admin') return alert('❌ Solo administradores pueden editar');
   const p = productos[id];
   document.getElementById('nombre').value = p.nombre || '';
   document.getElementById('stock').value = p.stock || 0;
@@ -218,18 +165,16 @@ window.editar = (id) => {
 };
 
 window.borrar = (id) => {
-  if(userRole !== 'admin') return alert('❌ Solo administradores pueden borrar');
   if(confirm(`🗑️ Borrar "${productos[id]?.nombre || 'Producto'}"?`)) {
     remove(ref(db, 'productos/' + id))
       .then(() => alert('✅ Borrado'))
-      .catch(e => alert('❌ Error: ' + e.message));
+      .catch(e => alert('❌ ' + e.message));
   }
 };
 
 window.cancelarEdit = () => limpiarFormulario();
 
 window.resetear = () => {
-  if(userRole !== 'admin') return alert('❌ Solo administradores pueden resetear');
   if(confirm('🔄 ¿Resetear TODAS las ventas a 0?')) {
     const updates = {};
     Object.entries(productos).forEach(([id]) => {
@@ -267,14 +212,17 @@ window.render = () => {
       <td style="font-weight:bold">${p.nombre}</td>
       <td>${p.stock || 0}</td>
       <td>${Number(p.bea || 0).toFixed(2)}</td>
-      <td>${Number(p.laura || 0).toFixed(2)}</td>
+      <td class="editable" title="Clic para cambiar precio Laura">
+        <strong>${Number(p.laura || 0).toFixed(2)}</strong>
+        <button onclick="modificarPrecioLaura('${id}')" style="font-size:12px;padding:2px 6px;margin-left:5px">💲</button>
+      </td>
       <td>
         <input type="number" min="1" max="${p.stock || 0}" value="1" style="width:60px">
         <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
       </td>
       <td>
-        <button onclick="editar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>✏️</button>
-        <button class="red" onclick="borrar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>🗑️</button>
+        <button onclick="editar('${id}')">✏️</button>
+        <button class="red" onclick="borrar('${id}')">🗑️</button>
       </td>
     </tr>`;
   });
@@ -282,9 +230,13 @@ window.render = () => {
   document.getElementById('tBea').textContent = totalBea.toFixed(2);
   document.getElementById('tLaura').textContent = totalLaura.toFixed(2);
 };
+
+// Inicio automático
+setTimeout(render, 500);
 </script>
 
 </body>
 </html>
+
 
 
