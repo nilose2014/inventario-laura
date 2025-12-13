@@ -98,7 +98,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 #backupText{font-family:monospace;background:#e9ecef;padding:15px;border-radius:5px;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:12px}
 .download-link{display:inline-block;background:#28a745;color:white;padding:8px 15px;border-radius:5px;text-decoration:none;margin-top:10px;font-weight:bold}
 .download-link:hover{background:#218838}
-
 /* ⭐ SOLO LAURA NEGRO SIEMPRE (Reservados restaurado al tamaño original) */
 .laura-negro { 
   color: black !important; 
@@ -399,7 +398,6 @@ window.renderTablaSolo = () => {
       <td>
         <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
         ${userRole === 'admin' ? `
-          <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ Añadir al stock">➕</button>
           <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
         ` : ''}
       </td>
@@ -914,6 +912,7 @@ function limpiarFormulario() {
 </script>
 </body>
 </html>
+
 
 
 
