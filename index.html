@@ -15,6 +15,8 @@ button:hover{background:#0056b3}
 .red:hover{background:#c82333}
 .sin-stock{background:#ffe5e5 !important}
 .stock-bajo{background:#fff3cd !important}
+.reservado{background:#e8f4fd !important}
+.reservado-bajo{background:#d1ecf1 !important}
 input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:12px}
 #nombre{width:300px !important;font-size:16px;padding:10px !important}
 #stock{width:80px;font-size:16px;padding:8px !important;text-align:center}
@@ -29,46 +31,26 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 .disabled{background:#ccc !important;cursor:not-allowed !important}
 .diferencia-positiva{background:#d4edda !important;color:#155724;font-weight:bold}
 .diferencia-negativa{background:#f8d7da !important;color:#721c24;font-weight:bold}
-.totales-container{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:15px;text-align:center;font-size:18px;font-weight:bold;padding:20px}
+.totales-container{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:15px;text-align:center;font-size:18px;font-weight:bold;padding:20px}
 .total-box{padding:12px;border-radius:10px}
 .editable{background:#fff3cd !important}
 .vendidos{font-weight:bold;color:#28a745}
+.reservados{font-weight:bold;color:#17a2b8}
 .filtros{display:flex;gap:15px;align-items:center;margin-bottom:15px}
 select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
-
-/* 🎯 BOTÓN STOCK EN TABLA */
 .stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
 .stock-editable{background:#fff3cd !important}
-
-/* 🎯 BOTÓN UNDO VENTA (ADMIN) - 1 POR 1 */
-.undo-btn{background:#ffc107 !important;color:#000 !important;font-weight:bold;font-size:11px;padding:2px 5px !important;margin-left:2px}
+.undo-btn{background:#ffc107 !important;color:#000 !important;font-size:11px;padding:2px 5px !important;margin-left:2px}
 .undo-btn:hover{background:#e0a800 !important}
-
-/* 🎯 BOTÓN SCROLL ARRIBA */
-#scrollTopBtn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 24px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,123,255,0.4);
-  display: none;
-  z-index: 1000;
-  transition: all 0.3s ease;
-}
-#scrollTopBtn:hover {
-  background: #0056b3;
-  transform: scale(1.1);
-}
-#scrollTopBtn.show {
-  display: block;
-}
+#scrollTopBtn{position:fixed;bottom:30px;right:30px;background:#007bff;color:white;border:none;border-radius:50%;width:60px;height:60px;font-size:24px;cursor:pointer;box-shadow:0 4px 12px rgba(0,123,255,0.4);display:none;z-index:1000;transition:all 0.3s ease}
+#scrollTopBtn:hover{background:#0056b3;transform:scale(1.1)}
+#scrollTopBtn.show{display:block}
+.reservar-btn{background:#17a2b8 !important}
+.reservar-btn:hover{background:#138496 !important}
+.confirmar-btn{background:#28a745 !important}
+.confirmar-btn:hover{background:#218838 !important}
+.cancelar-reserva{background:#ffc107 !important;color:#000 !important}
+.cancelar-reserva:hover{background:#e0a800 !important}
 </style>
 </head>
 <body>
@@ -95,7 +77,7 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="status" class="error">Cargando...</div>
 
-<!-- 🎯 SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
+<!-- SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
 <div class="card" id="nuevoProductoDiv">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
 Producto <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
@@ -117,6 +99,8 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
   <option value="stock-desc">Stock ↑</option>
   <option value="vendidos-desc">Vendidos ↓</option>
   <option value="vendidos-asc">Vendidos ↑</option>
+  <option value="reservados-desc">Reservados ↓</option>
+  <option value="reservados-asc">Reservados ↑</option>
   <option value="bea-asc">Bea ↓</option>
   <option value="bea-desc">Bea ↑</option>
   <option value="laura-asc">Laura ↓</option>
@@ -126,14 +110,14 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <table>
 <thead>
 <tr>
-<th>Producto</th><th>Stock</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Vender</th><th>Acciones</th>
+<th>Producto</th><th>Stock</th><th>Reservados</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Reservar</th><th>Vender</th><th>Acciones</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
 </table>
 </div>
 
-<!-- TOTALES CON VENDIDOS -->
+<!-- TOTALES CON RESERVADOS -->
 <div class="totales-container">
   <div class="total-box">
     <strong>💰 Venta Bea</strong><br>
@@ -147,6 +131,10 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
     <strong>📊 Diferencia (L-B)</strong><br>
     <span id="tDiferencia" style="font-size:24px">€0.00</span>
   </div>
+  <div class="total-box reservados">
+    <strong>📦 Reservados</strong><br>
+    <span id="tTotalReservados" style="font-size:24px">0</span>
+  </div>
   <div class="total-box vendidos">
     <strong>📦 Total Vendidos</strong><br>
     <span id="tTotalVendidos" style="font-size:24px">0</span>
@@ -154,17 +142,15 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </div>
 
 <div class="card" style="text-align:center">
-<button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos y totales">🔄 Reset COMPLETO</button>
+<button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
 <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
 </div>
 
-<!-- 🎯 BOTÓN SCROLL ARRIBA -->
 <button id="scrollTopBtn" title="Subir arriba">⬆️</button>
 
-<!-- 🔥 EMAILJS PARA NOTIFICACIONES AUTOMÁTICAS -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <script type="module">
@@ -192,7 +178,6 @@ let editId = null;
 let currentUser = null;
 let userRole = null;
 
-// 🔥 EMAILJS CONFIGURADO CON TUS CREDENCIALES
 const EMAILJS_CONFIG = {
   service: 'service_65ryfan',
   template: 'template_06j67bo',
@@ -200,11 +185,7 @@ const EMAILJS_CONFIG = {
 };
 
 async function enviarEmail(datos) {
-  if (!window.emailjs) {
-    console.log('EmailJS cargando...');
-    return;
-  }
-  
+  if (!window.emailjs) return console.log('EmailJS cargando...');
   emailjs.init(EMAILJS_CONFIG.publicKey);
   try {
     await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, datos);
@@ -214,19 +195,13 @@ async function enviarEmail(datos) {
   }
 }
 
-// 🎯 SCROLL TOP FUNCIONALIDAD
 window.onscroll = () => {
   const btn = document.getElementById('scrollTopBtn');
-  if (window.scrollY > 300) {
-    btn.classList.add('show');
-  } else {
-    btn.classList.remove('show');
-  }
+  if (window.scrollY > 300) btn.classList.add('show');
+  else btn.classList.remove('show');
 };
 
-document.getElementById('scrollTopBtn').onclick = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+document.getElementById('scrollTopBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -244,13 +219,10 @@ window.login = () => {
   const email = document.getElementById('userEmail').value.trim();
   const pass = document.getElementById('userPass').value;
   if(!email || !pass) return alert('❌ Email y contraseña requeridos');
-  signInWithEmailAndPassword(auth, email, pass)
-    .catch(e => alert('❌ Error: ' + e.message));
+  signInWithEmailAndPassword(auth, email, pass).catch(e => alert('❌ Error: ' + e.message));
 };
 
-window.logout = () => {
-  signOut(auth).catch(e => alert('❌ Error: ' + e.message));
-};
+window.logout = () => signOut(auth).catch(e => alert('❌ Error: ' + e.message));
 
 window.resetLogin = () => {
   document.getElementById('userEmail').value = '';
@@ -258,25 +230,16 @@ window.resetLogin = () => {
 };
 
 function checkUserRole() {
-  if(currentUser.email === 'nilose2014@gmail.com') {
-    userRole = 'admin';
-  } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
-    userRole = 'user';
-  } else {
-    userRole = 'user';
-  }
+  if(currentUser.email === 'nilose2014@gmail.com') userRole = 'admin';
+  else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) userRole = 'user';
+  else userRole = 'user';
   updateUI();
   toggleNuevoProducto();
   loadData();
 }
 
 function toggleNuevoProducto() {
-  const nuevoDiv = document.getElementById('nuevoProductoDiv');
-  if(userRole === 'admin') {
-    nuevoDiv.style.display = 'block';
-  } else {
-    nuevoDiv.style.display = 'none';
-  }
+  document.getElementById('nuevoProductoDiv').style.display = userRole === 'admin' ? 'block' : 'none';
 }
 
 function updateUI() {
@@ -288,20 +251,15 @@ function updateUI() {
   if(userRole === 'admin') {
     status.innerHTML = `👑 <strong>ADMIN:</strong> ${currentUser.email}<br>Todos los permisos ✅`;
     status.className = 'admin';
-    guardarBtn.disabled = false;
-    guardarBtn.className = '';
-    resetBtn.disabled = false;
-    resetBtn.className = '';
+    guardarBtn.disabled = false; guardarBtn.className = '';
+    resetBtn.disabled = false; resetBtn.className = '';
     precioGlobalBtn.disabled = false;
   } else {
     status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura ✅`;
     status.className = 'user';
-    guardarBtn.disabled = true;
-    guardarBtn.className = 'disabled';
-    resetBtn.disabled = true;
-    resetBtn.className = 'disabled';
-    precioGlobalBtn.disabled = false;
-    precioGlobalBtn.className = '';
+    guardarBtn.disabled = true; guardarBtn.className = 'disabled';
+    resetBtn.disabled = true; resetBtn.className = 'disabled';
+    precioGlobalBtn.disabled = false; precioGlobalBtn.className = '';
   }
 }
 
@@ -330,22 +288,14 @@ function ordenarProductos(productosObj) {
         valorA = (pA.nombre || '').toLowerCase();
         valorB = (pB.nombre || '').toLowerCase();
         return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
-        
-      case 'stock':
-        valorA = pA.stock || 0;
-        valorB = pB.stock || 0;
+      case 'stock': case 'vendidos': case 'reservados':
+        valorA = pA[campo] || 0;
+        valorB = pB[campo] || 0;
         break;
-        
-      case 'vendidos':
-        valorA = pA.vendidos || 0;
-        valorB = pB.vendidos || 0;
-        break;
-        
       case 'bea':
         valorA = pA.bea || 0;
         valorB = pB.bea || 0;
         break;
-        
       case 'laura':
         valorA = pA.laura || 0;
         valorB = pB.laura || 0;
@@ -356,55 +306,116 @@ function ordenarProductos(productosObj) {
   });
 }
 
-// 🎯 FUNCIÓN ELIMINAR 1 VENTA (SOLO ADMIN) - REPONER 1 STOCK
-window.eliminarUnaVenta = async (id) => {
-  if (userRole !== 'admin') {
-    alert('❌ Solo ADMIN puede eliminar ventas');
-    return;
-  }
+// 🎯 NUEVAS FUNCIONES RESERVA
+window.reservar = async (id, cant) => {
+  const p = productos[id];
+  cant = Number(cant);
+  if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
   
+  const nuevoStock = (p.stock||0)-cant;
+  const nuevosReservados = (p.reservados||0)+cant;
+  
+  await update(ref(db, 'productos/'+id), {
+    stock: nuevoStock,
+    reservados: nuevosReservados
+  });
+  
+  await enviarEmail({
+    producto: p.nombre,
+    stock: nuevoStock,
+    detalles: `${cant} uds. RESERVADAS | Stock disponible: ${nuevoStock}`,
+    subject: '⏳ RESERVA - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`);
+};
+
+window.confirmarReserva = async (id, cant) => {
+  const p = productos[id];
+  cant = Number(cant);
+  const reservados = p.reservados || 0;
+  if(cant<=0 || cant>reservados) return alert('❌ Cantidad inválida');
+  
+  await update(ref(db, 'productos/'+id), {
+    reservados: reservados - cant,
+    vendidos: (p.vendidos||0)+cant,
+    vBea: (p.vBea||0)+(p.bea||0)*cant,
+    vLaura: (p.vLaura||0)+(p.laura||0)*cant
+  });
+  
+  await enviarEmail({
+    producto: p.nombre,
+    stock: p.stock||0,
+    detalles: `${cant} uds. RESERVA CONFIRMADA → VENTA | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
+    subject: '✅ RESERVA CONFIRMADA - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Confirmadas ${cant} unidades como VENDIDAS`);
+};
+
+window.cancelarReserva = async (id, cant) => {
+  const p = productos[id];
+  cant = Number(cant);
+  const reservados = p.reservados || 0;
+  if(cant<=0 || cant>reservados) return alert('❌ Cantidad inválida');
+  
+  const nuevoStock = (p.stock||0)+cant;
+  const nuevosReservados = reservados - cant;
+  
+  await update(ref(db, 'productos/'+id), {
+    stock: nuevoStock,
+    reservados: nuevosReservados
+  });
+  
+  await enviarEmail({
+    producto: p.nombre,
+    stock: nuevoStock,
+    detalles: `${cant} uds. RESERVA CANCELADA | Stock devuelto: ${nuevoStock}`,
+    subject: '❌ RESERVA CANCELADA - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`);
+};
+
+// 🎯 FUNCIÓN ELIMINAR 1 VENTA (CORREGIDA)
+window.eliminarUnaVenta = async (id) => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede eliminar ventas');
   const p = productos[id];
   const vendidos = p.vendidos || 0;
   if (vendidos === 0) return alert('❌ No hay ventas para eliminar');
   
-  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) {
-    return;
-  }
+  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) return;
   
   const nuevoStock = (p.stock || 0) + 1;
   const nuevosVendidos = vendidos - 1;
   const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
-  const nuevoVLauara = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
+  const nuevoVLaura = Math.max(0, (p.vLaura || 0) - (p.laura || 0)); // ✅ CORREGIDO
   
   await update(ref(db, 'productos/'+id), {
     stock: nuevoStock,
     vendidos: nuevosVendidos,
     vBea: nuevoVBea,
-    vLaura: nuevoVLauara
+    vLaura: nuevoVLaura
   });
   
-  // Email de corrección
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
-    detalles: `↩️ 1 VENTA ELIMINADA | +1 stock | Vendidos: ${nuevosVendidos} | Bea:€${p.bea?.toFixed(2)} Laura:€${p.laura?.toFixed(2)}`,
-    subject: '↩️ VENTA CORREGIDA (1 ud) - ' + p.nombre,
+    detalles: `↩️ 1 VENTA ELIMINADA | +1 stock | Vendidos: ${nuevosVendidos}`,
+    subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
   
-  alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock} | Vendidos: ${nuevosVendidos}`);
+  alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`);
 };
 
-// 🎯 FUNCIÓN EDITAR STOCK EN TABLA (SOLO ADMIN)
 window.modificarStock = (id) => {
-  if (userRole !== 'admin') {
-    alert('❌ Solo ADMIN puede modificar stock');
-    return;
-  }
-  
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede modificar stock');
   const nuevoStock = prompt('📦 Nuevo stock:', productos[id]?.stock || '0');
   if (nuevoStock === null) return;
-  
   const stock = Math.max(0, Number(nuevoStock));
   if (isNaN(stock)) return alert('❌ Stock inválido');
   
@@ -428,15 +439,13 @@ window.guardar = () => {
     bea: Math.max(0, Number(document.getElementById('bea').value)||0),
     laura: Math.max(0, Number(document.getElementById('laura').value)||0),
     vendidos: editId ? (productos[editId]?.vendidos||0) : 0,
+    reservados: editId ? (productos[editId]?.reservados||0) : 0,
     vBea: editId ? (productos[editId]?.vBea||0) : 0,
     vLaura: editId ? (productos[editId]?.vLaura||0) : 0
   };
 
-  if(editId) {
-    update(ref(db, 'productos/'+editId), data).then(() => {limpiarFormulario(); alert('✅ Actualizado')});
-  } else {
-    push(productosRef, data).then(() => {limpiarFormulario(); alert('✅ Guardado')});
-  }
+  if(editId) update(ref(db, 'productos/'+editId), data).then(() => {limpiarFormulario(); alert('✅ Actualizado')});
+  else push(productosRef, data).then(() => {limpiarFormulario(); alert('✅ Guardado')});
 };
 
 window.modificarPrecioLaura = (id) => {
@@ -444,8 +453,7 @@ window.modificarPrecioLaura = (id) => {
   if(nuevoPrecio === null) return;
   const precio = Math.max(0, Number(nuevoPrecio));
   if(isNaN(precio)) return alert('❌ Precio inválido');
-  update(ref(db, 'productos/'+id), { laura: precio })
-    .then(() => alert(`✅ Laura: €${precio.toFixed(2)}`));
+  update(ref(db, 'productos/'+id), { laura: precio }).then(() => alert(`✅ Laura: €${precio.toFixed(2)}`));
 };
 
 window.modificarPrecioLauraGlobal = () => {
@@ -455,13 +463,10 @@ window.modificarPrecioLauraGlobal = () => {
   if(isNaN(precio)) return alert('❌ Precio inválido');
   
   const updates = {};
-  Object.entries(productos).forEach(([id]) => {
-    updates[`productos/${id}/laura`] = precio;
-  });
+  Object.entries(productos).forEach(([id]) => updates[`productos/${id}/laura`] = precio);
   update(ref(db), updates).then(() => alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
 };
 
-// 🔥 FUNCIÓN VENDER CON EMAIL AUTOMÁTICO
 window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -519,37 +524,35 @@ window.borrar = id => {
 
 window.resetear = () => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede resetear');
-  if(confirm('⚠️ ¿Resetear COMPLETAMENTE ventas, vendidos y totales?\n\n✅ Stock se mantiene\n❌ Se pierden: vBea, vLaura, vendidos')) {
+  if(confirm('⚠️ ¿Resetear COMPLETAMENTE?\n✅ Stock se mantiene\n❌ Se pierden: ventas, vendidos, reservados')) {
     const updates = {};
     Object.entries(productos).forEach(([id]) => {
       updates[`productos/${id}/vBea`] = 0;
       updates[`productos/${id}/vLaura`] = 0;
       updates[`productos/${id}/vendidos`] = 0;
+      updates[`productos/${id}/reservados`] = 0;
       updates[`productos/${id}/emailAgotadoEnviado`] = false;
     });
-    update(ref(db), updates).then(() => alert('✅ 🔄 RESET COMPLETO - Todo a cero'));
+    update(ref(db), updates).then(() => alert('✅ 🔄 RESET COMPLETO'));
   }
 };
 
-window.cancelarEdit = () => {
-  limpiarFormulario();
-};
+window.cancelarEdit = () => limpiarFormulario();
 
-function limpiarFormulario() {
-  document.getElementById('nombre').value = 
-  document.getElementById('stock').value = 
-  document.getElementById('bea').value = 
+function limpiarFormulario() { // ✅ CORREGIDO
+  document.getElementById('nombre').value = '';
+  document.getElementById('stock').value = '';
+  document.getElementById('bea').value = '';
   document.getElementById('laura').value = '';
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 };
 
-// 🔥 FUNCIÓN RENDER CON BOTÓN UNDO 1 VENTA (SOLO ADMIN)
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
   
-  let totalBea = 0, totalLaura = 0, totalVendidos = 0;
+  let totalBea = 0, totalLaura = 0, totalVendidos = 0, totalReservados = 0;
   const tabla = document.getElementById('tabla');
   tabla.innerHTML = '';
 
@@ -559,20 +562,26 @@ window.render = () => {
     totalBea += Number(p.vBea||0);
     totalLaura += Number(p.vLaura||0);
     totalVendidos += Number(p.vendidos||0);
+    totalReservados += Number(p.reservados||0);
     
-    const stockClass = (p.stock||0)<=0 ? 'sin-stock' : (p.stock||0)<=5 ? 'stock-bajo' : '';
+    const stockDisponible = (p.stock||0);
+    const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo' : '';
     const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
+    const filaClass = (p.reservados||0)>0 ? 'reservado' : stockClass;
     
     tabla.innerHTML += `
-    <tr class="${stockClass}">
+    <tr class="${filaClass}">
       <td style="font-weight:bold;text-align:left">${p.nombre}</td>
       <td class="${stockCellClass}">
-        ${p.stock||0}
+        ${stockDisponible}
         ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
-      <td class="vendidos">
-        ${p.vendidos||0}
-        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta (reponer 1 stock)">↩️</button>` : ''}
+      <td class="reservados">
+        ${(p.reservados||0)}
+        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
+      </td>
+      <td class="vendidos">${p.vendidos||0}
+        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
       </td>
       <td>${Number(p.bea||0).toFixed(2)}</td>
       <td class="editable">
@@ -580,7 +589,11 @@ window.render = () => {
         <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
       </td>
       <td>
-        <input type="number" min="1" max="${p.stock||0}" value="1" style="width:50px">
+        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+        <button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
+      </td>
+      <td>
+        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
         <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
       </td>
       <td>
@@ -592,6 +605,7 @@ window.render = () => {
 
   document.getElementById('tBea').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
+  document.getElementById('tTotalReservados').textContent = totalReservados;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
   
   const diferencia = totalLaura - totalBea;
