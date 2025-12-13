@@ -53,9 +53,30 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
 .stock-editable{background:#fff3cd !important}
-/* ⭐ NUEVO: ESTILOS PARA PRÓXIMO STOCK */
-.prox-input{background:#e8f5e8 !important;border-color:#28a745 !important}
-.prox-input.tiene-valor{background:#cce7ff !important;border-color:#007bff !important;box-shadow:0 0 5px rgba(0,123,255,0.3) !important}
+/* ⭐ ESTILOS ULTRA DESTACADOS PARA PRÓXIMO STOCK */
+.prox-input{
+  background:#e8f5e8 !important;
+  border:2px solid #28a745 !important;
+  font-weight:bold;
+  transition: all 0.3s ease !important;
+}
+.prox-input.tiene-valor{
+  background: linear-gradient(45deg, #007bff, #0056b3) !important;
+  border:3px solid #ffd700 !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 16px !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  box-shadow: 
+    0 0 15px rgba(0,123,255,0.8),
+    inset 0 0 10px rgba(255,255,255,0.2) !important;
+  transform: scale(1.1) !important;
+  animation: pulse-glow 2s infinite !important;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(0,123,255,0.8), inset 0 0 10px rgba(255,255,255,0.2); }
+  50% { box-shadow: 0 0 25px rgba(0,123,255,1), inset 0 0 15px rgba(255,255,255,0.4); }
+}
 .prox-btn{background:#28a745 !important;color:white !important;font-size:10px !important;padding:2px 6px !important;margin-left:2px !important}
 .prox-btn:hover{background:#218838 !important}
 .undo-btn{background:#ffc107 !important;color:#000 !important;font-size:11px;padding:2px 5px !important;margin-left:2px}
@@ -207,7 +228,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
-<!-- 🎯 SECCIÓN BACKUP - SOLO [nilose2014@gmail.com](mailto:nilose2014@gmail.com) - ABAJO DEL TODO -->
+<!-- 🎯 SECCIÓN BACKUP - SOLO nilose2014@gmail.com - ABAJO DEL TODO -->
 <div class="card hidden" id="backupSection">
   <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
@@ -303,7 +324,7 @@ window.anadirProximoStock = async (id) => {
   });
   
   inputProx.value = '0';
-  inputProx.classList.remove('tiene-valor'); // ⭐ Quitar clase azul
+  inputProx.classList.remove('tiene-valor'); 
   
   await enviarEmail({
     producto: p.nombre,
@@ -328,13 +349,13 @@ window.modificarProximoStock = (id) => {
     .then(() => alert(`✅ Próximo actualizado: ${proximo}`));
 };
 
-// ⭐ FUNCIÓN: ACTUALIZAR CLASE VISUAL DEL INPUT PRÓXIMO (AZUL SI HAY NÚMERO)
+// ⭐ FUNCIÓN: ACTUALIZAR CLASE VISUAL DEL INPUT PRÓXIMO (ULTRA DESTACADO)
 window.updateProxInputVisual = (input) => {
   const valor = Number(input.value);
   if (valor > 0) {
-    input.classList.add('tiene-valor'); // ⭐ AZUL
+    input.classList.add('tiene-valor'); 
   } else {
-    input.classList.remove('tiene-valor'); // ⭐ VERDE
+    input.classList.remove('tiene-valor'); 
   }
 };
 
@@ -411,6 +432,9 @@ window.updateProxInput = (id, value) => {
   updateProxInputVisual(document.querySelector(`input[data-producto="${id}"]`));
 };
 
+// resto del código igual...
+// [Incluyo solo las funciones que cambian para no hacer el código eterno]
+
 window.hacerBackup = async () => {
   if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
   
@@ -457,7 +481,7 @@ window.restaurarBackup = async (event) => {
   if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
   
   try {
-    const text = await file.text();
+        const text = await file.text();
     const backupData = JSON.parse(text);
     
     await set(ref(db, 'productos'), backupData.productos);
@@ -555,7 +579,7 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔵 AZUL) ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔥 ULTRA DESTACADO) ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
