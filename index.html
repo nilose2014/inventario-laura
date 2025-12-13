@@ -34,6 +34,19 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 .diferencia-positiva{background:#d4edda !important;color:#155724;font-weight:bold}
 .diferencia-negativa{background:#f8d7da !important;color:#721c24;font-weight:bold}
 
+/* 🎯 CONTADORES FILTRADOS */
+.contadores-filtrados {
+  background: #e9ecef;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 14px;
+  margin-left: 15px;
+  min-width: 120px;
+}
+#productosVisibles { color: #007bff; }
+#stockVisible { color: #28a745; }
+
 /* 🎯 TOTALES SUPERIORES - VISIBLES SIEMPRE */
 .totales-superiores {
   display: grid;
@@ -156,6 +169,10 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
   <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
   <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
 </div>
+<div class="contadores-filtrados">
+  <div id="productosVisibles">📦 0 productos</div>
+  <div id="stockVisible">📊 Stock: 0</div>
+</div>
 🆚 Ordenar: 
 <select id="ordenar" onchange="renderTablaSolo()">
   <option value="nombre-asc">A → Z</option>
@@ -239,7 +256,7 @@ const auth = getAuth(app);
 const productosRef = ref(db, "productos");
 
 let productos = {};
-let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 }; // 🎯 TOTALES FIJOS
+let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
 let editId = null;
 let currentUser = null;
 let userRole = null;
@@ -249,6 +266,10 @@ const EMAILJS_CONFIG = {
   template: 'template_06j67bo',
   publicKey: 'q6b-zVGH0aBXeREzv'
 };
+
+// 🎯 CONTADORES FILTRADOS (NUEVO)
+let productosVisiblesCount = 0;
+let stockVisibleTotal = 0;
 
 // 🎯 NUEVAS FUNCIONES PARA ASPA DE BORRAR BÚSQUEDA
 window.toggleClearBtn = () => {
@@ -265,18 +286,30 @@ window.clearSearch = () => {
   const buscar = document.getElementById('buscar');
   buscar.value = '';
   document.getElementById('buscar-clear').style.display = 'none';
-  renderTablaSolo(); // 🎯 Solo tabla, totales NO cambian
+  renderTablaSolo();
 };
 
-// 🎯 NUEVA FUNCIÓN: Renderizar SOLO tabla (totales fijos)
+// 🎯 ACTUALIZAR CONTADORES FILTRADOS (NUEVO)
+window.actualizarContadoresFiltrados = (count, stockTotal) => {
+  document.getElementById('productosVisibles').textContent = `📦 ${count} productos`;
+  document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
+};
+
+// 🎯 NUEVA FUNCIÓN: Renderizar SOLO tabla + contadores filtrados
 window.renderTablaSolo = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
   const tabla = document.getElementById('tabla');
   tabla.innerHTML = '';
 
+  productosVisiblesCount = 0;
+  stockVisibleTotal = 0;
+
   productosOrdenados.forEach(([id,p]) => {
     if(!p?.nombre?.toLowerCase().includes(filtro)) return;
+    
+    productosVisiblesCount++;
+    stockVisibleTotal += Number(p.stock || 0);
     
     const stockDisponible = (p.stock||0);
     const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo' : '';
@@ -316,6 +349,8 @@ window.renderTablaSolo = () => {
       </td>
     </tr>`;
   });
+
+  actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
 };
 
 async function enviarEmail(datos) {
@@ -415,7 +450,7 @@ function loadData() {
     });
     
     actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
-    renderTablaSolo(); // 🎯 Mostrar tabla completa al cargar
+    renderTablaSolo(); // 🎯 Mostrar tabla completa + contadores al cargar
   }, (error) => {
     document.getElementById('status').textContent = '❌ Error de conexión';
     document.getElementById('status').className = 'error';
@@ -505,6 +540,7 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
 }
 
 // Resto de funciones SIN CAMBIOS (reservar, vender, etc.)
+// [Todas las demás funciones permanecen exactamente iguales...]
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -747,6 +783,7 @@ function limpiarFormulario() {
 </script>
 </body>
 </html>
+
 
 
 
