@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - Reset Completo</title>
+<title>Inventario Laura Online - Ordenable</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -16,7 +16,8 @@ button:hover{background:#0056b3}
 .sin-stock{background:#ffe5e5 !important}
 .stock-bajo{background:#fff3cd !important}
 input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:12px}
-#buscar{width:250px;padding:10px;font-size:16px}
+#buscar{width:200px;padding:8px;font-size:14px}
+#ordenar{width:200px;padding:8px;font-size:14px}
 #status{padding:15px;margin-bottom:20px;border-radius:8px;text-align:center;font-weight:bold;font-size:16px}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
 .user{background:#d1ecf1;color:#0c5460;border:2px solid #bee5eb}
@@ -30,11 +31,13 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 .total-box{padding:12px;border-radius:10px}
 .editable{background:#fff3cd !important}
 .vendidos{font-weight:bold;color:#28a745}
+.filtros{display:flex;gap:15px;align-items:center;margin-bottom:15px}
+select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 </style>
 </head>
 <body>
 
-<h2>🛒 Inventario Laura Online - Reset Completo</h2>
+<h2>🛒 Inventario Laura Online - ORDENABLE</h2>
 
 <!-- LOGIN OBLIGATORIO -->
 <div class="card login-card" id="loginDiv">
@@ -67,7 +70,22 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </div>
 
 <div class="card">
-🔍 <input placeholder="Buscar producto..." id="buscar" onkeyup="render()"><br><br>
+<div class="filtros">
+🔍 <input placeholder="Buscar producto..." id="buscar" onkeyup="render()"><br>
+🆚 Ordenar: 
+<select id="ordenar" onchange="render()">
+  <option value="nombre-asc">A → Z</option>
+  <option value="nombre-desc">Z → A</option>
+  <option value="stock-asc">Stock ↓</option>
+  <option value="stock-desc">Stock ↑</option>
+  <option value="vendidos-desc">Vendidos ↓</option>
+  <option value="vendidos-asc">Vendidos ↑</option>
+  <option value="bea-asc">Bea ↓</option>
+  <option value="bea-desc">Bea ↑</option>
+  <option value="laura-asc">Laura ↓</option>
+  <option value="laura-desc">Laura ↑</option>
+</select>
+</div><br>
 <table>
 <thead>
 <tr>
@@ -208,6 +226,48 @@ function loadData() {
   });
 }
 
+// 🆕 FUNCIÓN ORDENAR
+function ordenarProductos(productosObj) {
+  const orden = document.getElementById('ordenar').value;
+  const entradas = Object.entries(productosObj);
+  
+  return entradas.sort((a, b) => {
+    const pA = a[1], pB = b[1];
+    const [campo, dir] = orden.split('-');
+    
+    let valorA, valorB;
+    
+    switch(campo) {
+      case 'nombre':
+        valorA = (pA.nombre || '').toLowerCase();
+        valorB = (pB.nombre || '').toLowerCase();
+        return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
+        
+      case 'stock':
+        valorA = pA.stock || 0;
+        valorB = pB.stock || 0;
+        break;
+        
+      case 'vendidos':
+        valorA = pA.vendidos || 0;
+        valorB = pB.vendidos || 0;
+        break;
+        
+      case 'bea':
+        valorA = pA.bea || 0;
+        valorB = pB.bea || 0;
+        break;
+        
+      case 'laura':
+        valorA = pA.laura || 0;
+        valorB = pB.laura || 0;
+        break;
+    }
+    
+    return dir === 'asc' ? valorA - valorB : valorB - valorA;
+  });
+}
+
 window.guardar = () => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede crear/editar');
   const nombre = document.getElementById('nombre').value.trim();
@@ -252,7 +312,6 @@ window.modificarPrecioLauraGlobal = () => {
   update(ref(db), updates).then(() => alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
 };
 
-// 🆕 VENTA CON CONTADOR VENDIDOS
 window.vender = (id,cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -284,7 +343,6 @@ window.borrar = id => {
   }
 };
 
-// 🔥 RESET COMPLETO: Ventas + Vendidos + Totales
 window.resetear = () => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede resetear');
   if(confirm('⚠️ ¿Resetear COMPLETAMENTE ventas, vendidos y totales?\n\n✅ Stock se mantiene\n❌ Se pierden: vBea, vLaura, vendidos')) {
@@ -307,14 +365,18 @@ function limpiarFormulario() {
   document.getElementById('cancelBtn').style.display = 'none';
 }
 
+// 🆕 RENDER CON ORDENACIÓN
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
+  const productosOrdenados = ordenarProductos(productos);
+  
   let totalBea = 0, totalLaura = 0, totalVendidos = 0;
   const tabla = document.getElementById('tabla');
   tabla.innerHTML = '';
 
-  Object.entries(productos).forEach(([id,p]) => {
+  productosOrdenados.forEach(([id,p]) => {
     if(!p?.nombre?.toLowerCase().includes(filtro)) return;
+    
     totalBea += Number(p.vBea||0);
     totalLaura += Number(p.vLaura||0);
     totalVendidos += Number(p.vendidos||0);
