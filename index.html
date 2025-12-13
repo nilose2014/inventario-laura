@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - ORDENABLE + BACKUP</title>
+<title>Inventario Laura Online - ORDENABLE + BACKUP + PRÓXIMO STOCK</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -17,6 +17,16 @@ button:hover{background:#0056b3}
 .stock-bajo{background:#fff3cd !important}
 .reservado{background:#e8f4fd !important}
 .reservado-bajo{background:#d1ecf1 !important}
+.proximo-stock-input {
+  background: rgba(255,255,255,0.9) !important;
+  border: 2px solid #fff !important;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #dc3545 !important;
+  font-size: 16px;
+  width: 70px !important;
+  margin-top: 5px;
+}
 input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:12px}
 #nombre{width:300px !important;font-size:16px;padding:10px !important}
 #stock{width:80px;font-size:16px;padding:8px !important;text-align:center}
@@ -76,7 +86,7 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 </head>
 <body>
 
-<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP</h2>
+<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK</h2>
 
 <!-- LOGIN OBLIGATORIO -->
 <div class="card login-card" id="loginDiv">
@@ -244,6 +254,7 @@ let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
 let editId = null;
 let currentUser = null;
 let userRole = null;
+let proximosStocks = {}; // 🆕 Variable para próximo stock
 
 const EMAILJS_CONFIG = {
   service: 'service_65ryfan',
@@ -255,6 +266,36 @@ let ultimoBackup = null;
 let backupRef = ref(db, 'backup/ultimo');
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
+
+// 🆕 FUNCIONES PRÓXIMO STOCK
+window.setProximoStock = (id, cantidad) => {
+  proximosStocks[id] = Number(cantidad) || 0;
+  localStorage.setItem('proximosStocks', JSON.stringify(proximosStocks));
+  alert(`📦 Reservado ${cantidad} para llegada de ${productos[id].nombre}`);
+};
+
+window.confirmarProximoStock = async (id) => {
+  if (!proximosStocks[id] || proximosStocks[id] <= 0) {
+    return alert('❌ Primero ingresa cantidad de próximo stock');
+  }
+  
+  if (confirm(`✅ ¿Confirmar llegada de ${proximosStocks[id]} unidades de "${productos[id].nombre}"?\n\n✅ Stock: 0 → ${proximosStocks[id]}\n✅ Email "agotado" reseteado`)) {
+    await update(ref(db, 'productos/'+id), { 
+      stock: proximosStocks[id],
+      emailAgotadoEnviado: false 
+    });
+    
+    delete proximosStocks[id];
+    localStorage.setItem('proximosStocks', JSON.stringify(proximosStocks));
+    
+    alert(`✅ ¡Stock actualizado! ${proximosStocks[id]} unidades disponibles`);
+  }
+};
+
+window.cargarProximosStocks = () => {
+  const guardados = localStorage.getItem('proximosStocks');
+  if (guardados) proximosStocks = JSON.parse(guardados);
+};
 
 window.toggleClearBtn = () => {
   const buscar = document.getElementById('buscar');
@@ -298,13 +339,19 @@ window.renderTablaSolo = () => {
     const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
     const filaClass = (p.reservados||0)>0 ? 'reservado' : stockClass;
     
+    // 🆕 LÓGICA MEJORADA PARA STOCK 0
+    const stockCellContent = stockDisponible === 0 ? 
+      `⛔ AGOTADO<br>
+       <input type="number" class="proximo-stock-input" min="1" placeholder="Próx. stock" 
+              onchange="setProximoStock('${id}', this.value)" style="width:70px">
+       ${userRole === 'admin' ? `<br><button class="confirmar-btn" onclick="confirmarProximoStock('${id}')" title="Confirmar llegada">✅</button>` : ''}` :
+      `${stockDisponible}
+       ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}`;
+    
     tabla.innerHTML += `
     <tr class="${filaClass}">
       <td style="font-weight:bold;text-align:left">${p.nombre}</td>
-      <td class="${stockCellClass}">
-        ${stockDisponible}
-        ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
-      </td>
+      <td class="${stockCellClass}">${stockCellContent}</td>
       <td class="reservados">
         ${(p.reservados||0)}
         ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
@@ -342,6 +389,7 @@ window.hacerBackup = async () => {
     const backupData = {
       productos: productos,
       totalesGlobales: totalesGlobales,
+      proximosStocks: proximosStocks, // 🆕 Incluye próximos stocks
       fecha: new Date().toISOString(),
       usuario: currentUser.email,
       timestamp: Date.now()
@@ -385,6 +433,8 @@ window.restaurarBackup = async (event) => {
     const backupData = JSON.parse(text);
     
     await set(ref(db, 'productos'), backupData.productos);
+    proximosStocks = backupData.proximosStocks || {}; // 🆕 Restaurar próximos stocks
+    localStorage.setItem('proximosStocks', JSON.stringify(proximosStocks));
     
     alert('✅ Restauración completada. Recarga la página.');
     location.reload();
@@ -454,11 +504,9 @@ window.resetLogin = () => {
 function checkUserRole() {
   if(currentUser.email === 'nilose2014@gmail.com') {
     userRole = 'admin';
-    // ✅ MOSTRAR BACKUP SOLO PARA nilose2014@gmail.com (ABAJO DEL TODO)
     document.getElementById('backupSection').classList.remove('hidden');
   } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
     userRole = 'user';
-    // ❌ OCULTAR BACKUP para otros usuarios
     document.getElementById('backupSection').classList.add('hidden');
   } else {
     userRole = 'user';
@@ -466,6 +514,7 @@ function checkUserRole() {
   }
   updateUI();
   toggleNuevoProducto();
+  cargarProximosStocks(); // 🆕 Cargar próximos stocks
   loadData();
   if(currentUser.email === 'nilose2014@gmail.com') cargarBackupFirebase();
 }
@@ -481,13 +530,13 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
     precioGlobalBtn.disabled = false;
   } else {
-    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura ✅`;
+    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + ver próximo stock ✅`;
     status.className = 'user';
     guardarBtn.disabled = true; guardarBtn.className = 'disabled';
     resetBtn.disabled = true; resetBtn.className = 'disabled';
@@ -518,7 +567,6 @@ function loadData() {
     document.getElementById('status').className = 'error';
   });
 }
-
 
 function ordenarProductos(productosObj) {
   const orden = document.getElementById('ordenar').value;
@@ -591,6 +639,7 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   }
 }
 
+// Resto de funciones sin cambios...
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
