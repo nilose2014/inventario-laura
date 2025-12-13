@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - Ordenable</title>
+<title>Inventario Laura Online - ORDENABLE</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -39,6 +39,10 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 /* 🎯 BOTÓN STOCK EN TABLA */
 .stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
 .stock-editable{background:#fff3cd !important}
+
+/* 🎯 BOTÓN UNDO VENTA (ADMIN) - 1 POR 1 */
+.undo-btn{background:#ffc107 !important;color:#000 !important;font-weight:bold;font-size:11px;padding:2px 5px !important;margin-left:2px}
+.undo-btn:hover{background:#e0a800 !important}
 
 /* 🎯 BOTÓN SCROLL ARRIBA */
 #scrollTopBtn {
@@ -91,7 +95,8 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="status" class="error">Cargando...</div>
 
-<div class="card">
+<!-- 🎯 SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
+<div class="card" id="nuevoProductoDiv">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
 Producto <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
 Stock <input id="stock" type="number" placeholder="0"><br>
@@ -186,7 +191,6 @@ let productos = {};
 let editId = null;
 let currentUser = null;
 let userRole = null;
-let editingStockId = null;
 
 // 🔥 EMAILJS CONFIGURADO CON TUS CREDENCIALES
 const EMAILJS_CONFIG = {
@@ -262,7 +266,17 @@ function checkUserRole() {
     userRole = 'user';
   }
   updateUI();
+  toggleNuevoProducto();
   loadData();
+}
+
+function toggleNuevoProducto() {
+  const nuevoDiv = document.getElementById('nuevoProductoDiv');
+  if(userRole === 'admin') {
+    nuevoDiv.style.display = 'block';
+  } else {
+    nuevoDiv.style.display = 'none';
+  }
 }
 
 function updateUI() {
@@ -342,6 +356,45 @@ function ordenarProductos(productosObj) {
   });
 }
 
+// 🎯 FUNCIÓN ELIMINAR 1 VENTA (SOLO ADMIN) - REPONER 1 STOCK
+window.eliminarUnaVenta = async (id) => {
+  if (userRole !== 'admin') {
+    alert('❌ Solo ADMIN puede eliminar ventas');
+    return;
+  }
+  
+  const p = productos[id];
+  const vendidos = p.vendidos || 0;
+  if (vendidos === 0) return alert('❌ No hay ventas para eliminar');
+  
+  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) {
+    return;
+  }
+  
+  const nuevoStock = (p.stock || 0) + 1;
+  const nuevosVendidos = vendidos - 1;
+  const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
+  const nuevoVLauara = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
+  
+  await update(ref(db, 'productos/'+id), {
+    stock: nuevoStock,
+    vendidos: nuevosVendidos,
+    vBea: nuevoVBea,
+    vLaura: nuevoVLauara
+  });
+  
+  // Email de corrección
+  await enviarEmail({
+    producto: p.nombre,
+    stock: nuevoStock,
+    detalles: `↩️ 1 VENTA ELIMINADA | +1 stock | Vendidos: ${nuevosVendidos} | Bea:€${p.bea?.toFixed(2)} Laura:€${p.laura?.toFixed(2)}`,
+    subject: '↩️ VENTA CORREGIDA (1 ud) - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock} | Vendidos: ${nuevosVendidos}`);
+};
+
 // 🎯 FUNCIÓN EDITAR STOCK EN TABLA (SOLO ADMIN)
 window.modificarStock = (id) => {
   if (userRole !== 'admin') {
@@ -358,7 +411,6 @@ window.modificarStock = (id) => {
   update(ref(db, 'productos/'+id), { stock: stock })
     .then(() => {
       alert(`✅ Stock actualizado: ${stock}`);
-      // Si pasa de >0 a 0, resetear alerta agotado
       if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
         update(ref(db, 'productos/'+id), { emailAgotadoEnviado: false });
       }
@@ -418,7 +470,6 @@ window.vender = async (id, cant) => {
   const nuevoStock = (p.stock||0)-cant;
   const eraStockCero = (p.stock||0) === 0;
   
-  // 1️⃣ ACTUALIZAR BASE DE DATOS
   await update(ref(db, 'productos/'+id), {
     stock: nuevoStock,
     vendidos: (p.vendidos||0)+cant,
@@ -426,7 +477,6 @@ window.vender = async (id, cant) => {
     vLaura: (p.vLaura||0)+(p.laura||0)*cant
   });
   
-  // 2️⃣ SI QUEDA EN 0 POR PRIMERA VEZ → ENVIAR ALERTA
   if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
     await update(ref(db, 'productos/'+id), { emailAgotadoEnviado: true });
     await enviarEmail({
@@ -438,7 +488,6 @@ window.vender = async (id, cant) => {
     });
   }
   
-  // 3️⃣ SIEMPRE ENVIAR EMAIL DE VENTA
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -495,7 +544,7 @@ function limpiarFormulario() {
   document.getElementById('cancelBtn').style.display = 'none';
 };
 
-// 🔥 FUNCIÓN RENDER CON STOCK EDITABLE PARA ADMIN
+// 🔥 FUNCIÓN RENDER CON BOTÓN UNDO 1 VENTA (SOLO ADMIN)
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
@@ -521,7 +570,10 @@ window.render = () => {
         ${p.stock||0}
         ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
-      <td class="vendidos">${p.vendidos||0}</td>
+      <td class="vendidos">
+        ${p.vendidos||0}
+        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta (reponer 1 stock)">↩️</button>` : ''}
+      </td>
       <td>${Number(p.bea||0).toFixed(2)}</td>
       <td class="editable">
         <strong>${Number(p.laura||0).toFixed(2)}</strong>
@@ -538,12 +590,10 @@ window.render = () => {
     </tr>`;
   });
 
-  // TOTALES
   document.getElementById('tBea').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
   
-  // DIFERENCIA
   const diferencia = totalLaura - totalBea;
   const diferenciaSpan = document.getElementById('tDiferencia');
   const diferenciaBox = document.getElementById('diferenciaBox');
