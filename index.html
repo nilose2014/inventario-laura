@@ -9,17 +9,16 @@ body{font-family:Arial;background:#f0f2f5;padding:20px}
 table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
 th{background:#f8f9fa}
-button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-size:12px}
+button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-size:12px;margin:2px}
 button:hover{background:#0056b3}
 .red{background:#dc3545}
 .red:hover{background:#c82333}
 .sin-stock{background:#ffe5e5}
-input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px}
+input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px;display:block;margin:5px 0}
 #buscar{width:200px}
-#status{padding:10px;margin-bottom:10px;border-radius:5px;text-align:center;font-weight:bold}
+#status{padding:10px;margin-bottom:10px;border-radius:5px;text-align:center;font-weight:bold;font-size:14px}
 .connected{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
-.disconnected{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
-.public{background:#fff3cd;color:#856404;border:1px solid #ffeaa7}
+.public-ok{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
 .hidden{display:none}
 </style>
 </head>
@@ -27,23 +26,24 @@ input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px}
 
 <h2>Inventario y Ventas</h2>
 
-<div id="status" class="disconnected">Iniciando...</div>
+<div id="status" class="public-ok">🔓 Modo Público Activo - Todo funciona</div>
 
 <div class="card">
-Producto <input id="nombre"><br><br>
-Stock <input id="stock" type="number"><br><br>
-Precio Bea <input id="bea" type="number"><br><br>
-Precio Laura <input id="laura" type="number"><br><br>
-<button onclick="guardar()">Guardar</button>
-<button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">Cancelar</button>
+<strong>Nuevo/Editar Producto:</strong><br>
+Producto <input id="nombre"><br>
+Stock <input id="stock" type="number"><br>
+Precio Bea <input id="bea" type="number"><br>
+Precio Laura <input id="laura" type="number"><br>
+<button onclick="guardar()">💾 Guardar</button>
+<button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
 </div>
 
 <div class="card">
-<input placeholder="Buscar producto" id="buscar" onkeyup="render()">
+<input placeholder="🔍 Buscar producto" id="buscar" onkeyup="render()"><br>
 <table>
 <thead>
 <tr>
-<th>Producto</th><th>Stock</th><th>Bea</th><th>Laura</th><th>Vender</th><th>Acciones</th>
+<th>Producto</th><th>Stock</th><th>Bea €</th><th>Laura €</th><th>Vender</th><th>Acciones</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
@@ -51,15 +51,15 @@ Precio Laura <input id="laura" type="number"><br><br>
 </div>
 
 <div class="card">
+<strong>Totales:</strong><br>
 Venta Bea: €<span id="tBea">0</span><br>
 Venta Laura: €<span id="tLaura">0</span><br>
-<button class="red" onclick="resetear()">Resetear ventas</button>
+<button class="red" onclick="resetear()">🔄 Resetear ventas</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -73,121 +73,91 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app);
 const productosRef = ref(db, "productos");
 
 let productos = {};
 let editId = null;
 let totalBea = 0;
 let totalLaura = 0;
-let isAuthenticated = false;
-let authReady = false;
 
-// Intento de autenticación anónima
-try {
-  signInAnonymously(auth);
-} catch(e) {
-  console.error('Auth error:', e);
-}
-
-onAuthStateChanged(auth, (user) => {
-  isAuthenticated = !!user;
-  authReady = true;
-  updateStatus();
-  console.log('Auth state:', user ? 'Conectado' : 'Desconectado');
-});
-
-function updateStatus() {
-  const status = document.getElementById('status');
-  const cancelBtn = document.getElementById('cancelBtn');
-  
-  if (!authReady) {
-    status.textContent = 'Iniciando...';
-    status.className = 'disconnected';
-    return;
-  }
-  
-  if (isAuthenticated) {
-    status.textContent = '✅ Conectado - Modo seguro';
-    status.className = 'connected';
-  } else {
-    status.textContent = '🔓 Modo público (solo lectura)';
-    status.className = 'public';
-  }
-  
-  cancelBtn.style.display = editId ? 'inline-block' : 'none';
-}
-
+// Carga automática de datos
 onValue(productosRef, (snap) => {
   productos = snap.val() || {};
   render();
 }, (error) => {
-  console.error('Error DB:', error);
-  document.getElementById('status').textContent = 'Error de conexión: ' + error.message;
+  console.error('Error:', error);
+  document.getElementById('status').textContent = '❌ Error de conexión: ' + error.message;
 });
 
+// FUNCIONES PRINCIPALES
 window.guardar = () => {
   const nombre = document.getElementById('nombre').value.trim();
-  if(!nombre) return alert('Nombre requerido');
+  if(!nombre) return alert('❌ Nombre requerido');
   
   const data = {
     nombre: nombre,
-    stock: Number(document.getElementById('stock').value)||0,
-    bea: Number(document.getElementById('bea').value)||0,
-    laura: Number(document.getElementById('laura').value)||0,
+    stock: Math.max(0, Number(document.getElementById('stock').value) || 0),
+    bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
+    laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
     vBea: 0,
     vLaura: 0
   };
 
-  if(editId){
-    update(ref(db,'productos/'+editId), data).catch(e => alert('Error al actualizar: ' + e.message));
-    editId = null;
+  if(editId) {
+    update(ref(db, 'productos/' + editId), data)
+      .then(() => { limpiarFormulario(); alert('✅ Actualizado'); })
+      .catch(e => alert('❌ Error: ' + e.message));
   } else {
-    push(productosRef, data).catch(e => alert('Error al guardar: ' + e.message));
+    push(productosRef, data)
+      .then(() => { limpiarFormulario(); alert('✅ Guardado'); })
+      .catch(e => alert('❌ Error: ' + e.message));
   }
-
-  limpiarFormulario();
 };
 
 window.vender = (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if(cant <= 0 || p.stock < cant) return alert('Stock insuficiente');
-
-  update(ref(db,'productos/'+id), {
+  if(cant <= 0 || p.stock < cant) return alert('❌ Stock insuficiente');
+  
+  update(ref(db, 'productos/' + id), {
     stock: p.stock - cant,
-    vBea: (p.vBea||0) + p.bea * cant,
-    vLaura: (p.vLaura||0) + p.laura * cant
-  }).catch(e => alert('Error al vender: ' + e.message));
+    vBea: (p.vBea || 0) + p.bea * cant,
+    vLaura: (p.vLaura || 0) + p.laura * cant
+  }).then(() => alert(`✅ Vendido ${cant} unidades`));
 };
 
 window.editar = (id) => {
   const p = productos[id];
-  document.getElementById('nombre').value = p.nombre;
-  document.getElementById('stock').value = p.stock;
-  document.getElementById('bea').value = p.bea;
-  document.getElementById('laura').value = p.laura;
+  document.getElementById('nombre').value = p.nombre || '';
+  document.getElementById('stock').value = p.stock || 0;
+  document.getElementById('bea').value = p.bea || 0;
+  document.getElementById('laura').value = p.laura || 0;
   editId = id;
   document.getElementById('cancelBtn').style.display = 'inline-block';
+  document.getElementById('status').textContent = '✏️ Editando: ' + p.nombre;
 };
 
 window.borrar = (id) => {
-  if(confirm('¿Borrar este producto permanentemente?')) {
-    remove(ref(db, 'productos/' + id)).catch(e => alert('Error al borrar: ' + e.message));
+  if(confirm('🗑️ ¿Borrar "' + productos[id].nombre + '" permanentemente?')) {
+    remove(ref(db, 'productos/' + id))
+      .then(() => alert('✅ Borrado'))
+      .catch(e => alert('❌ Error: ' + e.message));
   }
 };
 
 window.cancelarEdit = () => {
-  editId = null;
   limpiarFormulario();
-  document.getElementById('cancelBtn').style.display = 'none';
 };
 
 window.resetear = () => {
-  if(!confirm('¿Resetear TODAS las ventas?')) return;
-  Object.entries(productos).forEach(([id]) => {
-    update(ref(db,'productos/'+id), {vBea: 0, vLaura: 0}).catch(console.error);
-  });
+  if(confirm('🔄 ¿Resetear TODAS las ventas a 0?')) {
+    const updates = {};
+    Object.entries(productos).forEach(([id]) => {
+      updates['productos/' + id + '/vBea'] = 0;
+      updates['productos/' + id + '/vLaura'] = 0;
+    });
+    update(ref(db), updates).then(() => alert('✅ Ventas reseteadas'));
+  }
 };
 
 function limpiarFormulario() {
@@ -195,46 +165,46 @@ function limpiarFormulario() {
   document.getElementById('stock').value = 
   document.getElementById('bea').value = 
   document.getElementById('laura').value = '';
+  editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
+  document.getElementById('status').textContent = '🔓 Modo Público Activo - Todo funciona';
 }
 
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
-  totalBea = 0; 
-  totalLaura = 0;
+  totalBea = 0; totalLaura = 0;
   const tabla = document.getElementById('tabla');
   tabla.innerHTML = '';
 
   Object.entries(productos).forEach(([id, p]) => {
     if(!p?.nombre?.toLowerCase().includes(filtro)) return;
     
-    totalBea += p.vBea || 0;
-    totalLaura += p.vLaura || 0;
+    totalBea += Number(p.vBea || 0);
+    totalLaura += Number(p.vLaura || 0);
     
     tabla.innerHTML += `
-    <tr class="${p.stock <= 0 ? 'sin-stock' : ''}">
+    <tr class="${(p.stock || 0) <= 0 ? 'sin-stock' : ''}">
       <td>${p.nombre}</td>
-      <td>${p.stock}</td>
-      <td>€${p.bea}</td>
-      <td>€${p.laura}</td>
+      <td>${p.stock || 0}</td>
+      <td>${Number(p.bea || 0).toFixed(2)}</td>
+      <td>${Number(p.laura || 0).toFixed(2)}</td>
       <td>
-        <input type="number" min="1" max="${p.stock}" value="1" style="width:50px">
-        <button onclick="vender('${id}',this.previousElementSibling.value)">Vender</button>
+        <input type="number" min="1" max="${p.stock || 0}" value="1" style="width:50px">
+        <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
       </td>
       <td>
-        <button onclick="editar('${id}')">Editar</button>
-        <button class="red" onclick="borrar('${id}')">Borrar</button>
+        <button onclick="editar('${id}')">✏️</button>
+        <button class="red" onclick="borrar('${id}')">🗑️</button>
       </td>
     </tr>`;
   });
 
-  document.getElementById('tBea').innerText = totalBea.toFixed(2);
-  document.getElementById('tLaura').innerText = totalLaura.toFixed(2);
-  updateStatus();
+  document.getElementById('tBea').textContent = totalBea.toFixed(2);
+  document.getElementById('tLaura').textContent = totalLaura.toFixed(2);
 };
 
-// Cargar inicial
-setTimeout(render, 1000);
+// Render inicial
+render();
 </script>
 
 </body>
