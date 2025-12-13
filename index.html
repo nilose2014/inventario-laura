@@ -5,48 +5,61 @@
 <title>Inventario Laura Online</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px}
-.card{background:white;padding:15px;border-radius:10px;margin-bottom:20px}
+.card{background:white;padding:15px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
 table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #ddd;padding:8px;text-align:center}
-button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer}
-.red{background:#dc3545}
+th{background:#007bff;color:white}
+button{padding:6px 12px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-weight:bold}
+button:hover{opacity:0.9}
+.red{background:#dc3545 !important}
+.green{background:#28a745 !important}
 .sin-stock{background:#ffe5e5}
-input{padding:5px;border-radius:5px;border:1px solid #ccc}
+input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px}
+#buscar{width:200px}
+h3{margin:0 0 10px 0;color:#333}
 </style>
 </head>
 <body>
 
-<h2>Inventario y Ventas</h2>
+<h2>🛍️ Inventario Laura Online</h2>
 
 <div class="card">
-Producto <input id="nombre">
-Stock <input id="stock" type="number">
-Precio Bea <input id="bea" type="number">
-Precio Laura <input id="laura" type="number">
-<button onclick="guardar()">Guardar</button>
+  <h3>➕ Nuevo Producto</h3>
+  Producto <input id="nombre"><br><br>
+  Stock <input id="stock" type="number"><br><br>
+  Precio Bea <input id="bea" type="number" step="0.01"><br><br>
+  Precio Laura <input id="laura" type="number" step="0.01"><br><br>
+  <button onclick="guardar()">💾 Guardar</button>
 </div>
 
 <div class="card">
-<input placeholder="Buscar producto" id="buscar" onkeyup="render()">
-<table>
-<thead>
-<tr>
-<th>Producto</th><th>Stock</th><th>Bea</th><th>Laura</th><th>Vender</th><th>Editar</th>
-</tr>
-</thead>
-<tbody id="tabla"></tbody>
-</table>
+  <h3>🔍 Buscar</h3>
+  <input placeholder="Buscar producto..." id="buscar" onkeyup="render()">
 </div>
 
 <div class="card">
-Venta Bea: €<span id="tBea">0</span><br>
-Venta Laura: €<span id="tLaura">0</span><br>
-<button class="red" onclick="resetear()">Resetear ventas</button>
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th><th>Stock</th><th>Bea</th><th>Laura</th><th>Vender</th><th>Editar</th><th>Borrar</th>
+      </tr>
+    </thead>
+    <tbody id="tabla"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>💰 Totales Ventas</h3>
+  Venta Bea: €<span id="tBea">0</span><br>
+  Venta Laura: €<span id="tLaura">0</span><br><br>
+  <button class="red" onclick="resetear()">🔄 Resetear Ventas</button>
+  <button class="green" onclick="importarExcelCompleto()">🚀 Importar 106 Productos Excel</button>
+  <button class="red" onclick="borrarTodos()" style="font-size:14px;padding:8px">⚠️ Borrar TODO</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -72,82 +85,141 @@ onValue(productosRef, snap => {
   render();
 });
 
-window.guardar = () => {
+window.guardar = async () => {
   const data = {
-    nombre: nombre.value,
-    stock: Number(stock.value)||0,
-    bea: Number(bea.value)||0,
-    laura: Number(laura.value)||0,
-    vBea:0,
-    vLaura:0
+    nombre: document.getElementById('nombre').value.trim(),
+    stock: Number(document.getElementById('stock').value)||0,
+    bea: Number(document.getElementById('bea').value)||0,
+    laura: Number(document.getElementById('laura').value)||0,
+    vBea: 0, vLaura: 0
   };
 
-  if(editId){
-    update(ref(db,'productos/'+editId),data);
-    editId=null;
+  if(!data.nombre) return alert('❌ Escribe nombre');
+
+  if(editId) {
+    await update(ref(db, 'productos/'+editId), data);
+    editId = null;
+    alert('✅ Actualizado');
   } else {
-    push(productosRef,data);
+    await push(productosRef, data);
+    alert('✅ Guardado');
   }
 
-  nombre.value=stock.value=bea.value=laura.value='';
+  document.getElementById('nombre').value = 
+  document.getElementById('stock').value = 
+  document.getElementById('bea').value = 
+  document.getElementById('laura').value = '';
 };
 
-window.vender = (id,cant) => {
+window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if(cant<=0 || p.stock<cant) return alert('Stock insuficiente');
-
-  update(ref(db,'productos/'+id),{
-    stock:p.stock-cant,
-    vBea:(p.vBea||0)+p.bea*cant,
-    vLaura:(p.vLaura||0)+p.laura*cant
+  if(cant <= 0 || p.stock < cant) return alert('❌ Stock insuficiente');
+  
+  await update(ref(db, 'productos/'+id), {
+    stock: p.stock - cant,
+    vBea: (p.vBea||0) + p.bea * cant,
+    vLaura: (p.vLaura||0) + p.laura * cant
   });
 };
 
-window.editar = id => {
+window.editar = (id) => {
   const p = productos[id];
-  nombre.value=p.nombre;
-  stock.value=p.stock;
-  bea.value=p.bea;
-  laura.value=p.laura;
-  editId=id;
+  document.getElementById('nombre').value = p.nombre;
+  document.getElementById('stock').value = p.stock;
+  document.getElementById('bea').value = p.bea;
+  document.getElementById('laura').value = p.laura;
+  editId = id;
+  document.getElementById('nombre').focus();
 };
 
-window.resetear = () => {
-  Object.entries(productos).forEach(([id])=>{
-    update(ref(db,'productos/'+id),{vBea:0,vLaura:0});
+window.borrarProducto = async (id) => {
+  if(confirm(`🗑️ ¿Borrar "${productos[id].nombre}"?`)) {
+    await remove(ref(db, 'productos/'+id));
+    alert('✅ Borrado');
+  }
+};
+
+window.borrarTodos = async () => {
+  if(confirm('⚠️ ¿BORRAR TODO EL INVENTARIO?')) {
+    await remove(productosRef);
+    alert('🗑️ Inventario vacío');
+  }
+};
+
+window.resetear = async () => {
+  const updates = {};
+  Object.entries(productos).forEach(([id]) => {
+    updates[`productos/${id}/vBea`] = 0;
+    updates[`productos/${id}/vLaura`] = 0;
   });
+  await update(ref(db), updates);
+  alert('🔄 Ventas reseteadas');
 };
 
 window.render = () => {
-  const filtro = buscar.value.toLowerCase();
-  totalBea=0; totalLaura=0;
-  tabla.innerHTML='';
+  const filtro = document.getElementById('buscar').value.toLowerCase();
+  totalBea = 0; totalLaura = 0;
+  const tabla = document.getElementById('tabla');
+  tabla.innerHTML = '';
 
-  Object.entries(productos).forEach(([id,p])=>{
+  Object.entries(productos).forEach(([id, p]) => {
     if(!p.nombre.toLowerCase().includes(filtro)) return;
-    totalBea+=p.vBea||0;
-    totalLaura+=p.vLaura||0;
-    tabla.innerHTML+=`
-    <tr class="${p.stock<=0?'sin-stock':''}">
-      <td>${p.nombre}</td>
-      <td>${p.stock}</td>
-      <td>${p.bea}</td>
-      <td>${p.laura}</td>
-      <td>
-        <input type="number" min="1" value="1" style="width:50px">
-        <button onclick="vender('${id}',this.previousElementSibling.value)">Vender</button>
-      </td>
-      <td><button onclick="editar('${id}')">Editar</button></td>
-    </tr>`;
+    
+    totalBea += p.vBea || 0;
+    totalLaura += p.vLaura || 0;
+    
+    tabla.innerHTML += `
+      <tr class="${p.stock <= 0 ? 'sin-stock' : ''}">
+        <td style="font-weight:bold">${p.nombre}</td>
+        <td style="font-size:16px;color:${p.stock <= 0 ? 'red' : 'black'}">${p.stock}</td>
+        <td>€${p.bea}</td>
+        <td>€${p.laura}</td>
+        <td>
+          <input type="number" min="1" max="${p.stock}" value="1" style="width:50px">
+          <button onclick="vender('${id}', this.previousElementSibling.value)">Vender</button>
+        </td>
+        <td><button onclick="editar('${id}')">Editar</button></td>
+        <td><button class="red" onclick="borrarProducto('${id}')">🗑️</button></td>
+      </tr>`;
   });
 
-  tBea.innerText=totalBea;
-  tLaura.innerText=totalLaura;
+  document.getElementById('tBea').innerText = totalBea.toFixed(2);
+  document.getElementById('tLaura').innerText = totalLaura.toFixed(2);
 };
-</script>
 
-</body>
-</html>
+window.importarExcelCompleto = async () => {
+  if(!confirm('🚀 ¿Importar 106 productos del Excel?')) return;
+  
+  const productosExcel = [
+    {nombre:"aguilas resina", stock:1, bea:5.0, laura:7.0},
+    {nombre:"alien resina", stock:3, bea:4.5, laura:7.0},
+    {nombre:"barco rosas color lila resina", stock:1, bea:15.0, laura:22.0},
+    {nombre:"Belen completo en resina", stock:2, bea:15.0, laura:18.0},
+    {nombre:"bolas arbol multicolor pequeas", stock:8, bea:1.0, laura:1.5},
+    {nombre:"Bolas multicolor espiral o con diseos, no lisas", stock:25, bea:1.75, laura:2.5},
+    {nombre:"Bolas navidad con casa, trenes, etc", stock:6, bea:2.5, laura:3.5},
+    {nombre:"Bolas redondas lisas rbol multicolor", stock:9, bea:1.5, laura:2.0},
+    {nombre:"Brainrot avin Nuclearo Dinossauro ", stock:1, bea:7.0, laura:10.0},
+    {nombre:"Brainrot barrilete Capibara Burbaloni Luliloli ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot beb tralalero tralar ", stock:1, bea:5.0, laura:8.0},
+    {nombre:"Brainrot brr brr patapim ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot cabeza pez Tripi tropi tropa tripa ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot capuchina espressona signora la de negro ", stock:0, bea:9.0, laura:12.0},
+    {nombre:"Brainrot capuchina balerina ", stock:0, bea:7.0, laura:10.0},
+    {nombre:"Brainrot capuchino asesino ", stock:0, bea:8.0, laura:11.0},
+    {nombre:"Brainrot Chimpazini bananini ", stock:1, bea:9.0, laura:12.0},
+    {nombre:"Brainrot cocofanto elefanto", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot cuervo Frulli Frulla ", stock:1, bea:7.0, laura:10.0},
+    {nombre:"Brainrot Frigo Camelo ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot gato pez Trulimero Trulichina ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot Girafa Celeste ", stock:1, bea:9.0, laura:12.0},
+    {nombre:"Brainrot Hipoptamo Cactus ", stock:1, bea:6.0, laura:9.0},
+    {nombre:"Brainrot langosta gato Trippi Troppi ", stock:1, bea:7.0, laura:10.0},
+    {nombre:"Brainrot Matteo mafioso nariz grande y sombrero ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot naranja Udin din din dun ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot oso con escopeta Bobrito Bandito ", stock:1, bea:8.0, laura:11.0},
+    {nombre:"Brainrot palo con bate Tung tung tung sahur ", stock:1, bea:7.0, laura:10.0},
+    {nombre:"Brainrot Palomo espa Spioniro Golubiro ", stock:1, bea:
 
 
