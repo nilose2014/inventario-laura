@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - ORDENABLE</title>
+<title>Inventario Laura Online - ORDENABLE + BACKUP</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -102,11 +102,21 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .confirmar-btn:hover{background:#218838 !important}
 .cancelar-reserva{background:#ffc107 !important;color:#000 !important}
 .cancelar-reserva:hover{background:#e0a800 !important}
+
+/* 🎯 BACKUP BUTTONS */
+.backup-btn{background:#28a745 !important;color:white !important;font-weight:bold !important;padding:10px 15px !important;font-size:14px !important}
+.backup-btn:hover{background:#218838 !important}
+.restore-btn{background:#17a2b8 !important;color:white !important;font-weight:bold !important;padding:10px 15px !important;font-size:14px !important}
+.restore-btn:hover{background:#138496 !important}
+#backupArea{background:#f8f9fa;border:2px dashed #007bff;padding:20px;border-radius:10px;margin:10px 0;text-align:center;min-height:100px}
+#backupText{font-family:monospace;background:#e9ecef;padding:15px;border-radius:5px;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:12px}
+.download-link{display:inline-block;background:#28a745;color:white;padding:8px 15px;border-radius:5px;text-decoration:none;margin-top:10px;font-weight:bold}
+.download-link:hover{background:#218838}
 </style>
 </head>
 <body>
 
-<h2>🛒 Inventario Laura Online - ORDENABLE</h2>
+<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP</h2>
 
 <!-- LOGIN OBLIGATORIO -->
 <div class="card login-card" id="loginDiv">
@@ -147,6 +157,20 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
   <div class="total-box-superior vendidos">
     <strong>📦 Total Vendidos</strong><br>
     <span id="tTotalVendidosSup" style="font-size:28px">0</span>
+  </div>
+</div>
+
+<!-- 🎯 SECCIÓN BACKUP - SOLO ADMIN -->
+<div class="card" id="backupSection" style="display:none">
+  <h3>💾 Sistema de Backup Completo</h3>
+  <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
+  <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
+  <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+  
+  <div id="backupArea">
+    <p>📋 Último backup disponible aquí 👇</p>
+    <div id="backupText">Genera tu primer backup con el botón superior...</div>
+    <div id="backupDate"></div>
   </div>
 </div>
 
@@ -199,7 +223,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </table>
 </div>
 
-<!-- TOTALES INFERIORES (mantener por compatibilidad) -->
+<!-- TOTALES INFERIORES -->
 <div class="totales-container">
   <div class="total-box">
     <strong>💰 Venta Bea</strong><br>
@@ -237,7 +261,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, update, remove, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -267,11 +291,14 @@ const EMAILJS_CONFIG = {
   publicKey: 'q6b-zVGH0aBXeREzv'
 };
 
-// 🎯 CONTADORES FILTRADOS (NUEVO)
+// 🎯 VARIABLES BACKUP
+let ultimoBackup = null;
+let backupRef = ref(db, 'backup/ultimo');
+
+// 🎯 CONTADORES FILTRADOS
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
 
-// 🎯 NUEVAS FUNCIONES PARA ASPA DE BORRAR BÚSQUEDA
 window.toggleClearBtn = () => {
   const buscar = document.getElementById('buscar');
   const clearBtn = document.getElementById('buscar-clear');
@@ -289,13 +316,11 @@ window.clearSearch = () => {
   renderTablaSolo();
 };
 
-// 🎯 ACTUALIZAR CONTADORES FILTRADOS (NUEVO)
 window.actualizarContadoresFiltrados = (count, stockTotal) => {
   document.getElementById('productosVisibles').textContent = `📦 ${count} productos`;
   document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
 };
 
-// 🎯 NUEVA FUNCIÓN: Renderizar SOLO tabla + contadores filtrados
 window.renderTablaSolo = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
@@ -353,6 +378,84 @@ window.renderTablaSolo = () => {
   actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
 };
 
+// 🎯 FUNCIONES BACKUP COMPLETAS
+window.hacerBackup = async () => {
+  if(userRole !== 'admin') return alert('❌ Solo ADMIN puede hacer backup');
+  
+  try {
+    const backupData = {
+      productos: productos,
+      totalesGlobales: totalesGlobales,
+      fecha: new Date().toISOString(),
+      usuario: currentUser.email,
+      timestamp: Date.now()
+    };
+    
+    // Guardar en Firebase
+    await set(backupRef, backupData);
+    
+    // Mostrar en pantalla
+    document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
+    document.getElementById('backupDate').innerHTML = `<strong>📅 Backup creado: ${new Date().toLocaleString('es-ES')}</strong>`;
+    
+    // Descargar archivo
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup-inventario-${new Date().toISOString().slice(0,10)}.json`;
+    a.textContent = '💾 DESCARGAR BACKUP';
+    a.className = 'download-link';
+    document.getElementById('backupArea').appendChild(a);
+    
+    // Limpiar link anterior si existe
+    const oldLink = document.querySelector('.download-link');
+    if(oldLink && oldLink !== a) oldLink.remove();
+    
+    ultimoBackup = backupData;
+    alert('✅ Backup completado y descargado');
+    
+  } catch(error) {
+    alert('❌ Error en backup: ' + error.message);
+  }
+};
+
+window.restaurarBackup = async (event) => {
+  if(userRole !== 'admin') return alert('❌ Solo ADMIN puede restaurar');
+  
+  const file = event.target.files[0];
+  if(!file) return;
+  
+  if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
+  
+  try {
+    const text = await file.text();
+    const backupData = JSON.parse(text);
+    
+    // Restaurar en Firebase
+    await set(ref(db, 'productos'), backupData.productos);
+    
+    alert('✅ Restauración completada. Recarga la página.');
+    location.reload();
+    
+  } catch(error) {
+    alert('❌ Error restaurando: ' + error.message);
+  }
+};
+
+window.cargarBackupFirebase = () => {
+  onValue(backupRef, (snap) => {
+    if(snap.exists()) {
+      ultimoBackup = snap.val();
+      document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup, null, 2);
+      const fecha = new Date(ultimoBackup.timestamp).toLocaleString('es-ES');
+      document.getElementById('backupDate').innerHTML = `<strong>📅 Último backup Firebase: ${fecha}</strong>`;
+      document.getElementById('backupSection').style.display = 'block';
+    }
+  });
+};
+
+// 🎯 FUNCIONES EXISTENTES (sin cambios)
 async function enviarEmail(datos) {
   if (!window.emailjs) return console.log('EmailJS cargando...');
   emailjs.init(EMAILJS_CONFIG.publicKey);
@@ -405,6 +508,7 @@ function checkUserRole() {
   updateUI();
   toggleNuevoProducto();
   loadData();
+  if(userRole === 'admin') cargarBackupFirebase();
 }
 
 function toggleNuevoProducto() {
@@ -418,7 +522,7 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN:</strong> ${currentUser.email}<br>Todos los permisos ✅`;
+    status.innerHTML = `👑 <strong>ADMIN:</strong> ${currentUser.email}<br>Todos los permisos + BACKUP ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
@@ -436,7 +540,6 @@ function loadData() {
   onValue(productosRef, (snap) => {
     productos = snap.val() || {};
     
-    // 🎯 CALCULAR TOTALES GLOBALES UNA SOLA VEZ (NO cambian con filtro)
     totalesGlobales.bea = 0;
     totalesGlobales.laura = 0;
     totalesGlobales.vendidos = 0;
@@ -450,7 +553,7 @@ function loadData() {
     });
     
     actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
-    renderTablaSolo(); // 🎯 Mostrar tabla completa + contadores al cargar
+    renderTablaSolo();
   }, (error) => {
     document.getElementById('status').textContent = '❌ Error de conexión';
     document.getElementById('status').className = 'error';
@@ -490,21 +593,17 @@ function ordenarProductos(productosObj) {
   });
 }
 
-// 🎯 ACTUALIZAR TOTALES (USANDO TOTALES GLOBALES FIJOS)
 function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados) {
-  // Superiores
   document.getElementById('tBeaSup').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLauraSup').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservadosSup').textContent = totalReservados;
   document.getElementById('tTotalVendidosSup').textContent = totalVendidos;
   
-  // Inferiores (compatibilidad)
   document.getElementById('tBea').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservados').textContent = totalReservados;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
   
-  // Diferencia (ambos)
   const diferencia = totalLaura - totalBea;
   const diferenciaSup = document.getElementById('tDiferenciaSup');
   const diferenciaBoxSup = document.getElementById('diferenciaBoxSup');
@@ -514,33 +613,27 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   diferenciaSup.textContent = `€${diferencia.toFixed(2)}`;
   diferenciaInf.textContent = `€${diferencia.toFixed(2)}`;
   
-  // Colores diferencia SUPERIOR
   if(diferencia > 0) {
     diferenciaSup.className = 'diferencia-positiva';
     diferenciaBoxSup.className = 'total-box-superior diferencia bea';
-  } else if(diferencia < 0) {
-    diferenciaSup.className = 'diferencia-negativa';
-    diferenciaBoxSup.className = 'total-box-superior diferencia';
-  } else {
-    diferenciaSup.className = '';
-    diferenciaBoxSup.className = 'total-box-superior diferencia';
-  }
-  
-  // Colores diferencia INFERIOR
-  if(diferencia > 0) {
     diferenciaInf.className = 'diferencia-positiva';
     diferenciaBoxInf.className = 'total-box diferencia-positiva';
   } else if(diferencia < 0) {
+    diferenciaSup.className = 'diferencia-negativa';
+    diferenciaBoxSup.className = 'total-box-superior diferencia';
     diferenciaInf.className = 'diferencia-negativa';
     diferenciaBoxInf.className = 'total-box diferencia-negativa';
   } else {
+    diferenciaSup.className = '';
+    diferenciaBoxSup.className = 'total-box-superior diferencia';
     diferenciaInf.className = '';
     diferenciaBoxInf.className = 'total-box';
   }
 }
 
-// Resto de funciones SIN CAMBIOS (reservar, vender, etc.)
-// [Todas las demás funciones permanecen exactamente iguales...]
+// TODAS LAS DEMÁS FUNCIONES (reservar, vender, etc.) IGUALES AL ORIGINAL
+// [Aquí van todas las funciones originales sin cambios...]
+
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -564,6 +657,47 @@ window.reservar = async (id, cant) => {
   
   alert(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`);
 };
+
+window.vender = async (id, cant) => {
+  const p = productos[id];
+  cant = Number(cant);
+  if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
+  
+  const nuevoStock = (p.stock||0)-cant;
+  const eraStockCero = (p.stock||0) === 0;
+  
+  await update(ref(db, 'productos/'+id), {
+    stock: nuevoStock,
+    vendidos: (p.vendidos||0)+cant,
+    vBea: (p.vBea||0)+(p.bea||0)*cant,
+    vLaura: (p.vLaura||0)+(p.laura||0)*cant
+  });
+  
+  if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
+    await update(ref(db, 'productos/'+id), { emailAgotadoEnviado: true });
+    await enviarEmail({
+      producto: p.nombre,
+      stock: 0,
+      detalles: `⛔ PRODUCTO AGOTADO | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
+      subject: '⛔ AGOTADO - ' + p.nombre,
+      fecha: new Date().toLocaleString('es-ES')
+    });
+  }
+  
+  await enviarEmail({
+    producto: p.nombre,
+    stock: nuevoStock,
+    detalles: `${cant} uds. | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
+    subject: '🛒 VENTA - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
+};
+
+// [Resto de funciones originales: confirmarReserva, cancelarReserva, eliminarUnaVenta, 
+// modificarStock, guardar, modificarPrecioLaura, modificarPrecioLauraGlobal, editar, 
+// borrar, resetear, cancelarEdit, limpiarFormulario... Todas SIN CAMBIOS]
 
 window.confirmarReserva = async (id, cant) => {
   const p = productos[id];
@@ -700,43 +834,6 @@ window.modificarPrecioLauraGlobal = () => {
   update(ref(db), updates).then(() => alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
 };
 
-window.vender = async (id, cant) => {
-  const p = productos[id];
-  cant = Number(cant);
-  if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
-  
-  const nuevoStock = (p.stock||0)-cant;
-  const eraStockCero = (p.stock||0) === 0;
-  
-  await update(ref(db, 'productos/'+id), {
-    stock: nuevoStock,
-    vendidos: (p.vendidos||0)+cant,
-    vBea: (p.vBea||0)+(p.bea||0)*cant,
-    vLaura: (p.vLaura||0)+(p.laura||0)*cant
-  });
-  
-  if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
-    await update(ref(db, 'productos/'+id), { emailAgotadoEnviado: true });
-    await enviarEmail({
-      producto: p.nombre,
-      stock: 0,
-      detalles: `⛔ PRODUCTO AGOTADO | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
-      subject: '⛔ AGOTADO - ' + p.nombre,
-      fecha: new Date().toLocaleString('es-ES')
-    });
-  }
-  
-  await enviarEmail({
-    producto: p.nombre,
-    stock: nuevoStock,
-    detalles: `${cant} uds. | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
-    subject: '🛒 VENTA - ' + p.nombre,
-    fecha: new Date().toLocaleString('es-ES')
-  });
-  
-  alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
-};
-
 window.editar = id => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede editar');
   const p = productos[id];
@@ -783,6 +880,7 @@ function limpiarFormulario() {
 </script>
 </body>
 </html>
+
 
 
 
