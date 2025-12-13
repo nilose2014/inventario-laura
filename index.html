@@ -20,7 +20,9 @@ button:hover{background:#0056b3}
 input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:12px}
 #nombre{width:300px !important;font-size:16px;padding:10px !important}
 #stock{width:80px;font-size:16px;padding:8px !important;text-align:center}
-#buscar{width:200px;padding:8px;font-size:14px}
+#buscar{width:200px;padding:8px;font-size:14px;position:relative}
+#buscar-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#dc3545;color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:none;font-weight:bold;line-height:18px}
+#buscar-clear:hover{background:#c82333}
 #ordenar{width:200px;padding:8px;font-size:14px}
 #status{padding:15px;margin-bottom:20px;border-radius:8px;text-align:center;font-weight:bold;font-size:16px}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
@@ -150,7 +152,10 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 <div class="card">
 <div class="filtros">
-🔍 <input placeholder="Buscar producto..." id="buscar" onkeyup="render()"><br>
+🔍 <div style="position:relative;display:inline-block">
+  <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();render()">
+  <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+</div>
 🆚 Ordenar: 
 <select id="ordenar" onchange="render()">
   <option value="nombre-asc">A → Z</option>
@@ -242,6 +247,24 @@ const EMAILJS_CONFIG = {
   service: 'service_65ryfan',
   template: 'template_06j67bo',
   publicKey: 'q6b-zVGH0aBXeREzv'
+};
+
+// 🎯 NUEVAS FUNCIONES PARA ASPA DE BORRAR BÚSQUEDA
+window.toggleClearBtn = () => {
+  const buscar = document.getElementById('buscar');
+  const clearBtn = document.getElementById('buscar-clear');
+  if (buscar.value.length > 0) {
+    clearBtn.style.display = 'block';
+  } else {
+    clearBtn.style.display = 'none';
+  }
+};
+
+window.clearSearch = () => {
+  const buscar = document.getElementById('buscar');
+  buscar.value = '';
+  document.getElementById('buscar-clear').style.display = 'none';
+  render();
 };
 
 async function enviarEmail(datos) {
