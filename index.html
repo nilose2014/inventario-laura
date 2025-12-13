@@ -120,20 +120,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
   </div>
 </div>
 
-<!-- 🎯 SECCIÓN BACKUP - SOLO nilose2014@gmail.com -->
-<div class="card hidden" id="backupSection">
-  <h3>💾 Sistema de Backup Completo</h3>
-  <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
-  <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
-  <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
-  
-  <div id="backupArea">
-    <p>📋 Último backup disponible aquí 👇</p>
-    <div id="backupText">Genera tu primer backup con el botón superior...</div>
-    <div id="backupDate"></div>
-  </div>
-</div>
-
 <div id="status" class="error">Cargando...</div>
 
 <!-- SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
@@ -211,6 +197,20 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
 <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
+</div>
+
+<!-- 🎯 SECCIÓN BACKUP - SOLO nilose2014@gmail.com - ABAJO DEL TODO -->
+<div class="card hidden" id="backupSection">
+  <h3>💾 Sistema de Backup Completo</h3>
+  <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
+  <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
+  <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+  
+  <div id="backupArea">
+    <p>📋 Último backup disponible aquí 👇</p>
+    <div id="backupText">Genera tu primer backup con el botón superior...</div>
+    <div id="backupDate"></div>
+  </div>
 </div>
 
 </div>
@@ -454,7 +454,7 @@ window.resetLogin = () => {
 function checkUserRole() {
   if(currentUser.email === 'nilose2014@gmail.com') {
     userRole = 'admin';
-    // ✅ MOSTRAR BACKUP SOLO PARA nilose2014@gmail.com
+    // ✅ MOSTRAR BACKUP SOLO PARA nilose2014@gmail.com (ABAJO DEL TODO)
     document.getElementById('backupSection').classList.remove('hidden');
   } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
     userRole = 'user';
@@ -495,7 +495,6 @@ function updateUI() {
   }
 }
 
-// Resto del código SIN CAMBIOS...
 function loadData() {
   onValue(productosRef, (snap) => {
     productos = snap.val() || {};
@@ -809,6 +808,7 @@ function limpiarFormulario() {
 </script>
 </body>
 </html>
+
 
 
 
