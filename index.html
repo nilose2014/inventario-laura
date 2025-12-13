@@ -124,6 +124,9 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 </div>
 
+<!-- 🔥 EMAILJS PARA NOTIFICACIONES AUTOMÁTICAS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -148,6 +151,28 @@ let productos = {};
 let editId = null;
 let currentUser = null;
 let userRole = null;
+
+// 🔥 EMAILJS CONFIGURADO CON TUS CREDENCIALES
+const EMAILJS_CONFIG = {
+  service: 'service_65ryfan',
+  template: 'template_06j67bo',
+  publicKey: 'q6b-zVGH0aBXeREzv'
+};
+
+async function enviarEmail(datos) {
+  if (!window.emailjs) {
+    console.log('EmailJS cargando...');
+    return;
+  }
+  
+  emailjs.init(EMAILJS_CONFIG.publicKey);
+  try {
+    await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, datos);
+    console.log('✅ Email enviado:', datos.subject);
+  } catch(err) {
+    console.log('❌ Error email:', err);
+  }
+}
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -226,7 +251,6 @@ function loadData() {
   });
 }
 
-// 🆕 FUNCIÓN ORDENAR
 function ordenarProductos(productosObj) {
   const orden = document.getElementById('ordenar').value;
   const entradas = Object.entries(productosObj);
@@ -312,17 +336,32 @@ window.modificarPrecioLauraGlobal = () => {
   update(ref(db), updates).then(() => alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
 };
 
-window.vender = (id,cant) => {
+// 🔥 FUNCIÓN VENDER CON EMAIL AUTOMÁTICO
+window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
   if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
   
-  update(ref(db, 'productos/'+id), {
-    stock: (p.stock||0)-cant,
+  const nuevoStock = (p.stock||0)-cant;
+  
+  // 1️⃣ ACTUALIZAR BASE DE DATOS
+  await update(ref(db, 'productos/'+id), {
+    stock: nuevoStock,
     vendidos: (p.vendidos||0)+cant,
     vBea: (p.vBea||0)+(p.bea||0)*cant,
     vLaura: (p.vLaura||0)+(p.laura||0)*cant
-  }).then(() => alert(`✅ Vendido ${cant} unidades`));
+  });
+  
+  // 2️⃣ ENVIAR EMAIL VENTA AUTOMÁTICO
+  await enviarEmail({
+    producto: p.nombre,
+    stock: nuevoStock,
+    detalles: `${cant} uds. | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
+    subject: '🛒 VENTA - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Vendido ${cant} unidades`);
 };
 
 window.editar = id => {
@@ -356,6 +395,10 @@ window.resetear = () => {
   }
 };
 
+window.cancelarEdit = () => {
+  limpiarFormulario();
+};
+
 function limpiarFormulario() {
   document.getElementById('nombre').value = 
   document.getElementById('stock').value = 
@@ -365,8 +408,8 @@ function limpiarFormulario() {
   document.getElementById('cancelBtn').style.display = 'none';
 }
 
-// 🆕 RENDER CON ORDENACIÓN
-window.render = () => {
+// 🔥 FUNCIÓN RENDER CON DETECCIÓN STOCK CRÍTICO
+window.render = async () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
   
@@ -404,10 +447,12 @@ window.render = () => {
     </tr>`;
   });
 
+  // TOTALES
   document.getElementById('tBea').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
   
+  // DIFERENCIA
   const diferencia = totalLaura - totalBea;
   const diferenciaSpan = document.getElementById('tDiferencia');
   const diferenciaBox = document.getElementById('diferenciaBox');
@@ -423,11 +468,26 @@ window.render = () => {
     diferenciaSpan.className = '';
     diferenciaBox.className = 'total-box';
   }
+
+  // 🔥 DETECTAR STOCK CRÍTICO (solo una vez por producto)
+  Object.entries(productos).forEach(async ([id, p]) => {
+    const stock = p.stock || 0;
+    if (stock <= 3 && !p.emailStockEnviado) {
+      await enviarEmail({
+        producto: p.nombre,
+        stock: stock,
+        detalles: `STOCK CRÍTICO | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
+        subject: '⚠️ STOCK CRÍTICO - ' + p.nombre,
+        fecha: new Date().toLocaleString('es-ES')
+      });
+      // Marcar como enviado (evita spam)
+      await update(ref(db, 'productos/'+id), { emailStockEnviado: true });
+    }
+  });
 };
 </script>
 </body>
 </html>
-
 
 
 
