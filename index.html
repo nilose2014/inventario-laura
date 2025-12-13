@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - ORDENABLE + BACKUP + PRÓXIMO STOCK</title>
+<title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -53,7 +53,9 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
 .stock-editable{background:#fff3cd !important}
+/* ⭐ NUEVO: ESTILOS PARA PRÓXIMO STOCK */
 .prox-input{background:#e8f5e8 !important;border-color:#28a745 !important}
+.prox-input.tiene-valor{background:#cce7ff !important;border-color:#007bff !important;box-shadow:0 0 5px rgba(0,123,255,0.3) !important}
 .prox-btn{background:#28a745 !important;color:white !important;font-size:10px !important;padding:2px 6px !important;margin-left:2px !important}
 .prox-btn:hover{background:#218838 !important}
 .undo-btn{background:#ffc107 !important;color:#000 !important;font-size:11px;padding:2px 5px !important;margin-left:2px}
@@ -284,7 +286,7 @@ window.actualizarContadoresFiltrados = (count, stockTotal) => {
   document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
 };
 
-// ⭐ NUEVA FUNCIÓN: AÑADIR STOCK PROXIMO AL STOCK REAL
+// ⭐ FUNCIÓN: AÑADIR STOCK PRÓXIMO AL STOCK REAL
 window.anadirProximoStock = async (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede añadir stock próximo');
   const p = productos[id];
@@ -297,10 +299,11 @@ window.anadirProximoStock = async (id) => {
   
   await update(ref(db, 'productos/'+id), {
     stock: nuevoStock,
-    proximo: 0  // Resetear próximo a 0
+    proximo: 0
   });
   
-  inputProx.value = '0'; // Limpiar input visualmente
+  inputProx.value = '0';
+  inputProx.classList.remove('tiene-valor'); // ⭐ Quitar clase azul
   
   await enviarEmail({
     producto: p.nombre,
@@ -313,7 +316,7 @@ window.anadirProximoStock = async (id) => {
   alert(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`);
 };
 
-// ⭐ NUEVA FUNCIÓN: MODIFICAR STOCK PRÓXIMO
+// ⭐ FUNCIÓN: MODIFICAR STOCK PRÓXIMO DIRECTAMENTE
 window.modificarProximoStock = (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede modificar stock próximo');
   const nuevoProximo = prompt('📦 Nuevo stock próximo:', productos[id]?.proximo || '0');
@@ -323,6 +326,16 @@ window.modificarProximoStock = (id) => {
   
   update(ref(db, 'productos/'+id), { proximo: proximo })
     .then(() => alert(`✅ Próximo actualizado: ${proximo}`));
+};
+
+// ⭐ FUNCIÓN: ACTUALIZAR CLASE VISUAL DEL INPUT PRÓXIMO (AZUL SI HAY NÚMERO)
+window.updateProxInputVisual = (input) => {
+  const valor = Number(input.value);
+  if (valor > 0) {
+    input.classList.add('tiene-valor'); // ⭐ AZUL
+  } else {
+    input.classList.remove('tiene-valor'); // ⭐ VERDE
+  }
 };
 
 window.renderTablaSolo = () => {
@@ -345,6 +358,7 @@ window.renderTablaSolo = () => {
     const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo' : '';
     const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
     const filaClass = (p.reservados||0)>0 ? 'reservado' : stockClass;
+    const tieneProximo = proximoDisponible > 0;
     
     tabla.innerHTML += `
     <tr class="${filaClass}">
@@ -354,7 +368,7 @@ window.renderTablaSolo = () => {
         ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
       <td>
-        <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input" style="width:45px" onchange="updateProxInput('${id}',this.value)" title="Stock futuro">
+        <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
         ${userRole === 'admin' ? `
           <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ Añadir al stock">➕</button>
           <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
@@ -390,11 +404,11 @@ window.renderTablaSolo = () => {
   actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
 };
 
-// ⭐ NUEVA FUNCIÓN: ACTUALIZAR INPUT PRÓXIMO EN TIEMPO REAL (OPCIONAL)
+// ⭐ ACTUALIZAR INPUT PRÓXIMO EN FIREBASE + VISUAL
 window.updateProxInput = (id, value) => {
-  // Actualiza el valor en Firebase mientras escribes (opcional, se puede quitar si prefieres solo al guardar)
   const proximo = Math.max(0, Number(value));
   update(ref(db, 'productos/'+id), { proximo: proximo });
+  updateProxInputVisual(document.querySelector(`input[data-producto="${id}"]`));
 };
 
 window.hacerBackup = async () => {
@@ -541,7 +555,7 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔵 AZUL) ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
@@ -791,7 +805,7 @@ window.guardar = () => {
   const data = {
     nombre, 
     stock: Math.max(0, Number(document.getElementById('stock').value)||0),
-    proximo: Math.max(0, Number(document.getElementById('proximo').value)||0), // ⭐ NUEVO CAMPO
+    proximo: Math.max(0, Number(document.getElementById('proximo').value)||0),
     bea: Math.max(0, Number(document.getElementById('bea').value)||0),
     laura: Math.max(0, Number(document.getElementById('laura').value)||0),
     vendidos: editId ? (productos[editId]?.vendidos||0) : 0,
@@ -828,7 +842,7 @@ window.editar = id => {
   const p = productos[id];
   document.getElementById('nombre').value = p.nombre||'';
   document.getElementById('stock').value = p.stock||0;
-  document.getElementById('proximo').value = p.proximo||0; // ⭐ NUEVO CAMPO
+  document.getElementById('proximo').value = p.proximo||0;
   document.getElementById('bea').value = p.bea||0;
   document.getElementById('laura').value = p.laura||0;
   editId = id;
@@ -862,7 +876,7 @@ window.cancelarEdit = () => limpiarFormulario();
 function limpiarFormulario() {
   document.getElementById('nombre').value = '';
   document.getElementById('stock').value = '';
-  document.getElementById('proximo').value = ''; // ⭐ NUEVO CAMPO
+  document.getElementById('proximo').value = '';
   document.getElementById('bea').value = '';
   document.getElementById('laura').value = '';
   editId = null;
