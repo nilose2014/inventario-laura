@@ -395,10 +395,10 @@ window.renderTablaSolo = () => {
           <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
         ` : ''}
       </td>
-      <td class="reservados">
-        ${(p.reservados||0)}
-        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
-      </td>
+     <td class="reservados" style="padding:4px;font-size:12px;width:60px">
+  <div style="font-size:12px;font-weight:bold;">${(p.reservados||0)}</div>
+  ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva" style="font-size:9px;padding:1px 3px">❌</button>` : ''}
+</td>
       <td class="vendidos">${p.vendidos||0}
         ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
       </td>
