@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <title>Inventario Laura Online</title>
 <style>
-body { font-family: Arial; background:#f0f2f5; padding:20px }
-.card { background:white; padding:15px; border-radius:10px; margin-bottom:20px }
-table { width:100%; border-collapse:collapse }
-th,td { border:1px solid #ddd; padding:8px; text-align:center }
-button { padding:6px 10px; border:none; border-radius:5px; background:#007bff; color:white }
-.red { background:#dc3545 }
+body{font-family:Arial;background:#f0f2f5;padding:20px}
+.card{background:white;padding:15px;border-radius:10px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer}
+.red{background:#dc3545}
+.sin-stock{background:#ffe5e5}
+input{padding:5px;border-radius:5px;border:1px solid #ccc}
 </style>
 </head>
 <body>
@@ -25,10 +27,11 @@ Precio Laura <input id="laura" type="number">
 </div>
 
 <div class="card">
+<input placeholder="Buscar producto" id="buscar" onkeyup="render()">
 <table>
 <thead>
 <tr>
-<th>Producto</th><th>Stock</th><th>Bea</th><th>Laura</th><th>Vender</th>
+<th>Producto</th><th>Stock</th><th>Bea</th><th>Laura</th><th>Vender</th><th>Editar</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
@@ -43,8 +46,7 @@ Venta Laura: €<span id="tLaura">0</span><br>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, update } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -61,60 +63,91 @@ const db = getDatabase(app);
 const productosRef = ref(db, "productos");
 
 let productos = {};
+let editId = null;
 let totalBea = 0;
 let totalLaura = 0;
 
 onValue(productosRef, snap => {
   productos = snap.val() || {};
-  totalBea = 0;
-  totalLaura = 0;
-  document.getElementById("tabla").innerHTML = "";
-  Object.entries(productos).forEach(([id,p])=>{
-    totalBea += p.vBea || 0;
-    totalLaura += p.vLaura || 0;
-    document.getElementById("tabla").innerHTML += `
-    <tr>
-      <td>${p.nombre}</td>
-      <td>${p.stock}</td>
-      <td>${p.bea}</td>
-      <td>${p.laura}</td>
-      <td>
-        <button onclick="vender('${id}')">Vender</button>
-      </td>
-    </tr>`;
-  });
-  document.getElementById("tBea").innerText = totalBea;
-  document.getElementById("tLaura").innerText = totalLaura;
+  render();
 });
 
 window.guardar = () => {
-  push(productosRef, {
+  const data = {
     nombre: nombre.value,
     stock: Number(stock.value)||0,
     bea: Number(bea.value)||0,
     laura: Number(laura.value)||0,
     vBea:0,
     vLaura:0
-  });
+  };
+
+  if(editId){
+    update(ref(db,'productos/'+editId),data);
+    editId=null;
+  } else {
+    push(productosRef,data);
+  }
+
+  nombre.value=stock.value=bea.value=laura.value='';
 };
 
-window.vender = id => {
+window.vender = (id,cant) => {
   const p = productos[id];
-  if(p.stock<=0) return alert("Sin stock");
-  update(ref(db,"productos/"+id),{
-    stock:p.stock-1,
-    vBea:p.vBea + p.bea,
-    vLaura:p.vLaura + p.laura
+  cant = Number(cant);
+  if(cant<=0 || p.stock<cant) return alert('Stock insuficiente');
+
+  update(ref(db,'productos/'+id),{
+    stock:p.stock-cant,
+    vBea:(p.vBea||0)+p.bea*cant,
+    vLaura:(p.vLaura||0)+p.laura*cant
   });
 };
 
-window.resetear = ()=>{
+window.editar = id => {
+  const p = productos[id];
+  nombre.value=p.nombre;
+  stock.value=p.stock;
+  bea.value=p.bea;
+  laura.value=p.laura;
+  editId=id;
+};
+
+window.resetear = () => {
   Object.entries(productos).forEach(([id])=>{
-    update(ref(db,"productos/"+id),{vBea:0,vLaura:0});
+    update(ref(db,'productos/'+id),{vBea:0,vLaura:0});
   });
+};
+
+window.render = () => {
+  const filtro = buscar.value.toLowerCase();
+  totalBea=0; totalLaura=0;
+  tabla.innerHTML='';
+
+  Object.entries(productos).forEach(([id,p])=>{
+    if(!p.nombre.toLowerCase().includes(filtro)) return;
+    totalBea+=p.vBea||0;
+    totalLaura+=p.vLaura||0;
+    tabla.innerHTML+=`
+    <tr class="${p.stock<=0?'sin-stock':''}">
+      <td>${p.nombre}</td>
+      <td>${p.stock}</td>
+      <td>${p.bea}</td>
+      <td>${p.laura}</td>
+      <td>
+        <input type="number" min="1" value="1" style="width:50px">
+        <button onclick="vender('${id}',this.previousElementSibling.value)">Vender</button>
+      </td>
+      <td><button onclick="editar('${id}')">Editar</button></td>
+    </tr>`;
+  });
+
+  tBea.innerText=totalBea;
+  tLaura.innerText=totalLaura;
 };
 </script>
 
 </body>
 </html>
+
 
