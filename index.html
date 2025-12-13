@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inventario Laura (Firebase)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f0f2f5; padding:20px; }
+    h2 { text-align:center; }
+    .card { background:white; padding:15px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px; }
+    table { border-collapse: collapse; width: 100%; margin-top:10px; }
+    th, td { border:1px solid #ddd; padding:10px; text-align:center; }
+    th { background:#fafafa; }
+    button { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; background:#007bff; color:white; }
+    button.red { background:#dc3545; }
+    input { padding:5px; border-radius:5px; border:1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+<h2>Inventario y Ventas (Online)</h2>
+
+<div class="card">
+  <strong>Añadir / Modificar producto</strong><br><br>
+  Producto: <input id="pNombre"> 
+  Stock: <input id="pStock" type="number"> 
+  Precio Bea: <input id="pBea" type="number"> 
+  Precio Laura: <input id="pLaura" type="number"> 
+  <button onclick="guardarProducto()">Guardar</button>
+</div>
+
+<div class="card">
+  <input id="buscar" placeholder="Buscar producto" onkeyup="render()">
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Stock</th>
+        <th>Precio Bea</th>
+        <th>Precio Laura</th>
+        <th>Vender</th>
+        <th>Editar</th>
+      </tr>
+    </thead>
+    <tbody id="tabla"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <p><strong>Venta total Bea:</strong> €<span id="totalBea">0</span></p>
+  <p><strong>Venta total Laura:</strong> €<span id="totalLaura">0</span></p>
+  <button class="red" onclick="resetear()">Resetear ventas</button>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // 🔥 PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE 🔥
+  const firebaseConfig = {
+    apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
+    authDomain: "inventario-laura.firebaseapp.com",
+    projectId: "inventario-laura",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let productos = [];
+  let editId = null;
+  let totalBea = 0;
+  let totalLaura = 0;
+
+  async function cargarDatos() {
+    productos = [];
+    totalBea = 0;
+    totalLaura = 0;
+
+    const querySnapshot = await getDocs(collection(db, "productos"));
+    querySnapshot.forEach((docu) => {
+      const p = docu.data();
+      p.id = docu.id;
+      productos.push(p);
+      totalBea += p.ventaBea || 0;
+      totalLaura += p.ventaLaura || 0;
+    });
+    render();
+  }
+
+  window.guardarProducto = async function () {
+    const nombre = document.getElementById('pNombre').value;
+    if (!nombre) return alert('Nombre obligatorio');
+
+    const stock = parseInt(document.getElementById('pStock').value) || 0;
+    const bea = parseFloat(document.getElementById('pBea').value) || 0;
+    const laura = parseFloat(document.getElementById('pLaura').value) || 0;
+
+    if (editId) {
+      await updateDoc(doc(db, "productos", editId), { nombre, stock, bea, laura });
+      editId = null;
+    } else {
+      await addDoc(collection(db, "productos"), { nombre, stock, bea, laura, ventaBea: 0, ventaLaura: 0 });
+    }
+
+    document.getElementById('pNombre').value = '';
+    document.getElementById('pStock').value = '';
+    document.getElementById('pBea').value = '';
+    document.getElementById('pLaura').value = '';
+
+    cargarDatos();
+  }
+
+  window.vender = async function (id, cantidad) {
+    const p = productos.find(x => x.id === id);
+    if (p.stock < cantidad) return alert('Stock insuficiente');
+
+    await updateDoc(doc(db, "productos", id), {
+      stock: p.stock - cantidad,
+      ventaBea: (p.ventaBea || 0) + p.bea * cantidad,
+      ventaLaura: (p.ventaLaura || 0) + p.laura * cantidad
+    });
+
+    cargarDatos();
+  }
+
+  window.editar = function (id) {
+    const p = productos.find(x => x.id === id);
+    document.getElementById('pNombre').value = p.nombre;
+    document.getElementById('pStock').value = p.stock;
+    document.getElementById('pBea').value = p.bea;
+    document.getElementById('pLaura').value = p.laura;
+    editId = id;
+  }
+
+  window.resetear = async function () {
+    if (!confirm('Resetear ventas?')) return;
+    for (const p of productos) {
+      await updateDoc(doc(db, "productos", p.id), { ventaBea: 0, ventaLaura: 0 });
+    }
+    cargarDatos();
+  }
+
+  window.render = function () {
+    const filtro = document.getElementById('buscar').value.toLowerCase();
+    const tbody = document.getElementById('tabla');
+    tbody.innerHTML = '';
+
+    productos.forEach(p => {
+      if (!p.nombre.toLowerCase().includes(filtro)) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.nombre}</td>
+        <td>${p.stock}</td>
+        <td>€${p.bea}</td>
+        <td>€${p.laura}</td>
+        <td>
+          <input type="number" min="1" value="1" style="width:60px"> 
+          <button onclick="vender('${p.id}', this.previousElementSibling.value)">Vender</button>
+        </td>
+        <td><button onclick="editar('${p.id}')">Editar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('totalBea').innerText = totalBea.toFixed(2);
+    document.getElementById('totalLaura').innerText = totalLaura.toFixed(2);
+  }
+
+  cargarDatos();
+</script>
+
+</body>
+</html>
