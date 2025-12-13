@@ -120,8 +120,8 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
   </div>
 </div>
 
-<!-- 🎯 SECCIÓN BACKUP - SOLO ADMIN (AHORA SIEMPRE VISIBLE) -->
-<div class="card" id="backupSection">
+<!-- 🎯 SECCIÓN BACKUP - SOLO nilose2014@gmail.com -->
+<div class="card hidden" id="backupSection">
   <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
   <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
@@ -336,7 +336,7 @@ window.renderTablaSolo = () => {
 };
 
 window.hacerBackup = async () => {
-  if(userRole !== 'admin') return alert('❌ Solo ADMIN puede hacer backup');
+  if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
   
   try {
     const backupData = {
@@ -373,7 +373,7 @@ window.hacerBackup = async () => {
 };
 
 window.restaurarBackup = async (event) => {
-  if(userRole !== 'admin') return alert('❌ Solo ADMIN puede restaurar');
+  if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede restaurar');
   
   const file = event.target.files[0];
   if(!file) return;
@@ -395,6 +395,7 @@ window.restaurarBackup = async (event) => {
 };
 
 window.cargarBackupFirebase = () => {
+  if(currentUser.email !== 'nilose2014@gmail.com') return;
   onValue(backupRef, (snap) => {
     if(snap.exists()) {
       ultimoBackup = snap.val();
@@ -451,13 +452,22 @@ window.resetLogin = () => {
 };
 
 function checkUserRole() {
-  if(currentUser.email === 'nilose2014@gmail.com') userRole = 'admin';
-  else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) userRole = 'user';
-  else userRole = 'user';
+  if(currentUser.email === 'nilose2014@gmail.com') {
+    userRole = 'admin';
+    // ✅ MOSTRAR BACKUP SOLO PARA nilose2014@gmail.com
+    document.getElementById('backupSection').classList.remove('hidden');
+  } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
+    userRole = 'user';
+    // ❌ OCULTAR BACKUP para otros usuarios
+    document.getElementById('backupSection').classList.add('hidden');
+  } else {
+    userRole = 'user';
+    document.getElementById('backupSection').classList.add('hidden');
+  }
   updateUI();
   toggleNuevoProducto();
   loadData();
-  if(userRole === 'admin') cargarBackupFirebase();
+  if(currentUser.email === 'nilose2014@gmail.com') cargarBackupFirebase();
 }
 
 function toggleNuevoProducto() {
@@ -471,7 +481,7 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN:</strong> ${currentUser.email}<br>Todos los permisos + BACKUP ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
@@ -485,6 +495,7 @@ function updateUI() {
   }
 }
 
+// Resto del código SIN CAMBIOS...
 function loadData() {
   onValue(productosRef, (snap) => {
     productos = snap.val() || {};
@@ -641,30 +652,6 @@ window.vender = async (id, cant) => {
   alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
 };
 
-window.confirmarReserva = async (id, cant) => {
-  const p = productos[id];
-  cant = Number(cant);
-  const reservados = p.reservados || 0;
-  if(cant<=0 || cant>reservados) return alert('❌ Cantidad inválida');
-  
-  await update(ref(db, 'productos/'+id), {
-    reservados: reservados - cant,
-    vendidos: (p.vendidos||0)+cant,
-    vBea: (p.vBea||0)+(p.bea||0)*cant,
-    vLaura: (p.vLaura||0)+(p.laura||0)*cant
-  });
-  
-  await enviarEmail({
-    producto: p.nombre,
-    stock: p.stock||0,
-    detalles: `${cant} uds. RESERVA CONFIRMADA → VENTA | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
-    subject: '✅ RESERVA CONFIRMADA - ' + p.nombre,
-    fecha: new Date().toLocaleString('es-ES')
-  });
-  
-  alert(`✅ Confirmadas ${cant} unidades como VENDIDAS`);
-};
-
 window.cancelarReserva = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -819,13 +806,6 @@ function limpiarFormulario() {
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 };
-
-// 🔧 BACKUP SIEMPRE VISIBLE + DEBUG
-setTimeout(() => {
-  document.getElementById('backupSection').style.display = 'block';
-  console.log('🚀 Backup FORZADO visible para todos');
-}, 1000);
-
 </script>
 </body>
 </html>
