@@ -33,56 +33,18 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 .disabled{background:#ccc !important;cursor:not-allowed !important}
 .diferencia-positiva{background:#d4edda !important;color:#155724;font-weight:bold}
 .diferencia-negativa{background:#f8d7da !important;color:#721c24;font-weight:bold}
-
-/* 🎯 CONTADORES FILTRADOS */
-.contadores-filtrados {
-  background: #e9ecef;
-  padding: 8px 12px;
-  border-radius: 5px;
-  font-weight: bold;
-  font-size: 14px;
-  margin-left: 15px;
-  min-width: 120px;
-}
+.contadores-filtrados {background: #e9ecef;padding: 8px 12px;border-radius: 5px;font-weight: bold;font-size: 14px;margin-left: 15px;min-width: 120px;}
 #productosVisibles { color: #007bff; }
 #stockVisible { color: #28a745; }
-
-/* 🎯 TOTALES SUPERIORES - VISIBLES SIEMPRE */
-.totales-superiores {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-  gap: 15px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 20px;
-  margin-bottom: 20px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-.total-box-superior {
-  padding: 15px;
-  border-radius: 10px;
-  border: 2px solid #ddd;
-  transition: all 0.3s ease;
-}
+.totales-superiores {display: grid;grid-template-columns: 1fr 1fr 1fr 1fr 1fr;gap: 15px;text-align: center;font-size: 20px;font-weight: bold;padding: 20px;margin-bottom: 20px;background: white;border-radius: 10px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+.total-box-superior {padding: 15px;border-radius: 10px;border: 2px solid #ddd;transition: all 0.3s ease;}
 .total-box-superior:hover { transform: scale(1.02); }
 .total-box-superior.bea { background: #d4edda; border-color: #28a745; }
 .total-box-superior.laura { background: #cce7ff; border-color: #007bff; }
 .total-box-superior.diferencia { border-color: #ffc107; }
 .total-box-superior.reservados { background: #e8f4fd; border-color: #17a2b8; }
 .total-box-superior.vendidos { background: #d1ecf1; border-color: #28a745; }
-
-.totales-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-  gap: 15px;
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  padding: 20px;
-}
+.totales-container {display: grid;grid-template-columns: 1fr 1fr 1fr 1fr 1fr;gap: 15px;text-align: center;font-size: 18px;font-weight: bold;padding: 20px;}
 .total-box{padding:12px;border-radius:10px}
 .editable{background:#fff3cd !important}
 .vendidos{font-weight:bold;color:#28a745}
@@ -102,8 +64,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .confirmar-btn:hover{background:#218838 !important}
 .cancelar-reserva{background:#ffc107 !important;color:#000 !important}
 .cancelar-reserva:hover{background:#e0a800 !important}
-
-/* 🎯 BACKUP BUTTONS */
 .backup-btn{background:#28a745 !important;color:white !important;font-weight:bold !important;padding:10px 15px !important;font-size:14px !important}
 .backup-btn:hover{background:#218838 !important}
 .restore-btn{background:#17a2b8 !important;color:white !important;font-weight:bold !important;padding:10px 15px !important;font-size:14px !important}
@@ -160,8 +120,8 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
   </div>
 </div>
 
-<!-- 🎯 SECCIÓN BACKUP - SOLO ADMIN -->
-<div class="card" id="backupSection" style="display:none">
+<!-- 🎯 SECCIÓN BACKUP - SOLO ADMIN (AHORA SIEMPRE VISIBLE) -->
+<div class="card" id="backupSection">
   <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
   <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
@@ -291,11 +251,8 @@ const EMAILJS_CONFIG = {
   publicKey: 'q6b-zVGH0aBXeREzv'
 };
 
-// 🎯 VARIABLES BACKUP
 let ultimoBackup = null;
 let backupRef = ref(db, 'backup/ultimo');
-
-// 🎯 CONTADORES FILTRADOS
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
 
@@ -378,7 +335,6 @@ window.renderTablaSolo = () => {
   actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
 };
 
-// 🎯 FUNCIONES BACKUP COMPLETAS
 window.hacerBackup = async () => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede hacer backup');
   
@@ -391,14 +347,11 @@ window.hacerBackup = async () => {
       timestamp: Date.now()
     };
     
-    // Guardar en Firebase
     await set(backupRef, backupData);
     
-    // Mostrar en pantalla
     document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
     document.getElementById('backupDate').innerHTML = `<strong>📅 Backup creado: ${new Date().toLocaleString('es-ES')}</strong>`;
     
-    // Descargar archivo
     const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -408,7 +361,6 @@ window.hacerBackup = async () => {
     a.className = 'download-link';
     document.getElementById('backupArea').appendChild(a);
     
-    // Limpiar link anterior si existe
     const oldLink = document.querySelector('.download-link');
     if(oldLink && oldLink !== a) oldLink.remove();
     
@@ -432,7 +384,6 @@ window.restaurarBackup = async (event) => {
     const text = await file.text();
     const backupData = JSON.parse(text);
     
-    // Restaurar en Firebase
     await set(ref(db, 'productos'), backupData.productos);
     
     alert('✅ Restauración completada. Recarga la página.');
@@ -450,12 +401,10 @@ window.cargarBackupFirebase = () => {
       document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup, null, 2);
       const fecha = new Date(ultimoBackup.timestamp).toLocaleString('es-ES');
       document.getElementById('backupDate').innerHTML = `<strong>📅 Último backup Firebase: ${fecha}</strong>`;
-      document.getElementById('backupSection').style.display = 'block';
     }
   });
 };
 
-// 🎯 FUNCIONES EXISTENTES (sin cambios)
 async function enviarEmail(datos) {
   if (!window.emailjs) return console.log('EmailJS cargando...');
   emailjs.init(EMAILJS_CONFIG.publicKey);
@@ -631,9 +580,6 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   }
 }
 
-// TODAS LAS DEMÁS FUNCIONES (reservar, vender, etc.) IGUALES AL ORIGINAL
-// [Aquí van todas las funciones originales sin cambios...]
-
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -694,10 +640,6 @@ window.vender = async (id, cant) => {
   
   alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
 };
-
-// [Resto de funciones originales: confirmarReserva, cancelarReserva, eliminarUnaVenta, 
-// modificarStock, guardar, modificarPrecioLaura, modificarPrecioLauraGlobal, editar, 
-// borrar, resetear, cancelarEdit, limpiarFormulario... Todas SIN CAMBIOS]
 
 window.confirmarReserva = async (id, cant) => {
   const p = productos[id];
@@ -877,6 +819,13 @@ function limpiarFormulario() {
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 };
+
+// 🔧 BACKUP SIEMPRE VISIBLE + DEBUG
+setTimeout(() => {
+  document.getElementById('backupSection').style.display = 'block';
+  console.log('🚀 Backup FORZADO visible para todos');
+}, 1000);
+
 </script>
 </body>
 </html>
