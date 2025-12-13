@@ -98,6 +98,24 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 #backupText{font-family:monospace;background:#e9ecef;padding:15px;border-radius:5px;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:12px}
 .download-link{display:inline-block;background:#28a745;color:white;padding:8px 15px;border-radius:5px;text-decoration:none;margin-top:10px;font-weight:bold}
 .download-link:hover{background:#218838}
+
+/* ⭐ MODIFICACIONES NUEVAS - RESERVADOS ULTRA PEQUEÑO + LAURA NEGRO SIEMPRE */
+.reservados {
+  width: 45px !important;
+  min-width: 45px !important;
+  padding: 2px 1px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+.reservados button {
+  font-size: 8px !important;
+  padding: 0px 2px !important;
+  margin: 0 !important;
+  line-height: 0.9 !important;
+  height: 16px !important;
+}
+.laura-negro { color: black !important; }
+.laura-negro strong { color: black !important; }
 </style>
 </head>
 <body>
@@ -395,15 +413,15 @@ window.renderTablaSolo = () => {
           <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
         ` : ''}
       </td>
-     <td class="reservados" style="padding:4px;font-size:12px;width:60px">
-  <div style="font-size:12px;font-weight:bold;">${(p.reservados||0)}</div>
-  ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva" style="font-size:9px;padding:1px 3px">❌</button>` : ''}
-</td>
+      <td class="reservados">
+        ${(p.reservados||0)}
+        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
+      </td>
       <td class="vendidos">${p.vendidos||0}
         ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
       </td>
       <td>${Number(p.bea||0).toFixed(2)}</td>
-      <td class="editable">
+      <td class="editable laura-negro">
         <strong>${Number(p.laura||0).toFixed(2)}</strong>
         <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
       </td>
@@ -431,9 +449,6 @@ window.updateProxInput = (id, value) => {
   update(ref(db, 'productos/'+id), { proximo: proximo });
   updateProxInputVisual(document.querySelector(`input[data-producto="${id}"]`));
 };
-
-// resto del código igual...
-// [Incluyo solo las funciones que cambian para no hacer el código eterno]
 
 window.hacerBackup = async () => {
   if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
@@ -481,7 +496,7 @@ window.restaurarBackup = async (event) => {
   if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
   
   try {
-        const text = await file.text();
+    const text = await file.text();
     const backupData = JSON.parse(text);
     
     await set(ref(db, 'productos'), backupData.productos);
@@ -909,6 +924,7 @@ function limpiarFormulario() {
 </script>
 </body>
 </html>
+
 
 
 
