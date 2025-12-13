@@ -4,42 +4,43 @@
 <meta charset="UTF-8">
 <title>Inventario Laura Online</title>
 <style>
-body{font-family:Arial;background:#f0f2f5;padding:20px}
-.card{background:white;padding:15px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1200px;margin:0 auto}
+.card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
 table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:8px;text-align:center}
-th{background:#f8f9fa}
-button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-size:12px;margin:2px}
+th,td{border:1px solid #ddd;padding:10px;text-align:center}
+th{background:#007bff;color:white}
+button{padding:8px 12px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-size:14px;margin:2px;font-weight:bold}
 button:hover{background:#0056b3}
 .red{background:#dc3545}
 .red:hover{background:#c82333}
-.sin-stock{background:#ffe5e5}
-input{padding:5px;border-radius:5px;border:1px solid #ccc;width:100px;display:block;margin:5px 0}
-#buscar{width:200px}
-#status{padding:10px;margin-bottom:10px;border-radius:5px;text-align:center;font-weight:bold;font-size:14px}
-.connected{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
-.public-ok{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
-.hidden{display:none}
+.sin-stock{background:#ffe5e5 !important}
+input{padding:8px;border-radius:5px;border:1px solid #ccc;width:120px;display:block;margin:5px 0;font-size:14px}
+#buscar{width:250px;padding:10px;font-size:16px}
+#status{padding:15px;margin-bottom:20px;border-radius:8px;text-align:center;font-weight:bold;font-size:16px}
+.working{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
+.error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb}
+h2{text-align:center;color:#333}
+.totales{text-align:center;font-size:18px;font-weight:bold}
 </style>
 </head>
 <body>
 
-<h2>Inventario y Ventas</h2>
+<h2>🛒 Inventario Laura Online</h2>
 
-<div id="status" class="public-ok">🔓 Modo Público Activo - Todo funciona</div>
+<div id="status" class="error">🔄 Conectando con Firebase...</div>
 
 <div class="card">
-<strong>Nuevo/Editar Producto:</strong><br>
-Producto <input id="nombre"><br>
-Stock <input id="stock" type="number"><br>
-Precio Bea <input id="bea" type="number"><br>
-Precio Laura <input id="laura" type="number"><br>
-<button onclick="guardar()">💾 Guardar</button>
+<strong>📦 Nuevo/Editar Producto:</strong><br><br>
+Producto <input id="nombre" placeholder="Nombre del producto"><br>
+Stock <input id="stock" type="number" placeholder="0"><br>
+Precio Bea <input id="bea" type="number" step="0.01" placeholder="0.00"><br>
+Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br><br>
+<button onclick="guardar()">💾 Guardar Nuevo</button>
 <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
 </div>
 
 <div class="card">
-<input placeholder="🔍 Buscar producto" id="buscar" onkeyup="render()"><br>
+🔍 <input placeholder="Buscar producto..." id="buscar" onkeyup="render()"><br><br>
 <table>
 <thead>
 <tr>
@@ -50,11 +51,10 @@ Precio Laura <input id="laura" type="number"><br>
 </table>
 </div>
 
-<div class="card">
-<strong>Totales:</strong><br>
-Venta Bea: €<span id="tBea">0</span><br>
-Venta Laura: €<span id="tLaura">0</span><br>
-<button class="red" onclick="resetear()">🔄 Resetear ventas</button>
+<div class="card totales">
+💰 <strong>Totales:</strong><br>
+Venta Bea: €<span id="tBea">0.00</span> | Venta Laura: €<span id="tLaura">0.00</span><br><br>
+<button class="red" onclick="resetear()">🔄 Resetear TODAS las ventas</button>
 </div>
 
 <script type="module">
@@ -77,39 +77,45 @@ const productosRef = ref(db, "productos");
 
 let productos = {};
 let editId = null;
-let totalBea = 0;
-let totalLaura = 0;
 
-// Carga automática de datos
+// ✅ CONEXIÓN AUTOMÁTICA
 onValue(productosRef, (snap) => {
   productos = snap.val() || {};
+  document.getElementById('status').textContent = `✅ Conectado - ${Object.keys(productos).length} productos`;
+  document.getElementById('status').className = 'working';
   render();
 }, (error) => {
   console.error('Error:', error);
-  document.getElementById('status').textContent = '❌ Error de conexión: ' + error.message;
+  document.getElementById('status').textContent = '❌ Error: ' + error.message;
+  document.getElementById('status').className = 'error';
 });
 
-// FUNCIONES PRINCIPALES
 window.guardar = () => {
   const nombre = document.getElementById('nombre').value.trim();
-  if(!nombre) return alert('❌ Nombre requerido');
+  if(!nombre) return alert('❌ Escribe el nombre del producto');
   
   const data = {
-    nombre: nombre,
+    nombre,
     stock: Math.max(0, Number(document.getElementById('stock').value) || 0),
     bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
     laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
-    vBea: 0,
-    vLaura: 0
+    vBea: editId ? (productos[editId]?.vBea || 0) : 0,
+    vLaura: editId ? (productos[editId]?.vLaura || 0) : 0
   };
 
   if(editId) {
     update(ref(db, 'productos/' + editId), data)
-      .then(() => { limpiarFormulario(); alert('✅ Actualizado'); })
+      .then(() => { 
+        limpiarFormulario(); 
+        alert('✅ Producto actualizado'); 
+      })
       .catch(e => alert('❌ Error: ' + e.message));
   } else {
     push(productosRef, data)
-      .then(() => { limpiarFormulario(); alert('✅ Guardado'); })
+      .then(() => { 
+        limpiarFormulario(); 
+        alert('✅ Producto guardado'); 
+      })
       .catch(e => alert('❌ Error: ' + e.message));
   }
 };
@@ -117,12 +123,12 @@ window.guardar = () => {
 window.vender = (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if(cant <= 0 || p.stock < cant) return alert('❌ Stock insuficiente');
+  if(cant <= 0 || (p.stock || 0) < cant) return alert('❌ Stock insuficiente');
   
   update(ref(db, 'productos/' + id), {
-    stock: p.stock - cant,
-    vBea: (p.vBea || 0) + p.bea * cant,
-    vLaura: (p.vLaura || 0) + p.laura * cant
+    stock: (p.stock || 0) - cant,
+    vBea: (p.vBea || 0) + (p.bea || 0) * cant,
+    vLaura: (p.vLaura || 0) + (p.laura || 0) * cant
   }).then(() => alert(`✅ Vendido ${cant} unidades`));
 };
 
@@ -134,27 +140,24 @@ window.editar = (id) => {
   document.getElementById('laura').value = p.laura || 0;
   editId = id;
   document.getElementById('cancelBtn').style.display = 'inline-block';
-  document.getElementById('status').textContent = '✏️ Editando: ' + p.nombre;
 };
 
 window.borrar = (id) => {
-  if(confirm('🗑️ ¿Borrar "' + productos[id].nombre + '" permanentemente?')) {
+  if(confirm(`🗑️ Borrar "${productos[id]?.nombre || 'Producto'}"?`)) {
     remove(ref(db, 'productos/' + id))
       .then(() => alert('✅ Borrado'))
       .catch(e => alert('❌ Error: ' + e.message));
   }
 };
 
-window.cancelarEdit = () => {
-  limpiarFormulario();
-};
+window.cancelarEdit = () => limpiarFormulario();
 
 window.resetear = () => {
   if(confirm('🔄 ¿Resetear TODAS las ventas a 0?')) {
     const updates = {};
     Object.entries(productos).forEach(([id]) => {
-      updates['productos/' + id + '/vBea'] = 0;
-      updates['productos/' + id + '/vLaura'] = 0;
+      updates[`productos/${id}/vBea`] = 0;
+      updates[`productos/${id}/vLaura`] = 0;
     });
     update(ref(db), updates).then(() => alert('✅ Ventas reseteadas'));
   }
@@ -167,12 +170,11 @@ function limpiarFormulario() {
   document.getElementById('laura').value = '';
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
-  document.getElementById('status').textContent = '🔓 Modo Público Activo - Todo funciona';
 }
 
 window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
-  totalBea = 0; totalLaura = 0;
+  let totalBea = 0, totalLaura = 0;
   const tabla = document.getElementById('tabla');
   tabla.innerHTML = '';
 
@@ -184,12 +186,12 @@ window.render = () => {
     
     tabla.innerHTML += `
     <tr class="${(p.stock || 0) <= 0 ? 'sin-stock' : ''}">
-      <td>${p.nombre}</td>
+      <td style="font-weight:bold">${p.nombre}</td>
       <td>${p.stock || 0}</td>
       <td>${Number(p.bea || 0).toFixed(2)}</td>
       <td>${Number(p.laura || 0).toFixed(2)}</td>
       <td>
-        <input type="number" min="1" max="${p.stock || 0}" value="1" style="width:50px">
+        <input type="number" min="1" max="${p.stock || 0}" value="1" style="width:60px">
         <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
       </td>
       <td>
@@ -204,10 +206,11 @@ window.render = () => {
 };
 
 // Render inicial
-render();
+setTimeout(render, 500);
 </script>
 
 </body>
 </html>
+
 
 
