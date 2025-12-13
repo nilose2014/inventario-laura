@@ -343,6 +343,7 @@ window.vender = async (id, cant) => {
   if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
   
   const nuevoStock = (p.stock||0)-cant;
+  const eraStockCero = (p.stock||0) === 0;
   
   // 1️⃣ ACTUALIZAR BASE DE DATOS
   await update(ref(db, 'productos/'+id), {
@@ -352,7 +353,19 @@ window.vender = async (id, cant) => {
     vLaura: (p.vLaura||0)+(p.laura||0)*cant
   });
   
-  // 2️⃣ ENVIAR EMAIL VENTA AUTOMÁTICO
+  // 2️⃣ SI QUEDA EN 0 POR PRIMERA VEZ → ENVIAR ALERTA
+  if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
+    await update(ref(db, 'productos/'+id), { emailAgotadoEnviado: true });
+    await enviarEmail({
+      producto: p.nombre,
+      stock: 0,
+      detalles: `⛔ PRODUCTO AGOTADO | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
+      subject: '⛔ AGOTADO - ' + p.nombre,
+      fecha: new Date().toLocaleString('es-ES')
+    });
+  }
+  
+  // 3️⃣ SIEMPRE ENVIAR EMAIL DE VENTA
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -361,7 +374,7 @@ window.vender = async (id, cant) => {
     fecha: new Date().toLocaleString('es-ES')
   });
   
-  alert(`✅ Vendido ${cant} unidades`);
+  alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
 };
 
 window.editar = id => {
@@ -390,6 +403,7 @@ window.resetear = () => {
       updates[`productos/${id}/vBea`] = 0;
       updates[`productos/${id}/vLaura`] = 0;
       updates[`productos/${id}/vendidos`] = 0;
+      updates[`productos/${id}/emailAgotadoEnviado`] = false; // Reset alerta agotado
     });
     update(ref(db), updates).then(() => alert('✅ 🔄 RESET COMPLETO - Todo a cero'));
   }
@@ -408,8 +422,8 @@ function limpiarFormulario() {
   document.getElementById('cancelBtn').style.display = 'none';
 }
 
-// 🔥 FUNCIÓN RENDER CON DETECCIÓN STOCK CRÍTICO
-window.render = async () => {
+// 🔥 FUNCIÓN RENDER (SIN DETECCIÓN STOCK - YA SE HACE EN VENDER)
+window.render = () => {
   const filtro = document.getElementById('buscar').value.toLowerCase();
   const productosOrdenados = ordenarProductos(productos);
   
@@ -468,22 +482,6 @@ window.render = async () => {
     diferenciaSpan.className = '';
     diferenciaBox.className = 'total-box';
   }
-
-  // 🔥 DETECTAR STOCK CRÍTICO (solo una vez por producto)
-  Object.entries(productos).forEach(async ([id, p]) => {
-    const stock = p.stock || 0;
-    if (stock <= 3 && !p.emailStockEnviado) {
-      await enviarEmail({
-        producto: p.nombre,
-        stock: stock,
-        detalles: `STOCK CRÍTICO | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
-        subject: '⚠️ STOCK CRÍTICO - ' + p.nombre,
-        fecha: new Date().toLocaleString('es-ES')
-      });
-      // Marcar como enviado (evita spam)
-      await update(ref(db, 'productos/'+id), { emailStockEnviado: true });
-    }
-  });
 };
 </script>
 </body>
