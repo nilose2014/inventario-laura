@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK</title>
+<title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK + 📝 NOTAS</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -24,6 +24,8 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 #buscar-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#dc3545;color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:none;font-weight:bold;line-height:18px}
 #buscar-clear:hover{background:#c82333}
 #ordenar{width:200px;padding:8px;font-size:14px}
+#notasBtn{width:120px !important;background:#28a745 !important}
+#notasBtn:hover{background:#218838 !important}
 #status{padding:15px;margin-bottom:20px;border-radius:8px;text-align:center;font-weight:bold;font-size:16px}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
 .user{background:#d1ecf1;color:#0c5460;border:2px solid #bee5eb}
@@ -105,11 +107,31 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .laura-negro strong { 
   color: black !important; 
 }
+
+/* ⭐⭐ ESTILOS NOTAS NUEVAS */
+.notas-nueva-badge {
+  background: #ff4444 !important;
+  color: white !important;
+  animation: pulse-notas 1.5s infinite;
+  border-radius: 50% !important;
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  font-weight: bold !important;
+  position: absolute;
+  top: -5px;
+  right: -5px;
+}
+@keyframes pulse-notas {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
 </style>
 </head>
 <body>
 
-<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK</h2>
+<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK + 📝 NOTAS</h2>
 
 <!-- LOGIN OBLIGATORIO -->
 <div class="card login-card" id="loginDiv">
@@ -155,6 +177,11 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="status" class="error">Cargando...</div>
 
+<!-- ⭐ AVISO NOTAS NUEVAS -->
+<div id="notasNuevasAviso" class="card" style="background:#ffeb3b !important;color:#333 !important;border:3px solid #ffc107 !important;display:none;margin-bottom:15px;text-align:center;font-size:18px;font-weight:bold">
+  📝 <span id="numNotasNuevas">0</span> NOTA(S) NUEVA(S)! <button onclick="marcarNotasLeidas()" style="background:#ff9800;color:white;font-weight:bold;padding:5px 10px;margin-left:15px">✅ Leídas</button>
+</div>
+
 <!-- SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
 <div class="card" id="nuevoProductoDiv">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
@@ -194,6 +221,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
   <option value="laura-asc">Laura ↓</option>
   <option value="laura-desc">Laura ↑</option>
 </select>
+<button id="notasBtn" onclick="abrirNotas()" title="📝 Gestionar Notas">📝 Notas</button>
 </div><br>
 <table>
 <thead>
@@ -235,7 +263,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
-<!-- 🎯 SECCIÓN BACKUP - SOLO nilose2014@gmail.com - ABAJO DEL TODO -->
+<!-- 🎯 SECCIÓN BACKUP - SOLO [nilose2014@gmail.com](mailto:nilose2014@gmail.com) - ABAJO DEL TODO -->
 <div class="card hidden" id="backupSection">
   <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
@@ -274,12 +302,15 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
+const notasRef = ref(db, "notas");
 
 let productos = {};
+let notas = {};
 let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
 let editId = null;
 let currentUser = null;
 let userRole = null;
+let notasLeidas = new Set();
 
 const EMAILJS_CONFIG = {
   service: 'service_65ryfan',
@@ -291,6 +322,151 @@ let ultimoBackup = null;
 let backupRef = ref(db, 'backup/ultimo');
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
+
+// ⭐ CARGAR NOTAS
+function cargarNotas() {
+  onValue(notasRef, (snap) => {
+    notas = snap.val() || {};
+    actualizarAvisoNotasNuevas();
+  });
+}
+
+// ⭐ VERIFICAR NOTAS NUEVAS
+function actualizarAvisoNotasNuevas() {
+  const notasArray = Object.entries(notas);
+  let nuevas = 0;
+  
+  notasArray.forEach(([id, nota]) => {
+    if (!notasLeidas.has(id)) {
+      nuevas++;
+    }
+  });
+  
+  const aviso = document.getElementById('notasNuevasAviso');
+  const numSpan = document.getElementById('numNotasNuevas');
+  
+  if (nuevas > 0) {
+    numSpan.textContent = nuevas;
+    aviso.style.display = 'block';
+  } else {
+    aviso.style.display = 'none';
+  }
+}
+
+// ⭐ MARCAR TODAS COMO LEÍDAS
+window.marcarNotasLeidas = () => {
+  const notasArray = Object.entries(notas);
+  notasArray.forEach(([id]) => notasLeidas.add(id));
+  actualizarAvisoNotasNuevas();
+};
+
+// ⭐ ABRIR VENTANA NOTAS
+window.abrirNotas = () => {
+  const notasHtml = generarHtmlNotas();
+  const nuevaVentana = window.open('', 'notasWindow', 'width=800,height=700,scrollbars=yes,resizable=yes');
+  nuevaVentana.document.write(notasHtml);
+  nuevaVentana.document.close();
+};
+
+function generarHtmlNotas() {
+  let html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>📝 Notas - Inventario Laura</title>
+  <style>
+    body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:800px;margin:0 auto}
+    .card{background:white;padding:20px;border-radius:10px;margin-bottom:15px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #ddd;padding:10px;text-align:left}
+    th{background:#28a745;color:white}
+    button{padding:8px 12px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;margin:2px;font-weight:bold}
+    button:hover{background:#0056b3}
+    .red{background:#dc3545}
+    .red:hover{background:#c82333}
+    .nueva{background:#fff3cd !important;border-left:5px solid #ffc107 !important}
+    textarea{width:100%;height:80px;padding:10px;border:1px solid #ddd;border-radius:5px;font-family:Arial}
+    input[type="date"]{padding:8px;border:1px solid #ddd;border-radius:5px}
+    #nuevaNotaForm{margin-bottom:20px;padding:20px;background:#e8f5e8;border-radius:10px}
+  </style>
+</head>
+<body>
+  <h2>📝 Gestor de Notas</h2>
+  
+  <div class="card" id="nuevaNotaForm">
+    <h3>➕ Nueva Nota</h3>
+    <input type="date" id="notaFecha" value="${new Date().toISOString().split('T')[0]}">
+    <textarea id="notaTexto" placeholder="Escribe tu nota aquí..." maxlength="500"></textarea>
+    <br><button onclick="guardarNota()">💾 Guardar Nota</button>
+  </div>
+  
+  <div class="card">
+    <h3>📋 Todas las Notas (${Object.keys(notas).length})</h3>
+    <table>
+      <thead><tr><th>Fecha</th><th>Nota</th><th>Acciones</th></tr></thead>
+      <tbody id="tablaNotas">`;
+
+  const notasArray = Object.entries(notas).sort((a,b) => new Date(b[1].fecha) - new Date(a[1].fecha));
+  notasArray.forEach(([id, nota]) => {
+    const esNueva = !notasLeidas.has(id);
+    html += `
+      <tr class="${esNueva ? 'nueva' : ''}">
+        <td>${new Date(nota.fecha).toLocaleString('es-ES')}</td>
+        <td>${nota.texto.replace(/\n/g, '<br>')}</td>
+        <td>
+          <button onclick="editarNota('${id}', '${nota.texto.replace(/'/g,"\\'")}')">✏️</button>
+          <button class="red" onclick="borrarNota('${id}')">🗑️</button>
+          ${esNueva ? `<button onclick="marcarLeida('${id}')" style="background:#28a745">✅ Leída</button>` : ''}
+        </td>
+      </tr>`;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  </div>
+  
+  <script>
+    const notas = ${JSON.stringify(notas)};
+    const notasLeidas = ${JSON.stringify([...notasLeidas])};
+    
+    function guardarNota() {
+      const fecha = document.getElementById('notaFecha').value;
+      const texto = document.getElementById('notaTexto').value.trim();
+      if(!fecha || !texto) return alert('❌ Fecha y texto requeridos');
+      
+      const data = {fecha, texto};
+      fetch('${location.origin}/?guardarNota=' + encodeURIComponent(JSON.stringify(data)))
+        .then(() => location.reload())
+        .catch(() => alert('❌ Error guardando'));
+    }
+    
+    function editarNota(id, textoActual) {
+      const nuevoTexto = prompt('Editar nota:', textoActual);
+      if(nuevoTexto === null || nuevoTexto.trim() === '') return;
+      fetch('${location.origin}/?editarNota=' + encodeURIComponent(JSON.stringify({id, texto: nuevoTexto.trim()})))
+        .then(() => location.reload())
+        .catch(() => alert('❌ Error editando'));
+    }
+    
+    function borrarNota(id) {
+      if(!confirm('🗑️ Borrar esta nota?')) return;
+      fetch('${location.origin}/?borrarNota=' + encodeURIComponent(id))
+        .then(() => location.reload())
+        .catch(() => alert('❌ Error borrando'));
+    }
+    
+    function marcarLeida(id) {
+      window.opener.notasLeidas.add(id);
+      window.opener.actualizarAvisoNotasNuevas();
+      location.reload();
+    }
+  </script>
+</body>
+</html>`;
+  
+  return html;
+}
 
 window.toggleClearBtn = () => {
   const buscar = document.getElementById('buscar');
@@ -440,11 +616,12 @@ window.updateProxInput = (id, value) => {
 };
 
 window.hacerBackup = async () => {
-  if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
+  if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede hacer backup');
   
   try {
     const backupData = {
       productos: productos,
+      notas: notas,
       totalesGlobales: totalesGlobales,
       fecha: new Date().toISOString(),
       usuario: currentUser.email,
@@ -469,7 +646,7 @@ window.hacerBackup = async () => {
     if(oldLink && oldLink !== a) oldLink.remove();
     
     ultimoBackup = backupData;
-    alert('✅ Backup completado y descargado');
+    alert('✅ Backup completado y descargado (incluye NOTAS)');
     
   } catch(error) {
     alert('❌ Error en backup: ' + error.message);
@@ -477,20 +654,21 @@ window.hacerBackup = async () => {
 };
 
 window.restaurarBackup = async (event) => {
-  if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede restaurar');
+  if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede restaurar');
   
   const file = event.target.files[0];
   if(!file) return;
   
-  if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
+  if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos y NOTAS\n✅ Se actualizan todos los totales')) return;
   
   try {
     const text = await file.text();
     const backupData = JSON.parse(text);
     
     await set(ref(db, 'productos'), backupData.productos);
+    await set(ref(db, 'notas'), backupData.notas || {});
     
-    alert('✅ Restauración completada. Recarga la página.');
+    alert('✅ Restauración completada (incluye NOTAS). Recarga la página.');
     location.reload();
     
   } catch(error) {
@@ -569,6 +747,7 @@ function checkUserRole() {
   updateUI();
   toggleNuevoProducto();
   loadData();
+  cargarNotas();
   if(currentUser.email === 'nilose2014@gmail.com') cargarBackupFirebase();
 }
 
@@ -583,13 +762,13 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔥 ULTRA DESTACADO) ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK + 📝 NOTAS ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
     precioGlobalBtn.disabled = false;
   } else {
-    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura ✅`;
+    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + 📝 NOTAS ✅`;
     status.className = 'user';
     guardarBtn.disabled = true; guardarBtn.className = 'disabled';
     resetBtn.disabled = true; resetBtn.className = 'disabled';
@@ -692,6 +871,7 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   }
 }
 
+// ⭐ Resto de funciones igual que antes...
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
@@ -910,6 +1090,44 @@ function limpiarFormulario() {
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 };
+
+// ⭐ MANEJO DE URL PARA NOTAS (desde ventana nueva)
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  if (urlParams.has('guardarNota')) {
+    try {
+      const data = JSON.parse(decodeURIComponent(urlParams.get('guardarNota')));
+      push(notasRef, data).then(() => {
+        alert('✅ Nota guardada');
+        window.opener.location.reload();
+        window.close();
+      });
+    } catch(e) {
+      alert('❌ Error guardando nota');
+    }
+  } else if (urlParams.has('editarNota')) {
+    try {
+      const data = JSON.parse(decodeURIComponent(urlParams.get('editarNota')));
+      const notaId = Object.keys(notas).find(id => id === data.id) || Object.keys(notas)[0];
+      if (notaId) {
+        update(ref(db, 'notas/' + notaId), {texto: data.texto});
+        alert('✅ Nota editada');
+        window.opener.location.reload();
+        window.close();
+      }
+    } catch(e) {
+      alert('❌ Error editando nota');
+    }
+  } else if (urlParams.has('borrarNota')) {
+    const notaId = decodeURIComponent(urlParams.get('borrarNota'));
+    remove(ref(db, 'notas/' + notaId)).then(() => {
+      alert('✅ Nota borrada');
+      window.opener.location.reload();
+      window.close();
+    });
+  }
+});
 </script>
 </body>
 </html>
