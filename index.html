@@ -331,12 +331,6 @@
     .reservar-btn:hover {
       background: #138496 !important;
     }
-    .confirmar-btn {
-      background: #28a745 !important;
-    }
-    .confirmar-btn:hover {
-      background: #218838 !important;
-    }
     .cancelar-reserva {
       background: #ffc107 !important;
       color: #000 !important;
@@ -617,7 +611,9 @@
       <table>
         <thead>
           <tr>
-            <th>Producto</th><th>Stock</th><th>Prx.</th><th>Reservados</th><th>Vendidos</th><th>Bea</th><th>Laura</th><th>Reservar</th><th>Vender</th><th>Acciones</th><th>Notas</th>
+            <th>Producto</th><th>Stock</th><th>Prx.</th><th>Reservados</th><th>Vendidos</th><th>Bea</th><th>Laura</th><th>Reservar</th><th>Vender</th>
+            ${userRole == 'admin' ? '<th>Acciones</th>' : ''}
+            <th>Notas</th>
           </tr>
         </thead>
         <tbody id="tabla"></tbody>
@@ -687,7 +683,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4/dist/email.min.js"></script>
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, onValue, update, remove, push, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
@@ -748,47 +744,6 @@
       document.getElementById('stockVisible').textContent = 'Stock ' + stockTotal;
     };
 
-    // FUNCIÓN AÑADIR STOCK PRÓXIMO AL STOCK REAL
-    window.anadirProximoStock = async (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede añadir stock próximo');
-      const p = productos[id];
-      const inputProx = document.querySelector(`input[data-producto-id="${id}"]`);
-      const cantidad = Number(inputProx.value) || 0;
-      if (cantidad == 0) return alert('Cantidad inválida');
-      const nuevoStock = (p.stock || 0) + cantidad;
-      await update(ref(db, 'productos/' + id), { stock: nuevoStock, proximo: 0 });
-      inputProx.value = '0';
-      inputProx.classList.remove('tiene-valor');
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: cantidad + ' uds. AÑADIDAS DEL STOCK PRÓXIMO. Nuevo stock: ' + nuevoStock
-      }, 'STOCK AÑADIDO - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      alert('Añadidas ' + cantidad + ' unidades. Nuevo stock: ' + nuevoStock);
-    };
-
-    // FUNCIÓN MODIFICAR STOCK PRÓXIMO DIRECTAMENTE
-    window.modificarProximoStock = (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede modificar stock próximo');
-      const nuevoProximo = prompt('Nuevo stock próximo:', productos[id]?.proximo || 0);
-      if (nuevoProximo === null) return;
-      const proximo = Math.max(0, Number(nuevoProximo));
-      if (isNaN(proximo)) return alert('Stock próximo inválido');
-      update(ref(db, 'productos/' + id), { proximo: proximo }).then(() => {
-        alert('Próximo actualizado: ' + proximo);
-      });
-    };
-
-    // FUNCIÓN ACTUALIZAR CLASE VISUAL DEL INPUT PRÓXIMO
-    window.updateProxInputVisual = (input) => {
-      const valor = Number(input.value);
-      if (valor > 0) {
-        input.classList.add('tiene-valor');
-      } else {
-        input.classList.remove('tiene-valor');
-      }
-    };
-
     window.renderTablaSolo = () => {
       const filtro = document.getElementById('buscar').value.toLowerCase();
       const productosOrdenados = ordenarProductos(productos);
@@ -809,10 +764,9 @@
         const filaClass = (p.reservados || 0) > 0 ? 'reservado ' + stockClass : stockClass;
         const tieneProximo = proximoDisponible > 0;
         const tieneNotas = p.notas && p.notas.trim();
-
         const notasClass = tieneNotas ? 'notas-nueva' : '';
 
-        tabla.innerHTML += `
+        let filaHTML = `
           <tr class="${filaClass}">
             <td style="font-weight:bold;text-align:left">${p.nombre}</td>
             <td class="${stockCellClass}">${stockDisponible}${userRole == 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">✏️</button>` : ''}</td>
@@ -828,19 +782,41 @@
             <td>${Number(p.bea || 0).toFixed(2)}</td>
             <td class="editable laura-negro"><strong>${Number(p.laura || 0).toFixed(2)}</strong><button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">✏️</button></td>
             <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px"><button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">Reservar</button></td>
-            <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px"><button onclick="vender('${id}',this.previousElementSibling.value)">Vender</button></td>
+            <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px"><button onclick="vender('${id}',this.previousElementSibling.value)">Vender</button></td>`;
+
+        // COLUMNA ACCIONES - SOLO PARA ADMIN
+        if (userRole == 'admin') {
+          filaHTML += `
             <td>
-              <button onclick="editar('${id}')" ${userRole != 'admin' ? 'class="disabled" disabled' : ''}>Editar</button>
-              <button class="red" onclick="borrar('${id}')" ${userRole != 'admin' ? 'class="disabled" disabled' : ''}>Borrar</button>
-            </td>
+              <button onclick="editar('${id}')" style="margin-right:5px">Editar</button>
+              <button class="red" onclick="borrar('${id}')">Borrar</button>
+            </td>`;
+        }
+
+        filaHTML += `
             <td class="notas-cell ${notasClass}">
               ${tieneNotas ? `<span class="notas-texto" title="${p.notas}">${p.notas.length > 15 ? p.notas.substring(0,15) + '...' : p.notas}</span>` : '<span class="notas-texto">Sin notas</span>'}
               <button class="notas-btn" onclick="abrirNotas('${id}')" title="Editar notas">📝</button>
             </td>
-          </tr>
-        `;
+          </tr>`;
+
+        tabla.innerHTML += filaHTML;
       });
       actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
+    };
+
+    // RENDERIZAR HEADER DE TABLA CON ACCIONES SOLO PARA ADMIN
+    window.renderTablaHeader = () => {
+      const thead = document.querySelector('table thead tr');
+      let headerHTML = `
+        <th>Producto</th><th>Stock</th><th>Prx.</th><th>Reservados</th><th>Vendidos</th><th>Bea</th><th>Laura</th><th>Reservar</th><th>Vender</th>`;
+      
+      if (userRole == 'admin') {
+        headerHTML += `<th>Acciones</th>`;
+      }
+      
+      headerHTML += `<th>Notas</th>`;
+      thead.innerHTML = headerHTML;
     };
 
     // ACTUALIZAR INPUT PRÓXIMO EN FIREBASE + VISUAL
@@ -848,6 +824,15 @@
       const proximo = Math.max(0, Number(value));
       update(ref(db, 'productos/' + id), { proximo: proximo });
       updateProxInputVisual(document.querySelector(`input[data-producto-id="${id}"]`));
+    };
+
+    window.updateProxInputVisual = (input) => {
+      const valor = Number(input.value);
+      if (valor > 0) {
+        input.classList.add('tiene-valor');
+      } else {
+        input.classList.remove('tiene-valor');
+      }
     };
 
     // FUNCIONES DE NOTAS
@@ -925,19 +910,34 @@
       document.getElementById('notasCharCount').style.color = count > 450 ? '#dc3545' : '#666';
     };
 
-    // EVENT LISTENERS PARA NOTAS
-    document.addEventListener('DOMContentLoaded', () => {
-      const textarea = document.getElementById('notasTextarea');
-      if (textarea) {
-        textarea.addEventListener('input', actualizarContadorCaracteres);
-      }
-      const notasWindow = document.getElementById('notasWindow');
-      if (notasWindow) {
-        notasWindow.addEventListener('click', (e) => {
-          if (e.target.id == 'notasWindow') cerrarNotas();
-        });
-      }
-    });
+    window.anadirProximoStock = async (id) => {
+      if (userRole != 'admin') return alert('Solo ADMIN puede añadir stock próximo');
+      const p = productos[id];
+      const inputProx = document.querySelector(`input[data-producto-id="${id}"]`);
+      const cantidad = Number(inputProx.value) || 0;
+      if (cantidad == 0) return alert('Cantidad inválida');
+      const nuevoStock = (p.stock || 0) + cantidad;
+      await update(ref(db, 'productos/' + id), { stock: nuevoStock, proximo: 0 });
+      inputProx.value = '0';
+      inputProx.classList.remove('tiene-valor');
+      await enviarEmail({
+        producto: p.nombre,
+        stock: nuevoStock,
+        detalles: cantidad + ' uds. AÑADIDAS DEL STOCK PRÓXIMO. Nuevo stock: ' + nuevoStock
+      }, 'STOCK AÑADIDO - ' + p.nombre, new Date().toLocaleString('es-ES'));
+      alert('Añadidas ' + cantidad + ' unidades. Nuevo stock: ' + nuevoStock);
+    };
+
+    window.modificarProximoStock = (id) => {
+      if (userRole != 'admin') return alert('Solo ADMIN puede modificar stock próximo');
+      const nuevoProximo = prompt('Nuevo stock próximo:', productos[id]?.proximo || 0);
+      if (nuevoProximo === null) return;
+      const proximo = Math.max(0, Number(nuevoProximo));
+      if (isNaN(proximo)) return alert('Stock próximo inválido');
+      update(ref(db, 'productos/' + id), { proximo: proximo }).then(() => {
+        alert('Próximo actualizado: ' + proximo);
+      });
+    };
 
     window.hacerBackup = async () => {
       if (currentUser.email != 'nilose2014@gmail.com') return alert('Solo nilose2014@gmail.com puede hacer backup');
@@ -1054,21 +1054,20 @@
       if (currentUser.email == 'nilose2014@gmail.com') {
         userRole = 'admin';
         document.getElementById('backupSection').classList.remove('hidden');
+        document.getElementById('nuevoProductoDiv').style.display = 'block';
       } else if (['djsubixj@gmail.com', 'xiomaralamasmal@gmail.com'].includes(currentUser.email)) {
         userRole = 'user';
         document.getElementById('backupSection').classList.add('hidden');
+        document.getElementById('nuevoProductoDiv').style.display = 'none';
       } else {
         userRole = 'user';
         document.getElementById('backupSection').classList.add('hidden');
+        document.getElementById('nuevoProductoDiv').style.display = 'none';
       }
       updateUI();
-      toggleNuevoProducto();
+      renderTablaHeader();
       loadData();
       if (currentUser.email == 'nilose2014@gmail.com') cargarBackupFirebase();
-    }
-
-    function toggleNuevoProducto() {
-      document.getElementById('nuevoProductoDiv').style.display = userRole == 'admin' ? 'block' : 'none';
     }
 
     function updateUI() {
@@ -1100,9 +1099,7 @@
     function loadData() {
       onValue(productosRef, (snap) => {
         productos = snap.val() || {};
-        // VERIFICAR NOTAS NUEVAS
         verificarNuevasNotas();
-
         totalesGlobales.bea = 0;
         totalesGlobales.laura = 0;
         totalesGlobales.vendidos = 0;
@@ -1121,6 +1118,7 @@
           totalesGlobales.vendidos,
           totalesGlobales.reservados
         );
+        renderTablaHeader();
         renderTablaSolo();
       }, (error) => {
         document.getElementById('status').textContent = 'Error de conexión';
@@ -1135,7 +1133,6 @@
         const [campo, dir] = orden.split('-');
         let valorA, valorB;
 
-        // CASO PARA NOTAS
         if (campo == 'notas') {
           valorA = (pA.notas || '').length;
           valorB = (pB.notas || '').length;
@@ -1205,6 +1202,7 @@
       }
     }
 
+    // RESTO DE FUNCIONES (reservar, vender, etc.) - IGUALES QUE ANTES
     window.reservar = async (id, cant) => {
       const p = productos[id];
       cant = Number(cant);
@@ -1228,7 +1226,7 @@
       cant = Number(cant);
       if (cant <= 0 || (p.stock || 0) < cant) return alert('Stock insuficiente');
       const nuevoStock = (p.stock || 0) - cant;
-      const eraStockCero = (p.stock || 0) == 0;
+            const eraStockCero = (p.stock || 0) == 0;
       await update(ref(db, 'productos/' + id), {
         stock: nuevoStock,
         vendidos: (p.vendidos || 0) + cant,
@@ -1403,11 +1401,27 @@
       document.getElementById('cancelBtn').style.display = 'none';
     }
 
+    // EVENT LISTENERS PARA NOTAS
+    document.addEventListener('DOMContentLoaded', () => {
+      const textarea = document.getElementById('notasTextarea');
+      if (textarea) {
+        textarea.addEventListener('input', actualizarContadorCaracteres);
+      }
+      const notasWindow = document.getElementById('notasWindow');
+      if (notasWindow) {
+        notasWindow.addEventListener('click', (e) => {
+          if (e.target.id == 'notasWindow') cerrarNotas();
+        });
+      }
+    });
+
     // INICIALIZAR AL CARGAR
     document.addEventListener('DOMContentLoaded', verificarNuevasNotas);
   </script>
 </body>
 </html>
+
+
 
 
 
