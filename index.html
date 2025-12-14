@@ -395,12 +395,13 @@ window.renderTablaSolo = () => {
         ${stockDisponible}
         ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
-      <td>
-        <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
-        ${userRole === 'admin' ? `
-          <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
-        ` : ''}
-      </td>
+    <td>
+  <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
+  ${userRole === 'admin' ? `
+    <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
+    <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
+  ` : ''}
+</td>
       <td class="reservados">
         ${(p.reservados||0)}
         ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
