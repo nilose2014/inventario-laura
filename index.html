@@ -105,27 +105,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .laura-negro strong { 
   color: black !important; 
 }
-/* ⭐ OCULTAR COLUMNA Y FILAS ACCIONES PARA USUARIOS - SOLO VISIBLE PARA ADMIN */
-.col-acciones-admin { 
-  display: table-cell !important; 
-  background: #e9ecef;
-}
-.col-acciones-user { 
-  display: none !important; 
-}
-.fila-acciones-admin {
-  display: table-row !important;
-}
-.fila-acciones-user {
-  display: none !important;
-}
-/* ⭐ OCULTAR BOTONES ADMIN PARA USUARIOS */
-.btn-admin-only {
-  display: none !important;
-}
-.admin-visible .btn-admin-only {
-  display: inline-block !important;
-}
 </style>
 </head>
 <body>
@@ -219,8 +198,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <table>
 <thead>
 <tr>
-<th>Producto</th><th>Stock</th><th>Próx.</th><th>Reservados</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Reservar</th><th>Vender</th>
-<th class="col-acciones-admin">Acciones (ADMIN)</th>
+<th>Producto</th><th>Stock</th><th>Próx.</th><th>Reservados</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Reservar</th><th>Vender</th><th>Acciones</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
@@ -252,8 +230,8 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </div>
 
 <div class="card" style="text-align:center">
-<button class="red btn-admin-only" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
-<button class="btn-admin-only" onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
+<button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
+<button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
@@ -409,34 +387,32 @@ window.renderTablaSolo = () => {
     const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
     const filaClass = (p.reservados||0)>0 ? 'reservado' : stockClass;
     const tieneProximo = proximoDisponible > 0;
-    const mostrarAcciones = userRole === 'admin';
-    const claseFila = mostrarAcciones ? 'fila-acciones-admin' : 'fila-acciones-user';
     
     tabla.innerHTML += `
-    <tr class="${filaClass} ${claseFila}">
+    <tr class="${filaClass}">
       <td style="font-weight:bold;text-align:left">${p.nombre}</td>
       <td class="${stockCellClass}">
         ${stockDisponible}
-        ${userRole === 'admin' ? `<button class="stock-edit-btn btn-admin-only" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
+        ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
     <td>
-      <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
-      ${userRole === 'admin' ? `
-        <button class="prox-btn btn-admin-only" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
-        <button class="stock-edit-btn btn-admin-only" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
-      ` : ''}
-    </td>
+  <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
+  ${userRole === 'admin' ? `
+    <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
+    <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
+  ` : ''}
+</td>
       <td class="reservados">
         ${(p.reservados||0)}
-        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva btn-admin-only" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
+        ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
       </td>
       <td class="vendidos">${p.vendidos||0}
-        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn btn-admin-only" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
+        ${userRole === 'admin' && (p.vendidos||0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
       </td>
       <td>${Number(p.bea||0).toFixed(2)}</td>
       <td class="editable laura-negro">
         <strong>${Number(p.laura||0).toFixed(2)}</strong>
-        <button class="btn-admin-only" onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
+        <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
       </td>
       <td>
         <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
@@ -446,22 +422,14 @@ window.renderTablaSolo = () => {
         <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
         <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
       </td>
-      ${mostrarAcciones ? `
-      <td class="col-acciones-admin">
-        <button class="btn-admin-only" onclick="editar('${id}')" title="Editar">✏️</button>
-        <button class="red btn-admin-only" onclick="borrar('${id}')" title="Borrar">🗑️</button>
-      </td>` : '<td class="col-acciones-user"></td>'}
+      <td>
+        <button onclick="editar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>✏️</button>
+        <button class="red" onclick="borrar('${id}')" ${userRole !== 'admin' ? 'class="disabled" disabled' : ''}>🗑️</button>
+      </td>
     </tr>`;
   });
 
   actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
-  
-  // Aplicar clases admin para mostrar/ocultar elementos
-  if(userRole === 'admin') {
-    document.body.classList.add('admin-visible');
-  } else {
-    document.body.classList.remove('admin-visible');
-  }
 };
 
 // ⭐ ACTUALIZAR INPUT PRÓXIMO EN FIREBASE + VISUAL
@@ -591,15 +559,12 @@ function checkUserRole() {
   if(currentUser.email === 'nilose2014@gmail.com') {
     userRole = 'admin';
     document.getElementById('backupSection').classList.remove('hidden');
-    document.body.classList.add('admin-visible');
   } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
     userRole = 'user';
     document.getElementById('backupSection').classList.add('hidden');
-    document.body.classList.remove('admin-visible');
   } else {
     userRole = 'user';
     document.getElementById('backupSection').classList.add('hidden');
-    document.body.classList.remove('admin-visible');
   }
   updateUI();
   toggleNuevoProducto();
@@ -618,13 +583,13 @@ function updateUI() {
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   
   if(userRole === 'admin') {
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔥 ULTRA DESTACADO) + ACCIONES ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔥 ULTRA DESTACADO) ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = '';
     precioGlobalBtn.disabled = false;
   } else {
-    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + SIN columna Acciones ✅`;
+    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura ✅`;
     status.className = 'user';
     guardarBtn.disabled = true; guardarBtn.className = 'disabled';
     resetBtn.disabled = true; resetBtn.className = 'disabled';
