@@ -1,1451 +1,1408 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Inventario Laura Online - ORDENABLE BACKUP PRÓXIMO STOCK NOTAS</title>
-  <style>
-    body {
-      font-family: Arial;
-      background: #f0f2f5;
-      padding: 20px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      font-size: 14px;
-    }
-    th {
-      background: #007bff;
-      color: white;
-    }
-    button {
-      padding: 6px 10px;
-      border: none;
-      border-radius: 5px;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-      font-size: 12px;
-      margin: 1px;
-      font-weight: bold;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .red {
-      background: #dc3545;
-    }
-    .red:hover {
-      background: #c82333;
-    }
-    .sin-stock {
-      background: #dc3545 !important;
-      color: white !important;
-    }
-    .stock-bajo {
-      background: #fff3cd !important;
-    }
-    .reservado {
-      background: #e8f4fd !important;
-    }
-    .reservado-bajo {
-      background: #d1ecf1 !important;
-    }
-    input {
-      padding: 6px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 60px;
-      font-size: 12px;
-    }
-    .nombre {
-      width: 300px !important;
-      font-size: 16px;
-      padding: 10px !important;
-    }
-    .stock {
-      width: 80px;
-      font-size: 16px;
-      padding: 8px !important;
-      text-align: center;
-    }
-    .buscar {
-      width: 200px;
-      padding: 8px;
-      font-size: 14px;
-      position: relative;
-    }
-    #buscar-clear {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #dc3545;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      cursor: pointer;
-      display: none;
-      font-weight: bold;
-      line-height: 18px;
-    }
-    #buscar-clear:hover {
-      background: #c82333;
-    }
-    .ordenar {
-      width: 200px;
-      padding: 8px;
-      font-size: 14px;
-    }
-    .status {
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    .admin {
-      background: #d4edda;
-      color: #155724;
-      border: 2px solid #c3e6cb;
-    }
-    .user {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 2px solid #bee5eb;
-    }
-    .error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 2px solid #f5c6cb;
-    }
-    .login-card {
-      background: #fff3cd;
-      border: 2px solid #ffeaa7;
-    }
-    .hidden {
-      display: none;
-    }
-    .disabled {
-      background: #ccc !important;
-      cursor: not-allowed !important;
-    }
-    .diferencia-positiva {
-      background: #d4edda !important;
-      color: #155724;
-      font-weight: bold;
-    }
-    .diferencia-negativa {
-      background: #f8d7da !important;
-      color: #721c24;
-      font-weight: bold;
-    }
-    .contadores-filtrados {
-      background: #e9ecef;
-      padding: 8px 12px;
-      border-radius: 5px;
-      font-weight: bold;
-      font-size: 14px;
-      margin-left: 15px;
-      min-width: 120px;
-    }
-    #productosVisibles {
-      color: #007bff;
-    }
-    #stockVisible {
-      color: #28a745;
-    }
-    .totales-superiores {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-      gap: 15px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      padding: 20px;
-      margin-bottom: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .total-box-superior {
-      padding: 15px;
-      border-radius: 10px;
-      border: 2px solid #ddd;
-      transition: all 0.3s ease;
-    }
-    .total-box-superior:hover {
-      transform: scale(1.02);
-    }
-    .total-box-superior.bea {
-      background: #d4edda;
-      border-color: #28a745;
-    }
-    .total-box-superior.laura {
-      background: #cce7ff;
-      border-color: #007bff;
-    }
-    .total-box-superior.diferencia {
-      border-color: #ffc107;
-    }
-    .total-box-superior.reservados {
-      background: #e8f4fd;
-      border-color: #17a2b8;
-    }
-    .total-box-superior.vendidos {
-      background: #d1ecf1;
-      border-color: #28a745;
-    }
-    .totales-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-      gap: 15px;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      padding: 20px;
-    }
-    .total-box {
-      padding: 12px;
-      border-radius: 10px;
-    }
-    .editable {
-      background: #fff3cd !important;
-    }
-    .vendidos {
-      font-weight: bold;
-      color: #28a745;
-    }
-    .reservados {
-      font-weight: bold;
-      color: #17a2b8;
-    }
-    .filtros {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
-    }
-    select {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 8px;
-    }
-    .stock-edit-btn {
-      font-size: 10px;
-      padding: 1px 4px;
-      margin-left: 3px;
-    }
-    .stock-editable {
-      background: #fff3cd !important;
-    }
-    /* ESTILOS ULTRA DESTACADOS PARA PRÓXIMO STOCK */
-    .prox-input {
-      background: #e8f5e8 !important;
-      border: 2px solid #28a745 !important;
-      font-weight: bold;
-      transition: all 0.3s ease !important;
-    }
-    .prox-input.tiene-valor {
-      background: linear-gradient(45deg, #007bff, #0056b3) !important;
-      border: 3px solid #ffd700 !important;
-      color: white !important;
-      font-weight: bold !important;
-      font-size: 16px !important;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
-      box-shadow: 0 0 15px rgba(0,123,255,0.8), inset 0 0 10px rgba(255,255,255,0.2) !important;
-      transform: scale(1.1) !important;
-      animation: pulse-glow 2s infinite !important;
-    }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 15px rgba(0,123,255,0.8), inset 0 0 10px rgba(255,255,255,0.2); }
-      50% { box-shadow: 0 0 25px rgba(0,123,255,1), inset 0 0 15px rgba(255,255,255,0.4); }
-    }
-    .prox-btn {
-      background: #28a745 !important;
-      color: white !important;
-      font-size: 10px !important;
-      padding: 2px 6px !important;
-      margin-left: 2px !important;
-    }
-    .prox-btn:hover {
-      background: #218838 !important;
-    }
-    .undo-btn {
-      background: #ffc107 !important;
-      color: #000 !important;
-      font-size: 11px;
-      padding: 2px 5px !important;
-      margin-left: 2px;
-    }
-    .undo-btn:hover {
-      background: #e0a800 !important;
-    }
-    #scrollTopBtn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,123,255,0.4);
-      display: none;
-      z-index: 1000;
-      transition: all 0.3s ease;
-    }
-    #scrollTopBtn:hover {
-      background: #0056b3;
-      transform: scale(1.1);
-    }
-    #scrollTopBtn.show {
-      display: block;
-    }
-    .reservar-btn {
-      background: #17a2b8 !important;
-    }
-    .reservar-btn:hover {
-      background: #138496 !important;
-    }
-    .cancelar-reserva {
-      background: #ffc107 !important;
-      color: #000 !important;
-    }
-    .cancelar-reserva:hover {
-      background: #e0a800 !important;
-    }
-    .backup-btn {
-      background: #28a745 !important;
-      color: white !important;
-      font-weight: bold !important;
-      padding: 10px 15px !important;
-      font-size: 14px !important;
-    }
-    .backup-btn:hover {
-      background: #218838 !important;
-    }
-    .restore-btn {
-      background: #17a2b8 !important;
-      color: white !important;
-      font-weight: bold !important;
-      padding: 10px 15px !important;
-      font-size: 14px !important;
-    }
-    .restore-btn:hover {
-      background: #138496 !important;
-    }
-    #backupArea {
-      background: #f8f9fa;
-      border: 2px dashed #007bff;
-      padding: 20px;
-      border-radius: 10px;
-      margin: 10px 0;
-      text-align: center;
-      min-height: 100px;
-    }
-    #backupText {
-      font-family: monospace;
-      background: #e9ecef;
-      padding: 15px;
-      border-radius: 5px;
-      max-height: 300px;
-      overflow: auto;
-      white-space: pre-wrap;
-      font-size: 12px;
-    }
-    .download-link {
-      display: inline-block;
-      background: #28a745;
-      color: white;
-      padding: 8px 15px;
-      border-radius: 5px;
-      text-decoration: none;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    .download-link:hover {
-      background: #218838;
-    }
-    /* SOLO LAURA NEGRO SIEMPRE */
-    .laura-negro {
-      color: black !important;
-    }
-    .laura-negro strong {
-      color: black !important;
-    }
-    /* ESTILOS NOTAS CORREGIDOS - BOTÓN SIEMPRE VISIBLE */
-    .notas-btn {
-      background: #6c757d !important;
-      color: white !important;
-      font-size: 12px !important;
-      padding: 4px 8px !important;
-      margin: 0 !important;
-      border: none !important;
-      border-radius: 4px !important;
-      cursor: pointer !important;
-      min-width: 35px !important;
-      height: 28px !important;
-      display: inline-block !important;
-      vertical-align: middle !important;
-      margin-left: 10px;
-    }
-    .notas-btn:hover {
-      background: #545b62 !important;
-      transform: scale(1.05) !important;
-    }
-    .notas-cell {
-      position: relative;
-      min-width: 80px !important;
-      white-space: nowrap !important;
-    }
-    .notas-nueva {
-      background: #fff3cd !important;
-      animation: pulse-notas 2s infinite !important;
-    }
-    @keyframes pulse-notas {
-      0%, 100% { background: #fff3cd !important; }
-      50% { background: #ffeaa7 !important; }
-    }
-    .notas-texto {
-      font-size: 12px !important;
-      max-width: 120px !important;
-      display: inline-block !important;
-      vertical-align: middle !important;
-      margin-right: 5px !important;
-    }
-    #notasBadge {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #dc3545;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 16px;
-      box-shadow: 0 4px 12px rgba(220,53,69,0.5);
-      z-index: 1001;
-      cursor: pointer;
-      display: none;
-    }
-    #notasBadge.show {
-      display: block !important;
-      animation: bounce 1s infinite;
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    .notas-window {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 2000;
-      display: none;
-    }
-    .notas-content {
-      background: white;
-      margin: 5% auto;
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 600px;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    .notas-textarea {
-      width: 100%;
-      min-height: 200px;
-      padding: 15px;
-      border: 2px solid #ddd;
-      border-radius: 10px;
-      font-size: 16px;
-      font-family: Arial;
-      resize: vertical;
-      margin-bottom: 15px;
-    }
-    .notas-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    .notas-save {
-      background: #28a745 !important;
-    }
-    .notas-delete {
-      background: #dc3545 !important;
-    }
-    .notas-cancel {
-      background: #6c757d !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Inventario Laura Online - ORDENABLE BACKUP PRÓXIMO STOCK NOTAS</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f0f2f5;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+        button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 1px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .red {
+            background: #dc3545;
+        }
+        .red:hover {
+            background: #c82333;
+        }
+        .sin-stock {
+            background: #dc3545 !important;
+            color: white !important;
+        }
+        .stock-bajo {
+            background: #fff3cd !important;
+        }
+        .reservado {
+            background: #e8f4fd !important;
+        }
+        .reservado-bajo {
+            background: #d1ecf1 !important;
+        }
+        input {
+            padding: 6px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 60px;
+            font-size: 12px;
+        }
+        .nombre {
+            width: 300px !important;
+            font-size: 16px;
+            padding: 10px !important;
+        }
+        .stock {
+            width: 80px;
+            font-size: 16px;
+            padding: 8px !important;
+            text-align: center;
+        }
+        .buscar {
+            width: 200px;
+            padding: 8px;
+            font-size: 14px;
+            position: relative;
+        }
+        #buscar-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            font-weight: bold;
+            line-height: 18px;
+        }
+        #buscar-clear:hover {
+            background: #c82333;
+        }
+        .ordenar {
+            width: 200px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        .status {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .admin {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .user {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .login-card {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+        }
+        .hidden {
+            display: none;
+        }
+        .disabled {
+            background: #ccc !important;
+            cursor: not-allowed !important;
+        }
+        .diferencia-positiva {
+            background: #d4edda !important;
+            color: #155724;
+            font-weight: bold;
+        }
+        .diferencia-negativa {
+            background: #f8d7da !important;
+            color: #721c24;
+            font-weight: bold;
+        }
+        .contadores-filtrados {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-left: 15px;
+            min-width: 120px;
+        }
+        #productosVisibles {
+            color: #007bff;
+        }
+        #stockVisible {
+            color: #28a745;
+        }
+        .totales-superiores {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .total-box-superior {
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        .total-box-superior:hover {
+            transform: scale(1.02);
+        }
+        .total-box-superior.bea {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .total-box-superior.laura {
+            background: #cce7ff;
+            border-color: #007bff;
+        }
+        .total-box-superior.diferencia {
+            border-color: #ffc107;
+        }
+        .total-box-superior.reservados {
+            background: #e8f4fd;
+            border-color: #17a2b8;
+        }
+        .total-box-superior.vendidos {
+            background: #d1ecf1;
+            border-color: #28a745;
+        }
+        .totales-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px;
+        }
+        .total-box {
+            padding: 12px;
+            border-radius: 10px;
+        }
+        .editable {
+            background: #fff3cd !important;
+        }
+        .vendidos {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .reservados {
+            font-weight: bold;
+            color: #17a2b8;
+        }
+        .filtros {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        select {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 8px;
+        }
+        .stock-edit-btn {
+            font-size: 10px;
+            padding: 1px 4px;
+            margin-left: 3px;
+        }
+        .stock-editable {
+            background: #fff3cd !important;
+        }
+        /* ESTILOS ULTRA DESTACADOS PARA PRÓXIMO STOCK */
+        .prox-input {
+            background: #e8f5e8 !important;
+            border: 2px solid #28a745 !important;
+            font-weight: bold;
+            transition: all 0.3s ease !important;
+        }
+        .prox-input.tiene-valor {
+            background: linear-gradient(45deg, #007bff, #0056b3) !important;
+            border: 3px solid #ffd700 !important;
+            color: white !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+            box-shadow: 0 0 15px rgba(0,123,255,0.8), inset 0 0 10px rgba(255,255,255,0.2) !important;
+            transform: scale(1.1) !important;
+            animation: pulse-glow 2s infinite !important;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0,123,255,0.8), inset 0 0 10px rgba(255,255,255,0.2); }
+            50% { box-shadow: 0 0 25px rgba(0,123,255,1), inset 0 0 15px rgba(255,255,255,0.4); }
+        }
+        .prox-btn {
+            background: #28a745 !important;
+            color: white !important;
+            font-size: 10px !important;
+            padding: 2px 6px !important;
+            margin-left: 2px !important;
+        }
+        .prox-btn:hover {
+            background: #218838 !important;
+        }
+        .undo-btn {
+            background: #ffc107 !important;
+            color: #000 !important;
+            font-size: 11px;
+            padding: 2px 5px !important;
+            margin-left: 2px;
+        }
+        .undo-btn:hover {
+            background: #e0a800 !important;
+        }
+        #scrollTopBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+            display: none;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        #scrollTopBtn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+        #scrollTopBtn.show {
+            display: block;
+        }
+        .reservar-btn {
+            background: #17a2b8 !important;
+        }
+        .reservar-btn:hover {
+            background: #138496 !important;
+        }
+        .confirmar-btn {
+            background: #28a745 !important;
+        }
+        .confirmar-btn:hover {
+            background: #218838 !important;
+        }
+        .cancelar-reserva {
+            background: #ffc107 !important;
+            color: #000 !important;
+        }
+        .cancelar-reserva:hover {
+            background: #e0a800 !important;
+        }
+        .backup-btn {
+            background: #28a745 !important;
+            color: white !important;
+            font-weight: bold !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+        }
+        .backup-btn:hover {
+            background: #218838 !important;
+        }
+        .restore-btn {
+            background: #17a2b8 !important;
+            color: white !important;
+            font-weight: bold !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+        }
+        .restore-btn:hover {
+            background: #138496 !important;
+        }
+        #backupArea {
+            background: #f8f9fa;
+            border: 2px dashed #007bff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-align: center;
+            min-height: 100px;
+        }
+        #backupText {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .download-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .download-link:hover {
+            background: #218838;
+        }
+        /* SOLO LAURA NEGRO SIEMPRE */
+        .laura-negro {
+            color: black !important;
+        }
+        .laura-negro strong {
+            color: black !important;
+        }
+        /* ESTILOS NOTAS CORREGIDOS - BOTÓN SIEMPRE VISIBLE */
+        .notas-btn {
+            background: #6c757d !important;
+            color: white !important;
+            font-size: 12px !important;
+            padding: 4px 8px !important;
+            margin: 0 !important;
+            border: none !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            min-width: 35px !important;
+            height: 28px !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-left: 10px;
+        }
+        .notas-btn:hover {
+            background: #545b62 !important;
+            transform: scale(1.05) !important;
+        }
+        .notas-cell {
+            position: relative;
+            min-width: 80px !important;
+            white-space: nowrap !important;
+        }
+        .notas-nueva {
+            background: #fff3cd !important;
+            animation: pulse-notas 2s infinite !important;
+        }
+        @keyframes pulse-notas {
+            0%, 100% { background: #fff3cd !important; }
+            50% { background: #ffeaa7 !important; }
+        }
+        .notas-texto {
+            font-size: 12px !important;
+            max-width: 120px !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-right: 5px !important;
+        }
+        #notasBadge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(220,53,69,0.5);
+            z-index: 1001;
+            cursor: pointer;
+            display: none;
+        }
+        #notasBadge.show {
+            display: block !important;
+            animation: bounce 1s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .notas-window {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            display: none;
+        }
+        .notas-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .notas-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: Arial;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        .notas-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .notas-save {
+            background: #28a745 !important;
+        }
+        .notas-delete {
+            background: #dc3545 !important;
+        }
+        .notas-cancel {
+            background: #6c757d !important;
+        }
+        #notasCharCount {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-  <h2>Inventario Laura Online - ORDENABLE BACKUP PRÓXIMO STOCK NOTAS</h2>
+    <h2>Inventario Laura Online - ORDENABLE BACKUP PRÓXIMO STOCK NOTAS</h2>
 
-  <!-- BADGE DE NOTAS NUEVAS -->
-  <div id="notasBadge" onclick="abrirNotasNuevas()">📝 Nuevas Notas!</div>
+    <!-- BADGE DE NOTAS NUEVAS -->
+    <div id="notasBadge" onclick="abrirNotasNuevas()">🔔 ¡Nuevas Notas!</div>
 
-  <!-- LOGIN OBLIGATORIO -->
-  <div class="card login-card" id="loginDiv">
-    <h3>Iniciar Sesión</h3>
-    <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
-    <input id="userPass" type="password" placeholder="Contraseña"><br><br>
-    <datalist id="userList">
-      <option value="nilose2014@gmail.com">ADMIN</option>
-      <option value="djsubixj@gmail.com">Usuario</option>
-      <option value="xiomaralamasmal@gmail.com">Usuario</option>
-    </datalist><br>
-    <button onclick="login()">Entrar</button>
-    <button class="red" onclick="resetLogin()">Limpiar</button>
-  </div>
-
-  <div id="mainApp" style="display:none">
-
-    <!-- TOTALES SUPERIORES - VISIBLES SIEMPRE -->
-    <div class="totales-superiores">
-      <div class="total-box-superior bea">
-        <strong>Venta Bea</strong><br>
-        <span id="tBeaSup" style="font-size:28px">0.00</span>
-      </div>
-      <div class="total-box-superior laura">
-        <strong>Venta Laura</strong><br>
-        <span id="tLauraSup" style="font-size:28px">0.00</span>
-      </div>
-      <div class="total-box-superior diferencia" id="diferenciaBoxSup">
-        <strong>Diferencia L-B</strong><br>
-        <span id="tDiferenciaSup" style="font-size:28px">0.00</span>
-      </div>
-      <div class="total-box-superior reservados">
-        <strong>Reservados</strong><br>
-        <span id="tTotalReservadosSup" style="font-size:28px">0</span>
-      </div>
-      <div class="total-box-superior vendidos">
-        <strong>Total Vendidos</strong><br>
-        <span id="tTotalVendidosSup" style="font-size:28px">0</span>
-      </div>
+    <!-- LOGIN OBLIGATORIO -->
+    <div class="card login-card" id="loginDiv">
+        <h3>Iniciar Sesión</h3>
+        <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
+        <input id="userPass" type="password" placeholder="Contraseña"><br><br>
+        <datalist id="userList">
+            <option value="nilose2014@gmail.com">ADMIN</option>
+            <option value="djsubixjgmail.com">Usuario</option>
+            <option value="xiomaralamasmalgmail.com">Usuario</option>
+        </datalist><br>
+        <button onclick="login()">Entrar</button>
+        <button class="red" onclick="resetLogin()">Limpiar</button>
     </div>
 
-    <div id="status" class="error">Cargando...</div>
+    <div id="mainApp" style="display:none">
 
-    <!-- SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
-    <div class="card" id="nuevoProductoDiv">
-      <strong>Nuevo/Editar Productos</strong><br><br>
-      Producto: <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
-      Stock: <input id="stock" type="number" placeholder="0"><br>
-      Próximo: <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir"><br>
-      Precio Bea: <input id="bea" type="number" step="0.01" placeholder="0.00"><br>
-      Precio Laura: <input id="laura" type="number" step="0.01" placeholder="0.00"><br><br>
-      <button onclick="guardar()" id="guardarBtn">Guardar Nuevo</button>
-      <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">Cancelar</button>
-    </div>
-
-    <div class="card">
-      <div class="filtros">
-        <!-- BUSCAR PRIMERO -->
-        <div style="position:relative;display:inline-block;">
-          <input placeholder="Buscar producto..." id="buscar" class="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
-          <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">X</button>
+        <!-- TOTALES SUPERIORES - VISIBLES SIEMPRE -->
+        <div class="totales-superiores">
+            <div class="total-box-superior bea">
+                <strong>Venta Bea</strong><br>
+                <span id="tBeaSup" style="font-size:28px">0.00</span>
+            </div>
+            <div class="total-box-superior laura">
+                <strong>Venta Laura</strong><br>
+                <span id="tLauraSup" style="font-size:28px">0.00</span>
+            </div>
+            <div class="total-box-superior diferencia" id="diferenciaBoxSup">
+                <strong>Diferencia L-B</strong><br>
+                <span id="tDiferenciaSup" style="font-size:28px">0.00</span>
+            </div>
+            <div class="total-box-superior reservados">
+                <strong>Reservados</strong><br>
+                <span id="tTotalReservadosSup" style="font-size:28px">0</span>
+            </div>
+            <div class="total-box-superior vendidos">
+                <strong>Total Vendidos</strong><br>
+                <span id="tTotalVendidosSup" style="font-size:28px">0</span>
+            </div>
         </div>
-        
-        <!-- CONTADORES -->
-        <div class="contadores-filtrados">
-          <div id="productosVisibles">0 productos</div>
-          <div id="stockVisible">Stock 0</div>
+
+        <div id="status" class="error">Cargando...</div>
+
+        <!-- SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
+        <div class="card" id="nuevoProductoDiv">
+            <strong>Nuevo/Editar Productos</strong><br><br>
+            Producto: <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
+            Stock: <input id="stock" type="number" placeholder="0"><br>
+            Próximo: <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir"><br>
+            Precio Bea: <input id="bea" type="number" step="0.01" placeholder="0.00"><br>
+            Precio Laura: <input id="laura" type="number" step="0.01" placeholder="0.00"><br><br>
+            <button onclick="guardar()" id="guardarBtn">Guardar Nuevo</button>
+            <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">Cancelar</button>
         </div>
-        
-        <!-- ORDENAR -->
-        <select id="ordenar" class="ordenar" onchange="renderTablaSolo()">
-          <option value="nombre-asc">A-Z</option>
-          <option value="nombre-desc">Z-A</option>
-          <option value="stock-asc">Stock ↑</option>
-          <option value="stock-desc">Stock ↓</option>
-          <option value="proximo-desc">Próximo ↓</option>
-          <option value="proximo-asc">Próximo ↑</option>
-          <option value="vendidos-desc">Vendidos ↓</option>
-          <option value="vendidos-asc">Vendidos ↑</option>
-          <option value="reservados-desc">Reservados ↓</option>
-          <option value="reservados-asc">Reservados ↑</option>
-          <option value="bea-asc">Bea ↑</option>
-          <option value="bea-desc">Bea ↓</option>
-          <option value="laura-asc">Laura ↑</option>
-          <option value="laura-desc">Laura ↓</option>
-          <option value="notas-desc">Notas ↓</option>
-          <option value="notas-asc">Notas ↑</option>
-        </select>
-        
-        <!-- BOTÓN NOTAS DESPUÉS DE BUSCAR - SIEMPRE VISIBLE -->
-        <button class="notas-btn" onclick="abrirNotasNuevas()" title="Ver todas las notas nuevas">
-          📝
-        </button>
-      </div>
-      
-      <br>
-      <table>
-        <thead>
-          <tr>
-            <th>Producto</th><th>Stock</th><th>Prx.</th><th>Reservados</th><th>Vendidos</th><th>Bea</th><th>Laura</th><th>Reservar</th><th>Vender</th>
-            ${userRole == 'admin' ? '<th>Acciones</th>' : ''}
-            <th>Notas</th>
-          </tr>
-        </thead>
-        <tbody id="tabla"></tbody>
-      </table>
+
+        <div class="card">
+            <div class="filtros">
+                <!-- BUSCAR PRIMERO -->
+                <div style="position:relative;display:inline-block">
+                    <input placeholder="Buscar producto..." id="buscar" class="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
+                    <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">X</button>
+                </div>
+                <!-- CONTADORES -->
+                <div class="contadores-filtrados">
+                    <div id="productosVisibles">0 productos</div>
+                    <div id="stockVisible">Stock 0</div>
+                </div>
+                <!-- ORDENAR -->
+                <select id="ordenar" class="ordenar" onchange="renderTablaSolo()">
+                    <option value="nombre-asc">A-Z</option>
+                    <option value="nombre-desc">Z-A</option>
+                    <option value="stock-asc">Stock ↑</option>
+                    <option value="stock-desc">Stock ↓</option>
+                    <option value="proximo-desc">Próximo ↓</option>
+                    <option value="proximo-asc">Próximo ↑</option>
+                    <option value="vendidos-desc">Vendidos ↓</option>
+                    <option value="vendidos-asc">Vendidos ↑</option>
+                    <option value="reservados-desc">Reservados ↓</option>
+                    <option value="reservados-asc">Reservados ↑</option>
+                    <option value="bea-asc">Bea ↑</option>
+                    <option value="bea-desc">Bea ↓</option>
+                    <option value="laura-asc">Laura ↑</option>
+                    <option value="laura-desc">Laura ↓</option>
+                    <option value="notas-desc">Notas ↓</option>
+                    <option value="notas-asc">Notas ↑</option>
+                </select>
+                <!-- BOTÓN NOTAS DESPUÉS DE BUSCAR - SIEMPRE VISIBLE -->
+                <button class="notas-btn" onclick="abrirNotasNuevas()" title="Ver todas las notas nuevas">📝</button>
+            </div>
+            <br>
+            <table>
+                <thead id="tablaHead">
+                    <tr>
+                        <th>Producto</th>
+                        <th>Stock</th>
+                        <th>Prx.</th>
+                        <th>Reservados</th>
+                        <th>Vendidos</th>
+                        <th>Bea</th>
+                        <th>Laura</th>
+                        <th>Reservar</th>
+                        <th>Vender</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla"></tbody>
+            </table>
+        </div>
+
+        <!-- TOTALES INFERIORES -->
+        <div class="totales-container">
+            <div class="total-box">
+                <strong>Venta Bea</strong><br>
+                <span id="tBea" style="font-size:24px">0.00</span>
+            </div>
+            <div class="total-box">
+                <strong>Venta Laura</strong><br>
+                <span id="tLaura" style="font-size:24px">0.00</span>
+            </div>
+            <div class="total-box" id="diferenciaBox">
+                <strong>Diferencia L-B</strong><br>
+                <span id="tDiferencia" style="font-size:24px">0.00</span>
+            </div>
+            <div class="total-box reservados">
+                <strong>Reservados</strong><br>
+                <span id="tTotalReservados" style="font-size:24px">0</span>
+            </div>
+            <div class="total-box vendidos">
+                <strong>Total Vendidos</strong><br>
+                <span id="tTotalVendidos" style="font-size:24px">0</span>
+            </div>
+        </div>
+
+        <div class="card" style="text-align:center">
+            <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">Reset COMPLETO</button>
+            <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">Precio Laura Global</button>
+            <button style="background:#28a745" onclick="logout()">Cambiar Usuario</button>
+        </div>
+
+        <!-- SECCIÓN BACKUP - SOLO ADMIN -->
+        <div class="card hidden" id="backupSection">
+            <h3>Sistema de Backup Completo</h3>
+            <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">DESCARGAR BACKUP</button>
+            <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">RESTAURAR BACKUP</label>
+            <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+            <div id="backupArea">
+                <p>Último backup disponible aquí</p>
+                <div id="backupText">Genera tu primer backup con el botón superior...</div>
+                <div id="backupDate"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- TOTALES INFERIORES -->
-    <div class="totales-container">
-      <div class="total-box">
-        <strong>Venta Bea</strong><br>
-        <span id="tBea" style="font-size:24px">0.00</span>
-      </div>
-      <div class="total-box">
-        <strong>Venta Laura</strong><br>
-        <span id="tLaura" style="font-size:24px">0.00</span>
-      </div>
-      <div class="total-box" id="diferenciaBox">
-        <strong>Diferencia L-B</strong><br>
-        <span id="tDiferencia" style="font-size:24px">0.00</span>
-      </div>
-      <div class="total-box reservados">
-        <strong>Reservados</strong><br>
-        <span id="tTotalReservados" style="font-size:24px">0</span>
-      </div>
-      <div class="total-box vendidos">
-        <strong>Total Vendidos</strong><br>
-        <span id="tTotalVendidos" style="font-size:24px">0</span>
-      </div>
+    <!-- VENTANA MODAL DE NOTAS -->
+    <div id="notasWindow" class="notas-window">
+        <div class="notas-content">
+            <h3 id="notasTitle">Notas del Producto</h3>
+            <textarea id="notasTextarea" class="notas-textarea" placeholder="Escribe tus notas aquí... (máx 500 caracteres)"></textarea>
+            <div class="notas-buttons">
+                <button class="notas-save" onclick="guardarNota()">Guardar</button>
+                <button class="notas-delete" onclick="eliminarNota()" id="deleteBtn" style="display:none">Eliminar</button>
+                <button class="notas-cancel" onclick="cerrarNotas()">Cancelar</button>
+            </div>
+            <div id="notasCharCount">0/500</div>
+        </div>
     </div>
 
-    <div class="card" style="text-align:center">
-      <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">Reset COMPLETO</button>
-      <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">Precio Laura Global</button>
-      <button onclick="logout()" style="background:#28a745">Cambiar Usuario</button>
-    </div>
+    <button id="scrollTopBtn" title="Subir arriba">↑</button>
 
-    <!-- SECCIÓN BACKUP - SOLO ADMIN -->
-    <div class="card hidden" id="backupSection">
-      <h3>Sistema de Backup Completo</h3>
-      <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">DESCARGAR BACKUP</button>
-      <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">RESTAURAR BACKUP</label>
-      <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
-      <div id="backupArea">
-        <p>Último backup disponible aquí</p>
-        <div id="backupText">Genera tu primer backup con el botón superior...</div>
-        <div id="backupDate"></div>
-      </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4/dist/email.min.js"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, update, remove, push, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-  </div>
-
-  <!-- VENTANA MODAL DE NOTAS -->
-  <div id="notasWindow" class="notas-window">
-    <div class="notas-content">
-      <h3 id="notasTitle">Notas del Producto</h3>
-      <textarea id="notasTextarea" class="notas-textarea" placeholder="Escribe tus notas aquí... máx 500 caracteres"></textarea>
-      <div class="notas-buttons">
-        <button class="notas-save" onclick="guardarNota()">Guardar</button>
-        <button class="notas-delete" onclick="eliminarNota()" id="deleteBtn" style="display:none">Eliminar</button>
-        <button class="notas-cancel" onclick="cerrarNotas()">Cancelar</button>
-      </div>
-      <div id="notasCharCount" style="text-align:right;font-size:12px;color:#666;margin-top:10px">0/500</div>
-    </div>
-  </div>
-
-  <button id="scrollTopBtn" title="Subir arriba">↑</button>
-
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4/dist/email.min.js"></script>
-  <script type="module">
-     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getDatabase, ref, onValue, update, remove, push, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
-      authDomain: "inventario-laura.firebaseapp.com",
-      databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "inventario-laura",
-      storageBucket: "inventario-laura.firebasestorage.app",
-      messagingSenderId: "778807935660",
-      appId: "1:778807935660|web:947e223465f9347b17d509"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-    const productosRef = ref(db, 'productos');
-
-    let productos = {};
-    let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
-    let editId = null;
-    let currentUser = null;
-    let userRole = null;
-    const EMAILJS_CONFIG = {
-      service: 'service_65ryfan',
-      template: 'template_06j67bo',
-      publicKey: 'q6b-zVGH0aBXeREzv'
-    };
-    let ultimoBackup = null;
-    let backupRef = ref(db, 'backup/ultimo');
-    let productosVisiblesCount = 0;
-    let stockVisibleTotal = 0;
-
-    // VARIABLES GLOBALES PARA NOTAS
-    let notasActuales = {};
-    let productoNotasActual = null;
-    let hayNuevasNotas = false;
-
-    window.toggleClearBtn = () => {
-      const buscar = document.getElementById('buscar');
-      const clearBtn = document.getElementById('buscar-clear');
-      if (buscar.value.length > 0) {
-        clearBtn.style.display = 'block';
-      } else {
-        clearBtn.style.display = 'none';
-      }
-    };
-
-    window.clearSearch = () => {
-      const buscar = document.getElementById('buscar');
-      buscar.value = '';
-      document.getElementById('buscar-clear').style.display = 'none';
-      renderTablaSolo();
-    };
-
-    window.actualizarContadoresFiltrados = (count, stockTotal) => {
-      document.getElementById('productosVisibles').textContent = count + ' productos';
-      document.getElementById('stockVisible').textContent = 'Stock ' + stockTotal;
-    };
-
-    window.renderTablaSolo = () => {
-      const filtro = document.getElementById('buscar').value.toLowerCase();
-      const productosOrdenados = ordenarProductos(productos);
-      const tabla = document.getElementById('tabla');
-      tabla.innerHTML = '';
-      productosVisiblesCount = 0;
-      stockVisibleTotal = 0;
-
-      productosOrdenados.forEach(([id, p]) => {
-        if (!p?.nombre?.toLowerCase().includes(filtro)) return;
-        productosVisiblesCount++;
-        stockVisibleTotal += Number(p.stock || 0);
-
-        const stockDisponible = p.stock || 0;
-        const proximoDisponible = p.proximo || 0;
-        const stockClass = stockDisponible == 0 ? 'sin-stock' : (stockDisponible <= 5 ? 'stock-bajo' : '');
-        const stockCellClass = userRole == 'admin' ? 'stock-editable' : '';
-        const filaClass = (p.reservados || 0) > 0 ? 'reservado ' + stockClass : stockClass;
-        const tieneProximo = proximoDisponible > 0;
-        const tieneNotas = p.notas && p.notas.trim();
-        const notasClass = tieneNotas ? 'notas-nueva' : '';
-
-        let filaHTML = `
-          <tr class="${filaClass}">
-            <td style="font-weight:bold;text-align:left">${p.nombre}</td>
-            <td class="${stockCellClass}">${stockDisponible}${userRole == 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">✏️</button>` : ''}</td>
-            <td>${
-              userRole == 'admin' ? 
-              `<input type="number" min="0" value="${proximoDisponible}" data-producto-id="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
-              <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="AÑADIR al Stock Real">+</button>
-              <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">✏️</button>` : 
-              proximoDisponible
-            }</td>
-            <td class="reservados">${(p.reservados || 0)}${(p.reservados || 0) > 0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">−</button>` : ''}</td>
-            <td class="vendidos">${(p.vendidos || 0)}${userRole == 'admin' && (p.vendidos || 0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↶</button>` : ''}</td>
-            <td>${Number(p.bea || 0).toFixed(2)}</td>
-            <td class="editable laura-negro"><strong>${Number(p.laura || 0).toFixed(2)}</strong><button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">✏️</button></td>
-            <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px"><button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">Reservar</button></td>
-            <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px"><button onclick="vender('${id}',this.previousElementSibling.value)">Vender</button></td>`;
-
-        // COLUMNA ACCIONES - SOLO PARA ADMIN
-        if (userRole == 'admin') {
-          filaHTML += `
-            <td>
-              <button onclick="editar('${id}')" style="margin-right:5px">Editar</button>
-              <button class="red" onclick="borrar('${id}')">Borrar</button>
-            </td>`;
-        }
-
-        filaHTML += `
-            <td class="notas-cell ${notasClass}">
-              ${tieneNotas ? `<span class="notas-texto" title="${p.notas}">${p.notas.length > 15 ? p.notas.substring(0,15) + '...' : p.notas}</span>` : '<span class="notas-texto">Sin notas</span>'}
-              <button class="notas-btn" onclick="abrirNotas('${id}')" title="Editar notas">📝</button>
-            </td>
-          </tr>`;
-
-        tabla.innerHTML += filaHTML;
-      });
-      actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
-    };
-
-    // RENDERIZAR HEADER DE TABLA CON ACCIONES SOLO PARA ADMIN
-    window.renderTablaHeader = () => {
-      const thead = document.querySelector('table thead tr');
-      let headerHTML = `
-        <th>Producto</th><th>Stock</th><th>Prx.</th><th>Reservados</th><th>Vendidos</th><th>Bea</th><th>Laura</th><th>Reservar</th><th>Vender</th>`;
-      
-      if (userRole == 'admin') {
-        headerHTML += `<th>Acciones</th>`;
-      }
-      
-      headerHTML += `<th>Notas</th>`;
-      thead.innerHTML = headerHTML;
-    };
-
-    // ACTUALIZAR INPUT PRÓXIMO EN FIREBASE + VISUAL
-    window.updateProxInput = (id, value) => {
-      const proximo = Math.max(0, Number(value));
-      update(ref(db, 'productos/' + id), { proximo: proximo });
-      updateProxInputVisual(document.querySelector(`input[data-producto-id="${id}"]`));
-    };
-
-    window.updateProxInputVisual = (input) => {
-      const valor = Number(input.value);
-      if (valor > 0) {
-        input.classList.add('tiene-valor');
-      } else {
-        input.classList.remove('tiene-valor');
-      }
-    };
-
-    // FUNCIONES DE NOTAS
-    window.verificarNuevasNotas = () => {
-      hayNuevasNotas = false;
-      Object.values(productos).forEach(p => {
-        if (p.notas && p.notas.trim() && !notasActuales[p.id]) {
-          hayNuevasNotas = true;
-        }
-      });
-      const badge = document.getElementById('notasBadge');
-      if (hayNuevasNotas) {
-        badge.classList.add('show');
-      } else {
-        badge.classList.remove('show');
-      }
-    };
-
-    window.abrirNotas = (id) => {
-      productoNotasActual = id;
-      const p = productos[id];
-      document.getElementById('notasTitle').textContent = 'Notas: ' + p.nombre;
-      document.getElementById('notasTextarea').value = p.notas || '';
-      document.getElementById('deleteBtn').style.display = p.notas ? 'inline-block' : 'none';
-      actualizarContadorCaracteres();
-      document.getElementById('notasWindow').style.display = 'block';
-    };
-
-    window.abrirNotasNuevas = () => {
-      let lista = 'PRODUCTOS CON NOTAS:\n';
-      Object.entries(productos).forEach(([id, p]) => {
-        if (p.notas && p.notas.trim()) {
-          lista += `- ${p.nombre}: ${p.notas.substring(0,50)}${p.notas.length > 50 ? '...' : ''}\n`;
-        }
-      });
-      alert(lista);
-    };
-
-    window.guardarNota = async () => {
-      if (!productoNotasActual) return;
-      const texto = document.getElementById('notasTextarea').value.trim();
-      if (texto.length > 500) return alert('Máximo 500 caracteres');
-      await update(ref(db, 'productos/' + productoNotasActual), { 
-        notas: texto, 
-        ultimaNota: Date.now() 
-      });
-      notasActuales[productoNotasActual] = true;
-      verificarNuevasNotas();
-      alert('Nota guardada');
-      cerrarNotas();
-    };
-
-    window.eliminarNota = async () => {
-      if (!productoNotasActual) return;
-      if (!confirm('¿Eliminar esta nota?')) return;
-      await update(ref(db, 'productos/' + productoNotasActual), { 
-        notas: null, 
-        ultimaNota: null 
-      });
-      delete notasActuales[productoNotasActual];
-      verificarNuevasNotas();
-      alert('Nota eliminada');
-      cerrarNotas();
-    };
-
-    window.cerrarNotas = () => {
-      document.getElementById('notasWindow').style.display = 'none';
-      productoNotasActual = null;
-    };
-
-    window.actualizarContadorCaracteres = () => {
-      const textarea = document.getElementById('notasTextarea');
-      const count = textarea.value.length;
-      document.getElementById('notasCharCount').textContent = count + '/500';
-      document.getElementById('notasCharCount').style.color = count > 450 ? '#dc3545' : '#666';
-    };
-
-    window.anadirProximoStock = async (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede añadir stock próximo');
-      const p = productos[id];
-      const inputProx = document.querySelector(`input[data-producto-id="${id}"]`);
-      const cantidad = Number(inputProx.value) || 0;
-      if (cantidad == 0) return alert('Cantidad inválida');
-      const nuevoStock = (p.stock || 0) + cantidad;
-      await update(ref(db, 'productos/' + id), { stock: nuevoStock, proximo: 0 });
-      inputProx.value = '0';
-      inputProx.classList.remove('tiene-valor');
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: cantidad + ' uds. AÑADIDAS DEL STOCK PRÓXIMO. Nuevo stock: ' + nuevoStock
-      }, 'STOCK AÑADIDO - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      alert('Añadidas ' + cantidad + ' unidades. Nuevo stock: ' + nuevoStock);
-    };
-
-    window.modificarProximoStock = (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede modificar stock próximo');
-      const nuevoProximo = prompt('Nuevo stock próximo:', productos[id]?.proximo || 0);
-      if (nuevoProximo === null) return;
-      const proximo = Math.max(0, Number(nuevoProximo));
-      if (isNaN(proximo)) return alert('Stock próximo inválido');
-      update(ref(db, 'productos/' + id), { proximo: proximo }).then(() => {
-        alert('Próximo actualizado: ' + proximo);
-      });
-    };
-
-    window.hacerBackup = async () => {
-      if (currentUser.email != 'nilose2014@gmail.com') return alert('Solo nilose2014@gmail.com puede hacer backup');
-      try {
-        const backupData = {
-          productos: productos,
-          totalesGlobales: totalesGlobales,
-          fecha: new Date().toISOString(),
-          usuario: currentUser.email,
-          timestamp: Date.now()
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
+            authDomain: "inventario-laura.firebaseapp.com",
+            databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "inventario-laura",
+            storageBucket: "inventario-laura.firebasestorage.app",
+            messagingSenderId: "778807935660",
+            appId: "1:778807935660|web:947e223465f9347b17d509"
         };
-        await set(backupRef, backupData);
-        document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
-        document.getElementById('backupDate').innerHTML = '<strong>Backup creado: ' + new Date().toLocaleString('es-ES') + '</strong>';
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'backup-inventario-' + new Date().toISOString().slice(0,10) + '.json';
-        a.textContent = 'DESCARGAR BACKUP';
-        a.className = 'download-link';
-        document.getElementById('backupArea').appendChild(a);
-        const oldLink = document.querySelector('.download-link');
-        if (oldLink && oldLink != a) oldLink.remove();
-        ultimoBackup = backupData;
-        alert('Backup completado y descargado');
-      } catch (error) {
-        alert('Error en backup: ' + error.message);
-      }
-    };
 
-    window.restaurarBackup = async (event) => {
-      if (currentUser.email != 'nilose2014@gmail.com') return alert('Solo nilose2014@gmail.com puede restaurar');
-      const file = event.target.files[0];
-      if (!file) return;
-      if (!confirm('¿Restaurar TODO desde este backup? Se reemplazan TODOS los productos. Se actualizan todos los totales')) return;
-      try {
-        const text = await file.text();
-        const backupData = JSON.parse(text);
-        await set(ref(db, 'productos'), backupData.productos);
-        alert('Restauración completada. Recarga la página.');
-        location.reload();
-      } catch (error) {
-        alert('Error restaurando: ' + error.message);
-      }
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+        const productosRef = ref(db, 'productos');
 
-    window.cargarBackupFirebase = () => {
-      if (currentUser.email != 'nilose2014@gmail.com') return;
-      onValue(backupRef, (snap) => {
-        if (snap.exists()) {
-          ultimoBackup = snap.val();
-          document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup, null, 2);
-          const fecha = new Date(ultimoBackup.timestamp).toLocaleString('es-ES');
-          document.getElementById('backupDate').innerHTML = '<strong>Último backup Firebase: ' + fecha + '</strong>';
-        }
-      });
-    };
+        let productos = {};
+        let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
+        let editId = null;
+        let currentUser = null;
+        let userRole = null;
 
-    async function enviarEmail(datos, subject, fecha) {
-      if (!window.emailjs) return console.log('EmailJS cargando...');
-      emailjs.init(EMAILJS_CONFIG.publicKey);
-      try {
-        await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, {
-          ...datos,
-          subject: subject,
-          fecha: fecha
-        });
-        console.log('Email enviado', subject);
-      } catch (err) {
-        console.log('Error email', err);
-      }
-    }
+        const EMAILJS_CONFIG = {
+            service: 'service_65ryfan',
+            template: 'template_06j67bo',
+            publicKey: 'q6b-zVGH0aBXeREzv'
+        };
 
-    window.onscroll = () => {
-      const btn = document.getElementById('scrollTopBtn');
-      if (window.scrollY > 300) {
-        btn.classList.add('show');
-      } else {
-        btn.classList.remove('show');
-      }
-    };
-    document.getElementById('scrollTopBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        let ultimoBackup = null;
+        let backupRef = ref(db, 'backup/ultimo');
+        let productosVisiblesCount = 0;
+        let stockVisibleTotal = 0;
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-        document.getElementById('loginDiv').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        checkUserRole();
-      } else {
-        document.getElementById('mainApp').style.display = 'none';
-        document.getElementById('loginDiv').style.display = 'block';
-      }
-    });
+        // VARIABLES GLOBALES PARA NOTAS
+        let notasActuales = {};
+        let productoNotasActual = null;
+        let hayNuevasNotas = false;
 
-    window.login = () => {
-      const email = document.getElementById('userEmail').value.trim();
-      const pass = document.getElementById('userPass').value;
-      if (!email || !pass) return alert('Email y contraseña requeridos');
-      signInWithEmailAndPassword(auth, email, pass).catch(e => alert('Error: ' + e.message));
-    };
-
-    window.logout = () => {
-      signOut(auth).catch(e => alert('Error: ' + e.message));
-    };
-
-    window.resetLogin = () => {
-      document.getElementById('userEmail').value = '';
-      document.getElementById('userPass').value = '';
-    };
-
-    function checkUserRole() {
-      if (currentUser.email == 'nilose2014@gmail.com') {
-        userRole = 'admin';
-        document.getElementById('backupSection').classList.remove('hidden');
-        document.getElementById('nuevoProductoDiv').style.display = 'block';
-      } else if (['djsubixj@gmail.com', 'xiomaralamasmal@gmail.com'].includes(currentUser.email)) {
-        userRole = 'user';
-        document.getElementById('backupSection').classList.add('hidden');
-        document.getElementById('nuevoProductoDiv').style.display = 'none';
-      } else {
-        userRole = 'user';
-        document.getElementById('backupSection').classList.add('hidden');
-        document.getElementById('nuevoProductoDiv').style.display = 'none';
-      }
-      updateUI();
-      renderTablaHeader();
-      loadData();
-      if (currentUser.email == 'nilose2014@gmail.com') cargarBackupFirebase();
-    }
-
-    function updateUI() {
-      const status = document.getElementById('status');
-      const guardarBtn = document.getElementById('guardarBtn');
-      const resetBtn = document.getElementById('resetBtn');
-      const precioGlobalBtn = document.getElementById('precioGlobalBtn');
-
-      if (userRole == 'admin') {
-        status.innerHTML = '<strong>ADMIN</strong><br>' + currentUser.email + '<br>Todos los permisos: BACKUP PRÓXIMO STOCK NOTAS';
-        status.className = 'admin';
-        guardarBtn.disabled = false;
-        guardarBtn.className = '';
-        resetBtn.disabled = false;
-        resetBtn.className = '';
-        precioGlobalBtn.disabled = false;
-      } else {
-        status.innerHTML = '<strong>USUARIO</strong><br>' + currentUser.email + '<br>Solo ventas, precio Laura, NOTAS';
-        status.className = 'user';
-        guardarBtn.disabled = true;
-        guardarBtn.className = 'disabled';
-        resetBtn.disabled = true;
-        resetBtn.className = 'disabled';
-        precioGlobalBtn.disabled = false;
-        precioGlobalBtn.className = '';
-      }
-    }
-
-    function loadData() {
-      onValue(productosRef, (snap) => {
-        productos = snap.val() || {};
-        verificarNuevasNotas();
-        totalesGlobales.bea = 0;
-        totalesGlobales.laura = 0;
-        totalesGlobales.vendidos = 0;
-        totalesGlobales.reservados = 0;
-
-        Object.values(productos).forEach(p => {
-          totalesGlobales.bea += Number(p.vBea || 0);
-          totalesGlobales.laura += Number(p.vLaura || 0);
-          totalesGlobales.vendidos += Number(p.vendidos || 0);
-          totalesGlobales.reservados += Number(p.reservados || 0);
-        });
-
-        actualizarTotales(
-          totalesGlobales.bea,
-          totalesGlobales.laura,
-          totalesGlobales.vendidos,
-          totalesGlobales.reservados
-        );
-        renderTablaHeader();
-        renderTablaSolo();
-      }, (error) => {
-        document.getElementById('status').textContent = 'Error de conexión';
-        document.getElementById('status').className = 'error';
-      });
-    }
-
-    function ordenarProductos(productosObj) {
-      const orden = document.getElementById('ordenar').value;
-      const entradas = Object.entries(productosObj);
-      return entradas.sort(([a, pA], [b, pB]) => {
-        const [campo, dir] = orden.split('-');
-        let valorA, valorB;
-
-        if (campo == 'notas') {
-          valorA = (pA.notas || '').length;
-          valorB = (pB.notas || '').length;
-          return dir == 'asc' ? valorA - valorB : valorB - valorA;
+        window.toggleClearBtn = function() {
+            const buscar = document.getElementById('buscar');
+            const clearBtn = document.getElementById('buscar-clear');
+            if (buscar.value.length > 0) {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+            }
         }
 
-        switch (campo) {
-          case 'nombre':
-            valorA = (pA.nombre || '').toLowerCase();
-            valorB = (pB.nombre || '').toLowerCase();
-            return dir == 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
-          case 'stock':
-          case 'vendidos':
-          case 'reservados':
-          case 'proximo':
-            valorA = pA[campo] || 0;
-            valorB = pB[campo] || 0;
-            break;
-          case 'bea':
-            valorA = pA.bea || 0;
-            valorB = pB.bea || 0;
-            break;
-          case 'laura':
-            valorA = pA.laura || 0;
-            valorB = pB.laura || 0;
-            break;
+        window.clearSearch = function() {
+            const buscar = document.getElementById('buscar');
+            buscar.value = '';
+            document.getElementById('buscar-clear').style.display = 'none';
+            renderTablaSolo();
         }
-        return dir == 'asc' ? valorA - valorB : valorB - valorA;
-      });
-    }
 
-    function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados) {
-      document.getElementById('tBeaSup').textContent = totalBea.toFixed(2);
-      document.getElementById('tLauraSup').textContent = totalLaura.toFixed(2);
-      document.getElementById('tTotalReservadosSup').textContent = totalReservados;
-      document.getElementById('tTotalVendidosSup').textContent = totalVendidos;
-
-      document.getElementById('tBea').textContent = totalBea.toFixed(2);
-      document.getElementById('tLaura').textContent = totalLaura.toFixed(2);
-      document.getElementById('tTotalReservados').textContent = totalReservados;
-      document.getElementById('tTotalVendidos').textContent = totalVendidos;
-
-      const diferencia = totalLaura - totalBea;
-      const diferenciaSup = document.getElementById('tDiferenciaSup');
-      const diferenciaBoxSup = document.getElementById('diferenciaBoxSup');
-      const diferenciaInf = document.getElementById('tDiferencia');
-      const diferenciaBoxInf = document.getElementById('diferenciaBox');
-
-      diferenciaSup.textContent = diferencia.toFixed(2);
-      diferenciaInf.textContent = diferencia.toFixed(2);
-
-      if (diferencia > 0) {
-        diferenciaSup.className = 'diferencia-positiva';
-        diferenciaBoxSup.className = 'total-box-superior diferencia bea';
-        diferenciaInf.className = 'diferencia-positiva';
-        diferenciaBoxInf.className = 'total-box diferencia-positiva';
-      } else if (diferencia < 0) {
-        diferenciaSup.className = 'diferencia-negativa';
-        diferenciaBoxSup.className = 'total-box-superior diferencia';
-        diferenciaInf.className = 'diferencia-negativa';
-        diferenciaBoxInf.className = 'total-box diferencia-negativa';
-      } else {
-        diferenciaSup.className = '';
-        diferenciaBoxSup.className = 'total-box-superior diferencia';
-        diferenciaInf.className = '';
-        diferenciaBoxInf.className = 'total-box';
-      }
-    }
-
-    // RESTO DE FUNCIONES (reservar, vender, etc.) - IGUALES QUE ANTES
-    window.reservar = async (id, cant) => {
-      const p = productos[id];
-      cant = Number(cant);
-      if (cant <= 0 || (p.stock || 0) < cant) return alert('Stock insuficiente');
-      const nuevoStock = (p.stock || 0) - cant;
-      const nuevosReservados = (p.reservados || 0) + cant;
-      await update(ref(db, 'productos/' + id), { 
-        stock: nuevoStock, 
-        reservados: nuevosReservados 
-      });
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: cant + ' uds. RESERVADAS. Stock disponible: ' + nuevoStock
-      }, 'RESERVA - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      alert('Reservadas ' + cant + ' unidades. Stock disponible: ' + nuevoStock);
-    };
-
-    window.vender = async (id, cant) => {
-      const p = productos[id];
-      cant = Number(cant);
-      if (cant <= 0 || (p.stock || 0) < cant) return alert('Stock insuficiente');
-      const nuevoStock = (p.stock || 0) - cant;
-            const eraStockCero = (p.stock || 0) == 0;
-      await update(ref(db, 'productos/' + id), {
-        stock: nuevoStock,
-        vendidos: (p.vendidos || 0) + cant,
-        vBea: (p.vBea || 0) + (p.bea || 0) * cant,
-        vLaura: (p.vLaura || 0) + (p.laura || 0) * cant
-      });
-      if (nuevoStock == 0 && !eraStockCero && !p.emailAgotadoEnviado) {
-        await update(ref(db, 'productos/' + id), { emailAgotadoEnviado: true });
-        await enviarEmail({
-          producto: p.nombre,
-          stock: 0,
-          detalles: 'PRODUCTO AGOTADO. Bea: ' + (p.bea || 0).toFixed(2) + ' Laura: ' + (p.laura || 0).toFixed(2)
-        }, 'AGOTADO - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      }
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: cant + ' uds. Bea: ' + (p.bea || 0).toFixed(2) + ' Laura: ' + (p.laura || 0).toFixed(2)
-      }, 'VENTA - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      alert('Vendido ' + cant + ' unidades' + (nuevoStock == 0 ? ' AGOTADO' : ''));
-    };
-
-    window.cancelarReserva = async (id, cant) => {
-      const p = productos[id];
-      cant = Number(cant);
-      const reservados = p.reservados || 0;
-      if (cant <= 0 || cant > reservados) return alert('Cantidad inválida');
-      const nuevoStock = (p.stock || 0) + cant;
-      const nuevosReservados = reservados - cant;
-      await update(ref(db, 'productos/' + id), { 
-        stock: nuevoStock, 
-        reservados: nuevosReservados 
-      });
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: cant + ' uds. RESERVA CANCELADA. Stock devuelto: ' + nuevoStock
-      }, 'RESERVA CANCELADA - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      alert('Canceladas ' + cant + ' unidades. Stock: ' + nuevoStock);
-    };
-
-    window.eliminarUnaVenta = async (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede eliminar ventas');
-      const p = productos[id];
-      const vendidos = p.vendidos || 0;
-      if (vendidos == 0) return alert('No hay ventas para eliminar');
-      if (!confirm(`¿Eliminar 1 venta de ${p.nombre}? (+1 stock, -1 vendidos. Resta ${p.bea?.toFixed(2)} Bea, ${p.laura?.toFixed(2)} Laura)`)) return;
-      const nuevoStock = (p.stock || 0) + 1;
-      const nuevosVendidos = vendidos - 1;
-      const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
-      const nuevoVLaura = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
-      await update(ref(db, 'productos/' + id), {
-        stock: nuevoStock,
-        vendidos: nuevosVendidos,
-        vBea: nuevoVBea,
-        vLaura: nuevoVLaura
-      });
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: '1 VENTA ELIMINADA (+1 stock). Vendidos: ' + nuevosVendidos
-      }, 'VENTA CORREGIDA - ' + p.nombre, new Date().toLocaleString('es-ES'));
-      alert('Eliminada 1 venta. Stock: ' + nuevoStock);
-    };
-
-    window.modificarStock = (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede modificar stock');
-      const nuevoStock = prompt('Nuevo stock:', productos[id]?.stock || 0);
-      if (nuevoStock === null) return;
-      const stock = Math.max(0, Number(nuevoStock));
-      if (isNaN(stock)) return alert('Stock inválido');
-      update(ref(db, 'productos/' + id), { stock: stock }).then(() => {
-        alert('Stock actualizado: ' + stock);
-        if (stock == 0 && productos[id]?.emailAgotadoEnviado) {
-          update(ref(db, 'productos/' + id), { emailAgotadoEnviado: false });
+        window.actualizarContadoresFiltrados = function(count, stockTotal) {
+            document.getElementById('productosVisibles').textContent = count + ' productos';
+            document.getElementById('stockVisible').textContent = 'Stock ' + stockTotal;
         }
-      });
-    };
 
-    window.guardar = () => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede crear/editar');
-      const nombre = document.getElementById('nombre').value.trim();
-      if (!nombre) return alert('Nombre requerido');
-      const data = {
-        nombre,
-        stock: Math.max(0, Number(document.getElementById('stock').value) || 0),
-        proximo: Math.max(0, Number(document.getElementById('proximo').value) || 0),
-        bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
-        laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
-        vendidos: editId ? (productos[editId]?.vendidos || 0) : 0,
-        reservados: editId ? (productos[editId]?.reservados || 0) : 0,
-        vBea: editId ? (productos[editId]?.vBea || 0) : 0,
-        vLaura: editId ? (productos[editId]?.vLaura || 0) : 0,
-        notas: editId ? productos[editId]?.notas : null
-      };
-      if (editId) {
-        update(ref(db, 'productos/' + editId), data).then(limpiarFormulario).then(() => alert('Actualizado'));
-      } else {
-        push(productosRef, data).then(limpiarFormulario).then(() => alert('Guardado'));
-      }
-    };
+        // FUNCIÓN AÑADIR STOCK PRÓXIMO AL STOCK REAL
+        window.anadirProximoStock = async function(id) {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede añadir stock próximo');
+            const p = productos[id];
+            const inputProx = document.querySelector(`input[data-producto-id="${id}"]`);
+            const cantidad = Number(inputProx.value) || 0;
+            if (cantidad <= 0) return alert('Cantidad inválida');
 
-    window.modificarPrecioLaura = (id) => {
-      const nuevoPrecio = prompt('Nuevo precio Laura:', productos[id]?.laura || 0);
-      if (nuevoPrecio === null) return;
-      const precio = Math.max(0, Number(nuevoPrecio));
-      if (isNaN(precio)) return alert('Precio inválido');
-      update(ref(db, 'productos/' + id), { laura: precio }).then(() => {
-        alert('Laura: ' + precio.toFixed(2));
-      });
-    };
+            const nuevoStock = (p.stock || 0) + cantidad;
+            await update(ref(db, 'productos/' + id), { stock: nuevoStock, proximo: 0 });
+            inputProx.value = '0';
+            inputProx.classList.remove('tiene-valor');
+            await enviarEmail({ producto: p.nombre, stock: nuevoStock }, 'STOCK AÑADIDO - ' + p.nombre, new Date().toLocaleString('es-ES'));
+            alert('Añadidas ' + cantidad + ' unidades. Nuevo stock: ' + nuevoStock);
+        }
 
-    window.modificarPrecioLauraGlobal = () => {
-      const nuevoPrecio = prompt('Nuevo precio Laura para TODOS:', 0);
-      if (nuevoPrecio === null) return;
-      const precio = Math.max(0, Number(nuevoPrecio));
-      if (isNaN(precio)) return alert('Precio inválido');
-      const updates = {};
-      Object.entries(productos).forEach(([id]) => {
-        updates['productos/' + id + '/laura'] = precio;
-      });
-      update(ref(db), updates).then(() => {
-        alert('Laura GLOBAL: ' + precio.toFixed(2));
-      });
-    };
+        // FUNCIÓN MODIFICAR STOCK PRÓXIMO DIRECTAMENTE
+        window.modificarProximoStock = function(id) {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede modificar stock próximo');
+            const nuevoProximo = prompt('Nuevo stock próximo:', productos[id]?.proximo || 0);
+            if (nuevoProximo === null) return;
+            const proximo = Math.max(0, Number(nuevoProximo));
+            if (isNaN(proximo)) return alert('Stock próximo inválido');
+            update(ref(db, 'productos/' + id), { proximo: proximo }).then(() => alert('Próximo actualizado: ' + proximo));
+        }
 
-    window.editar = (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede editar');
-      const p = productos[id];
-      document.getElementById('nombre').value = p.nombre;
-      document.getElementById('stock').value = p.stock || 0;
-      document.getElementById('proximo').value = p.proximo || 0;
-      document.getElementById('bea').value = p.bea || 0;
-      document.getElementById('laura').value = p.laura || 0;
-      editId = id;
-      document.getElementById('cancelBtn').style.display = 'inline-block';
-    };
+        // FUNCIÓN ACTUALIZAR CLASE VISUAL DEL INPUT PRÓXIMO
+        window.updateProxInputVisual = function(input) {
+            const valor = Number(input.value);
+            if (valor > 0) {
+                input.classList.add('tiene-valor');
+            } else {
+                input.classList.remove('tiene-valor');
+            }
+        }
 
-    window.borrar = (id) => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede borrar');
-      if (confirm('¿Borrar ' + productos[id]?.nombre + '?')) {
-        remove(ref(db, 'productos/' + id)).then(() => alert('Borrado'));
-      }
-    };
+        // FUNCIÓN PRINCIPAL DE TABLA CON COLUMNA ACCIONES OCULTA
+        window.renderTablaSolo = function() {
+            const filtro = document.getElementById('buscar').value.toLowerCase();
+            const productosOrdenados = ordenarProductos(productos);
+            const tabla = document.getElementById('tabla');
+            tabla.innerHTML = '';
+            productosVisiblesCount = 0;
+            stockVisibleTotal = 0;
 
-    window.resetear = () => {
-      if (userRole != 'admin') return alert('Solo ADMIN puede resetear');
-      if (confirm('¿Resetear COMPLETAMENTE? Stock se mantiene. Próximo se mantiene. Se pierden ventas, vendidos, reservados')) {
-        const updates = {};
-        Object.entries(productos).forEach(([id]) => {
-          updates['productos/' + id + '/vBea'] = 0;
-          updates['productos/' + id + '/vLaura'] = 0;
-          updates['productos/' + id + '/vendidos'] = 0;
-          updates['productos/' + id + '/reservados'] = 0;
-          updates['productos/' + id + '/emailAgotadoEnviado'] = false;
+            productosOrdenados.forEach(([id, p]) => {
+                if (!p?.nombre?.toLowerCase().includes(filtro)) return;
+
+                productosVisiblesCount++;
+                stockVisibleTotal += Number(p.stock) || 0;
+
+                const stockDisponible = p.stock || 0;
+                const proximoDisponible = p.proximo || 0;
+                const stockClass = stockDisponible === 0 ? 'sin-stock' : 
+                                  (stockDisponible <= 5 ? 'stock-bajo' : '');
+                const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
+                const filaClass = (p.reservados || 0) > 0 ? 'reservado ' + stockClass : stockClass;
+                const tieneProximo = proximoDisponible > 0;
+                const tieneNotas = p.notas && p.notas.trim();
+                const notasClass = tieneNotas ? 'notas-nueva' : '';
+
+                let filaHTML = `
+                    <tr class="${filaClass}">
+                        <td style="font-weight:bold;text-align:left">${p.nombre}</td>
+                        <td class="${stockCellClass}">${stockDisponible}${userRole === 'admin' ? 
+                            ` <button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">Editar</button>` : 
+                            ''}</td>
+                        <td>${userRole === 'admin' ? 
+                            `<input type="number" min="0" value="${proximoDisponible}" data-producto-id="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}', this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
+                             <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="AÑADIR al Stock Real">→</button>
+                             <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">Editar</button>` : 
+                            proximoDisponible}</td>
+                        <td class="reservados">${(p.reservados || 0)}${(p.reservados || 0) > 0 ? 
+                            ` <br><button class="cancelar-reserva" onclick="cancelarReserva('${id}', 1)" title="Cancelar 1 reserva">Cancelar</button>` : 
+                            ''}</td>
+                        <td class="vendidos">${(p.vendidos || 0)}${userRole === 'admin' && (p.vendidos || 0) > 0 ? 
+                            ` <button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">Undo</button>` : 
+                            ''}</td>
+                        <td>${Number(p.bea || 0).toFixed(2)}</td>
+                        <td class="editable laura-negro"><strong>${Number(p.laura || 0).toFixed(2)}</strong>
+                            <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px;">Editar</button></td>
+                        <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+                            <button class="reservar-btn" onclick="reservar('${id}', this.previousElementSibling.value)">Reservar</button></td>
+                        <td><input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+                            <button onclick="vender('${id}', this.previousElementSibling.value)">Vender</button></td>`;
+
+                // COLUMNA ACCIONES - COMPLETAMENTE OCULTA para no-admin
+                if (userRole === 'admin') {
+                    filaHTML += `<td><button onclick="editar('${id}')">Editar</button>
+                                 <button class="red" onclick="borrar('${id}')">Borrar</button></td>`;
+                }
+
+                filaHTML += `
+                        <!-- NOTAS - SIEMPRE VISIBLE PARA TODOS -->
+                        <td class="notas-cell ${notasClass}">
+                            ${tieneNotas ? 
+                                `<span class="notas-texto" title="${p.notas}">${p.notas.length > 15 ? p.notas.substring(0,15) + '...' : p.notas}</span>` : 
+                                '<span class="notas-texto">Sin notas</span>'
+                            }
+                            <button class="notas-btn" onclick="abrirNotas('${id}')" title="Editar notas">📝</button>
+                        </td>
+                    </tr>`;
+
+                tabla.innerHTML += filaHTML;
+            });
+
+            actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
+        }
+
+        // ACTUALIZAR INPUT PRÓXIMO EN FIREBASE + VISUAL
+        window.updateProxInput = function(id, value) {
+            const proximo = Math.max(0, Number(value));
+            update(ref(db, 'productos/' + id), { proximo: proximo });
+            updateProxInputVisual(document.querySelector(`input[data-producto-id="${id}"]`));
+        }
+
+        // FUNCIONES DE NOTAS
+        window.verificarNuevasNotas = function() {
+            hayNuevasNotas = false;
+            Object.values(productos).forEach(p => {
+                if (p.notas && p.notas.trim() && !notasActuales[p.id]) {
+                    hayNuevasNotas = true;
+                }
+            });
+            const badge = document.getElementById('notasBadge');
+            if (hayNuevasNotas) {
+                badge.classList.add('show');
+            } else {
+                badge.classList.remove('show');
+            }
+        }
+
+        window.abrirNotas = function(id) {
+            productoNotasActual = id;
+            const p = productos[id];
+            document.getElementById('notasTitle').textContent = 'Notas: ' + p.nombre;
+            document.getElementById('notasTextarea').value = p.notas || '';
+            document.getElementById('deleteBtn').style.display = p.notas ? 'inline-block' : 'none';
+            actualizarContadorCaracteres();
+            document.getElementById('notasWindow').style.display = 'block';
+        }
+
+        window.abrirNotasNuevas = function() {
+            let lista = 'PRODUCTOS CON NOTAS:\n';
+            Object.entries(productos).forEach(([id, p]) => {
+                if (p.notas && p.notas.trim()) {
+                    lista += `- ${p.nombre}: ${p.notas.substring(0,50)}${p.notas.length > 50 ? '...' : ''}\n`;
+                }
+            });
+            alert(lista);
+        }
+
+        window.guardarNota = async function() {
+            if (!productoNotasActual) return;
+            const texto = document.getElementById('notasTextarea').value.trim();
+            if (texto.length > 500) return alert('Máximo 500 caracteres');
+            await update(ref(db, 'productos/' + productoNotasActual), { 
+                notas: texto, 
+                ultimaNota: Date.now()
+            });
+            notasActuales[productoNotasActual] = true;
+            verificarNuevasNotas();
+            alert('Nota guardada');
+            cerrarNotas();
+        }
+
+        window.eliminarNota = async function() {
+            if (!productoNotasActual) return;
+            if (!confirm('¿Eliminar esta nota?')) return;
+            await update(ref(db, 'productos/' + productoNotasActual), { 
+                notas: null, 
+                ultimaNota: null 
+            });
+            delete notasActuales[productoNotasActual];
+            verificarNuevasNotas();
+            alert('Nota eliminada');
+            cerrarNotas();
+        }
+
+        window.cerrarNotas = function() {
+            document.getElementById('notasWindow').style.display = 'none';
+            productoNotasActual = null;
+        }
+
+        window.actualizarContadorCaracteres = function() {
+            const textarea = document.getElementById('notasTextarea');
+            const count = textarea.value.length;
+            document.getElementById('notasCharCount').textContent = count + '/500';
+            document.getElementById('notasCharCount').style.color = count > 450 ? '#dc3545' : '#666';
+        }
+
+        // EVENT LISTENERS PARA NOTAS
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('notasTextarea');
+            if (textarea) {
+                textarea.addEventListener('input', actualizarContadorCaracteres);
+            }
+            const notasWindow = document.getElementById('notasWindow');
+            if (notasWindow) {
+                notasWindow.addEventListener('click', function(e) {
+                    if (e.target.id === 'notasWindow') cerrarNotas();
+                });
+            }
         });
-        update(ref(db), updates).then(() => alert('RESET COMPLETO'));
-      }
-    };
 
-    window.cancelarEdit = () => {
-      limpiarFormulario();
-    };
+        window.hacerBackup = async function() {
+            if (currentUser.email !== 'nilose2014@gmail.com') return alert('Solo nilose2014@gmail.com puede hacer backup');
+            try {
+                const backupData = {
+                    productos: productos,
+                    totalesGlobales: totalesGlobales,
+                    fecha: new Date().toISOString(),
+                    usuario: currentUser.email,
+                    timestamp: Date.now()
+                };
+                await set(backupRef, backupData);
+                document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
+                document.getElementById('backupDate').innerHTML = '<strong>Backup creado: ' + new Date().toLocaleString('es-ES') + '</strong>';
 
-    function limpiarFormulario() {
-      document.getElementById('nombre').value = '';
-      document.getElementById('stock').value = '';
-      document.getElementById('proximo').value = '';
-      document.getElementById('bea').value = '';
-      document.getElementById('laura').value = '';
-      editId = null;
-      document.getElementById('cancelBtn').style.display = 'none';
-    }
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'backup-inventario-' + new Date().toISOString().slice(0,10) + '.json';
+                a.textContent = 'DESCARGAR BACKUP';
+                a.className = 'download-link';
+                document.getElementById('backupArea').appendChild(a);
 
-    // EVENT LISTENERS PARA NOTAS
-    document.addEventListener('DOMContentLoaded', () => {
-      const textarea = document.getElementById('notasTextarea');
-      if (textarea) {
-        textarea.addEventListener('input', actualizarContadorCaracteres);
-      }
-      const notasWindow = document.getElementById('notasWindow');
-      if (notasWindow) {
-        notasWindow.addEventListener('click', (e) => {
-          if (e.target.id == 'notasWindow') cerrarNotas();
+                const oldLink = document.querySelector('.download-link:not(a)');
+                if (oldLink && oldLink !== a) oldLink.remove();
+
+                ultimoBackup = backupData;
+                alert('Backup completado y descargado');
+            } catch (error) {
+                alert('Error en backup: ' + error.message);
+            }
+        }
+
+        window.restaurarBackup = async function(event) {
+            if (currentUser.email !== 'nilose2014@gmail.com') return alert('Solo nilose2014@gmail.com puede restaurar');
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!confirm('¿Restaurar TODO desde este backup? Se reemplazan TODOS los productos. Se actualizan todos los totales')) return;
+            try {
+                const text = await file.text();
+                const backupData = JSON.parse(text);
+                await set(ref(db, 'productos'), backupData.productos);
+                alert('Restauración completada. Recarga la página.');
+                location.reload();
+            } catch (error) {
+                alert('Error restaurando: ' + error.message);
+            }
+        }
+
+        window.cargarBackupFirebase = function() {
+            if (currentUser.email !== 'nilose2014@gmail.com') return;
+            onValue(backupRef, (snap) => {
+                if (snap.exists()) {
+                    ultimoBackup = snap.val();
+                    document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup, null, 2);
+                    const fecha = new Date(ultimoBackup.timestamp).toLocaleString('es-ES');
+                    document.getElementById('backupDate').innerHTML = '<strong>Último backup Firebase: ' + fecha + '</strong>';
+                }
+            });
+        }
+
+        async function enviarEmail(datos, subject, fecha) {
+            if (!window.emailjs) return console.log('EmailJS cargando...');
+            emailjs.init(EMAILJS_CONFIG.publicKey);
+            try {
+                await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, {
+                    ...datos,
+                    subject: subject,
+                    fecha: fecha
+                });
+                console.log('Email enviado:', subject);
+            } catch (err) {
+                console.log('Error email:', err);
+            }
+        }
+
+        window.onscroll = function() {
+            const btn = document.getElementById('scrollTopBtn');
+            if (window.scrollY > 300) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        }
+
+        document.getElementById('scrollTopBtn').onclick = function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginDiv').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                checkUserRole();
+            } else {
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('loginDiv').style.display = 'block';
+            }
         });
-      }
-    });
 
-    // INICIALIZAR AL CARGAR
-    document.addEventListener('DOMContentLoaded', verificarNuevasNotas);
-  </script>
+        window.login = function() {
+            const email = document.getElementById('userEmail').value.trim();
+            const pass = document.getElementById('userPass').value;
+            if (!email || !pass) return alert('Email y contraseña requeridos');
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert('Error: ' + e.message));
+        }
+
+        window.logout = function() {
+            signOut(auth).catch(e => alert('Error: ' + e.message));
+        }
+
+        window.resetLogin = function() {
+            document.getElementById('userEmail').value = '';
+            document.getElementById('userPass').value = '';
+        }
+
+        function checkUserRole() {
+            if (currentUser.email === 'nilose2014@gmail.com') {
+                userRole = 'admin';
+                document.getElementById('backupSection').classList.remove('hidden');
+            } else if (['djsubixjgmail.com', 'xiomaralamasmalgmail.com'].includes(currentUser.email)) {
+                userRole = 'user';
+                document.getElementById('backupSection').classList.add('hidden');
+            } else {
+                userRole = 'user';
+                document.getElementById('backupSection').classList.add('hidden');
+            }
+            updateUI();
+            toggleNuevoProducto();
+            loadData();
+        }
+
+        function toggleNuevoProducto() {
+            document.getElementById('nuevoProductoDiv').style.display = userRole === 'admin' ? 'block' : 'none';
+        }
+
+        function updateUI() {
+            const status = document.getElementById('status');
+            const guardarBtn = document.getElementById('guardarBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const precioGlobalBtn = document.getElementById('precioGlobalBtn');
+
+            if (userRole === 'admin') {
+                status.innerHTML = '<strong>ADMIN</strong><br>' + currentUser.email + '<br>Todos los permisos (BACKUP, PRÓXIMO STOCK, NOTAS)';
+                status.className = 'admin';
+                guardarBtn.disabled = false;
+                guardarBtn.className = '';
+                resetBtn.disabled = false;
+                resetBtn.className = '';
+                precioGlobalBtn.disabled = false;
+            } else {
+                status.innerHTML = '<strong>USUARIO</strong><br>' + currentUser.email + '<br>Solo ventas, precio Laura, NOTAS';
+                status.className = 'user';
+                guardarBtn.disabled = true;
+                guardarBtn.className = 'disabled';
+                resetBtn.disabled = true;
+                resetBtn.className = 'disabled';
+                precioGlobalBtn.disabled = false;
+                precioGlobalBtn.className = '';
+            }
+        }
+
+        function loadData() {
+            onValue(productosRef, (snap) => {
+                productos = snap.val() || {};
+                // VERIFICAR NOTAS NUEVAS
+                verificarNuevasNotas();
+
+                totalesGlobales.bea = 0;
+                totalesGlobales.laura = 0;
+                totalesGlobales.vendidos = 0;
+                totalesGlobales.reservados = 0;
+
+                Object.values(productos).forEach(p => {
+                    totalesGlobales.bea += Number(p.vBea || 0);
+                    totalesGlobales.laura += Number(p.vLaura || 0);
+                    totalesGlobales.vendidos += Number(p.vendidos || 0);
+                    totalesGlobales.reservados += Number(p.reservados || 0);
+                });
+
+                actualizarTotales(
+                    totalesGlobales.bea,
+                    totalesGlobales.laura,
+                    totalesGlobales.vendidos,
+                    totalesGlobales.reservados
+                );
+                renderTablaSolo();
+            }, (error) => {
+                document.getElementById('status').textContent = 'Error de conexión';
+                document.getElementById('status').className = 'error';
+            });
+        }
+
+        function ordenarProductos(productosObj) {
+            const orden = document.getElementById('ordenar').value;
+            const entradas = Object.entries(productosObj);
+            return entradas.sort(([a, pA], [b, pB]) => {
+                const [campo, dir] = orden.split('-');
+                let valorA, valorB;
+
+                // CASO PARA NOTAS
+                if (campo === 'notas') {
+                    valorA = (pA.notas || '').length;
+                    valorB = (pB.notas || '').length;
+                    return dir === 'asc' ? valorA - valorB : valorB - valorA;
+                }
+
+                switch (campo) {
+                    case 'nombre':
+                        valorA = (pA.nombre || '').toLowerCase();
+                        valorB = (pB.nombre || '').toLowerCase();
+                        return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
+                    case 'stock':
+                    case 'vendidos':
+                    case 'reservados':
+                    case 'proximo':
+                        valorA = pA[campo] || 0;
+                        valorB = pB[campo] || 0;
+                        break;
+                    case 'bea':
+                        valorA = pA.bea || 0;
+                        valorB = pB.bea || 0;
+                        break;
+                    case 'laura':
+                        valorA = pA.laura || 0;
+                        valorB = pB.laura || 0;
+                        break;
+                }
+                return dir === 'asc' ? valorA - valorB : valorB - valorA;
+            });
+        }
+
+        function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados) {
+            document.getElementById('tBeaSup').textContent = totalBea.toFixed(2);
+            document.getElementById('tLauraSup').textContent = totalLaura.toFixed(2);
+            document.getElementById('tTotalReservadosSup').textContent = totalReservados;
+            document.getElementById('tTotalVendidosSup').textContent = totalVendidos;
+            document.getElementById('tBea').textContent = totalBea.toFixed(2);
+            document.getElementById('tLaura').textContent = totalLaura.toFixed(2);
+            document.getElementById('tTotalReservados').textContent = totalReservados;
+            document.getElementById('tTotalVendidos').textContent = totalVendidos;
+
+            const diferencia = totalLaura - totalBea;
+            const diferenciaSup = document.getElementById('tDiferenciaSup');
+            const diferenciaBoxSup = document.getElementById('diferenciaBoxSup');
+            const diferenciaInf = document.getElementById('tDiferencia');
+            const diferenciaBoxInf = document.getElementById('diferenciaBox');
+
+            diferenciaSup.textContent = diferencia.toFixed(2);
+            diferenciaInf.textContent = diferencia.toFixed(2);
+
+            if (diferencia > 0) {
+                diferenciaSup.className = 'diferencia-positiva';
+                diferenciaBoxSup.className = 'total-box-superior diferencia bea';
+                diferenciaInf.className = 'diferencia-positiva';
+                diferenciaBoxInf.className = 'total-box diferencia-positiva';
+            } else if (diferencia < 0) {
+                diferenciaSup.className = 'diferencia-negativa';
+                diferenciaBoxSup.className = 'total-box-superior diferencia';
+                diferenciaInf.className = 'diferencia-negativa';
+                diferenciaBoxInf.className = 'total-box diferencia-negativa';
+            } else {
+                diferenciaSup.className = '';
+                diferenciaBoxSup.className = 'total-box-superior diferencia';
+                diferenciaInf.className = '';
+                diferenciaBoxInf.className = 'total-box';
+            }
+        }
+
+        window.reservar = async function(id, cant) {
+            const p = productos[id];
+            cant = Number(cant);
+            if (cant <= 0 || (p.stock || 0) < cant) return alert('Stock insuficiente');
+            const nuevoStock = (p.stock || 0) - cant;
+            const nuevosReservados = (p.reservados || 0) + cant;
+            await update(ref(db, 'productos/' + id), { stock: nuevoStock, reservados: nuevosReservados });
+            await enviarEmail({ producto: p.nombre, stock: nuevoStock }, 'RESERVA - ' + p.nombre, new Date().toLocaleString('es-ES'));
+            alert('Reservadas ' + cant + ' unidades. Stock disponible: ' + nuevoStock);
+        }
+
+        window.vender = async function(id, cant) {
+            const p = productos[id];
+            cant = Number(cant);
+            if (cant <= 0 || (p.stock || 0) < cant) return alert('Stock insuficiente');
+            const nuevoStock = (p.stock || 0) - cant;
+            const eraStockCero = (p.stock || 0) === 0;
+            await update(ref(db, 'productos/' + id), {
+                stock: nuevoStock,
+                vendidos: (p.vendidos || 0) + cant,
+                vBea: (p.vBea || 0) + (p.bea || 0) * cant,
+                vLaura: (p.vLaura || 0) + (p.laura || 0) * cant
+            });
+            if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
+                await update(ref(db, 'productos/' + id), { emailAgotadoEnviado: true });
+                await enviarEmail({ producto: p.nombre, stock: 0 }, 'AGOTADO - ' + p.nombre, new Date().toLocaleString('es-ES'));
+            }
+            await enviarEmail({ producto: p.nombre, stock: nuevoStock }, 'VENTA - ' + p.nombre, new Date().toLocaleString('es-ES'));
+            alert('Vendido ' + cant + ' unidades' + (nuevoStock === 0 ? ' (AGOTADO)' : ''));
+        }
+
+        window.cancelarReserva = async function(id, cant) {
+            const p = productos[id];
+            cant = Number(cant);
+            const reservados = p.reservados || 0;
+            if (cant <= 0 || cant > reservados) return alert('Cantidad inválida');
+            const nuevoStock = (p.stock || 0) + cant;
+            const nuevosReservados = reservados - cant;
+            await update(ref(db, 'productos/' + id), { stock: nuevoStock, reservados: nuevosReservados });
+            await enviarEmail({ producto: p.nombre, stock: nuevoStock }, 'RESERVA CANCELADA - ' + p.nombre, new Date().toLocaleString('es-ES'));
+            alert('Canceladas ' + cant + ' unidades. Stock: ' + nuevoStock);
+        }
+
+        window.eliminarUnaVenta = async function(id) {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede eliminar ventas');
+            const p = productos[id];
+            const vendidos = p.vendidos || 0;
+            if (vendidos === 0) return alert('No hay ventas para eliminar');
+            if (!confirm(`Eliminar 1 venta de ${p.nombre}? (+1 stock, -1 vendidos. Resta ${p.bea?.toFixed(2)} Bea, ${p.laura?.toFixed(2)} Laura`)) return;
+            const nuevoStock = (p.stock || 0) + 1;
+            const nuevosVendidos = vendidos - 1;
+            const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
+            const nuevoVLaura = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
+            await update(ref(db, 'productos/' + id), {
+                stock: nuevoStock,
+                vendidos: nuevosVendidos,
+                vBea: nuevoVBea,
+                vLaura: nuevoVLaura
+            });
+            await enviarEmail({ producto: p.nombre, stock: nuevoStock }, 'VENTA CORREGIDA - ' + p.nombre, new Date().toLocaleString('es-ES'));
+            alert('Eliminada 1 venta. Stock: ' + nuevoStock);
+        }
+
+        window.modificarStock = function(id) {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede modificar stock');
+            const nuevoStock = prompt('Nuevo stock:', productos[id]?.stock || 0);
+            if (nuevoStock === null) return;
+            const stock = Math.max(0, Number(nuevoStock));
+            if (isNaN(stock)) return alert('Stock inválido');
+            update(ref(db, 'productos/' + id), { stock: stock }).then(() => {
+                alert('Stock actualizado: ' + stock);
+                if (stock === 0 && productos[id]?.emailAgotadoEnviado) {
+                    update(ref(db, 'productos/' + id), { emailAgotadoEnviado: false });
+                }
+            });
+        }
+
+        window.guardar = function() {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede crear/editar');
+            const nombre = document.getElementById('nombre').value.trim();
+            if (!nombre) return alert('Nombre requerido');
+            const data = {
+                nombre,
+                stock: Math.max(0, Number(document.getElementById('stock').value) || 0),
+                proximo: Math.max(0, Number(document.getElementById('proximo').value) || 0),
+                bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
+                laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
+                vendidos: editId ? (productos[editId]?.vendidos || 0) : 0,
+                reservados: editId ? (productos[editId]?.reservados || 0) : 0,
+                vBea: editId ? (productos[editId]?.vBea || 0) : 0,
+                vLaura: editId ? (productos[editId]?.vLaura || 0) : 0,
+                notas: editId ? productos[editId]?.notas : null
+            };
+            if (editId) {
+                update(ref(db, 'productos/' + editId), data).then(limpiarFormulario).then(() => alert('Actualizado'));
+            } else {
+                push(productosRef, data).then(limpiarFormulario).then(() => alert('Guardado'));
+            }
+        }
+
+        window.modificarPrecioLaura = function(id) {
+            const nuevoPrecio = prompt('Nuevo precio Laura:', productos[id]?.laura || 0);
+            if (nuevoPrecio === null) return;
+            const precio = Math.max(0, Number(nuevoPrecio));
+            if (isNaN(precio)) return alert('Precio inválido');
+            update(ref(db, 'productos/' + id), { laura: precio }).then(() => alert('Laura: ' + precio.toFixed(2)));
+        }
+
+        window.modificarPrecioLauraGlobal = function() {
+            const nuevoPrecio = prompt('Nuevo precio Laura para TODOS:', 0);
+            if (nuevoPrecio === null) return;
+            const precio = Math.max(0, Number(nuevoPrecio));
+            if (isNaN(precio)) return alert('Precio inválido');
+            const updates = {};
+            Object.entries(productos).forEach(([id]) => {
+                updates['productos/' + id + '/laura'] = precio;
+            });
+            update(ref(db), updates).then(() => alert('Laura GLOBAL: ' + precio.toFixed(2)));
+        }
+
+        window.editar = function(id) {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede editar');
+            const p = productos[id];
+            document.getElementById('nombre').value = p.nombre;
+            document.getElementById('stock').value = p.stock || 0;
+            document.getElementById('proximo').value = p.proximo || 0;
+            document.getElementById('bea').value = p.bea || 0;
+            document.getElementById('laura').value = p.laura || 0;
+            editId = id;
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+        }
+
+        window.borrar = function(id) {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede borrar');
+            if (confirm('Borrar ' + productos[id]?.nombre + '?')) {
+                remove(ref(db, 'productos/' + id)).then(() => alert('Borrado'));
+            }
+        }
+
+        window.resetear = function() {
+            if (userRole !== 'admin') return alert('Solo ADMIN puede resetear');
+            if (!confirm('¿Resetear COMPLETAMENTE? Stock se mantiene. Próximo se mantiene. Se pierden ventas, vendidos, reservados')) {
+                const updates = {};
+                Object.entries(productos).forEach(([id]) => {
+                    updates['productos/' + id + '/vBea'] = 0;
+                    updates['productos/' + id + '/vLaura'] = 0;
+                    updates['productos/' + id + '/vendidos'] = 0;
+                    updates['productos/' + id + '/reservados'] = 0;
+                    updates['productos/' + id + '/emailAgotadoEnviado'] = false;
+                });
+                update(ref(db), updates).then(() => alert('RESET COMPLETO'));
+            }
+        }
+
+        window.cancelarEdit = function() {
+            limpiarFormulario();
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('nombre').value = '';
+            document.getElementById('stock').value = '';
+            document.getElementById('proximo').value = '';
+            document.getElementById('bea').value = '';
+            document.getElementById('laura').value = '';
+            editId = null;
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // INICIALIZAR AL CARGAR
+        document.addEventListener('DOMContentLoaded', verificarNuevasNotas);
+    </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
