@@ -19,17 +19,22 @@ button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:w
 button:hover{background:#0056b3}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
 .error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
-
-/* Contenedor de tabla sin altura máxima para poder ver todos */
 .tabla-container{overflow:auto}
-
-/* Opcional: ocultar botones y fondo en impresión */
 @media print {
   body{background:white;padding:0;margin:0}
   button, #status, h2 {display:none !important}
   .card{box-shadow:none;padding:0}
   .tabla-container{overflow:visible}
 }
+
+/* CAJAS PERMANENTES */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-bottom:20px}
+.stats-card{text-align:center;padding:20px;border-radius:10px}
+.stats-vendidos{background:linear-gradient(135deg,#28a745,#20c997);color:white}
+.stats-bea{background:linear-gradient(135deg,#ffc107,#ff8f00)}
+.stats-laura{background:linear-gradient(135deg,#007bff,#0056b3);color:white}
+.stats-dif{background:linear-gradient(135deg,#dc3545,#c82333);color:white}
+.stats-number{font-size:32px;font-weight:bold;margin:10px 0}
 </style>
 </head>
 <body>
@@ -39,6 +44,26 @@ button:hover{background:#0056b3}
 <div id="status" class="admin">Cargando...</div>
 
 <div class="card" id="cardEstadisticas">
+  <!-- CAJAS PERMANENTES TOTALES -->
+  <div class="stats-grid">
+    <div class="stats-card stats-vendidos">
+      <h3 style="margin:0;font-size:18px">📈 Total Vendidos</h3>
+      <div id="totalVendidosPermanente" class="stats-number">0</div>
+    </div>
+    <div class="stats-card stats-bea">
+      <h3 style="margin:0;font-size:18px;color:#333">💰 Bea Total</h3>
+      <div id="totalBeaPermanente" class="stats-number">€0</div>
+    </div>
+    <div class="stats-card stats-laura">
+      <h3 style="margin:0;font-size:18px">💎 Laura Total</h3>
+      <div id="totalLauraPermanente" class="stats-number">€0</div>
+    </div>
+    <div class="stats-card stats-dif">
+      <h3 style="margin:0;font-size:18px">📊 Diferencia</h3>
+      <div id="diferenciaPermanente" class="stats-number">€0</div>
+    </div>
+  </div>
+
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div>
       <strong>Total productos con ventas:</strong> <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
@@ -50,6 +75,7 @@ button:hover{background:#0056b3}
       <button onclick="volver()">⬅️ Volver al Inventario</button>
     </div>
   </div>
+  
   <div class="tabla-container">
     <table>
       <thead>
@@ -69,7 +95,7 @@ button:hover{background:#0056b3}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -86,8 +112,23 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
+const statsRef = ref(db, 'estadisticas_permanentes');
 
 let productos = {};
+
+// FUNCIÓN PARA REGISTRAR VENTA GLOBAL (llamar desde index.html)
+window.registrarVentaGlobal = async (productoId, cantidad = 1, precioBea, precioLaura) => {
+  await runTransaction(statsRef, (current) => {
+    if (!current) current = { total_vendidos: 0, total_bea: 0, total_laura: 0, diferencia: 0 };
+    
+    current.total_vendidos += cantidad;
+    current.total_bea += cantidad * (precioBea || 0);
+    current.total_laura += cantidad * (precioLaura || 0);
+    current.diferencia = current.total_laura - current.total_bea;
+    
+    return current;
+  });
+};
 
 onAuthStateChanged(auth, (user) => {
   const status = document.getElementById('status');
@@ -109,6 +150,16 @@ onAuthStateChanged(auth, (user) => {
 });
 
 function cargarEstadisticas() {
+  // LISTENER PERMANENTE PARA ESTADÍSTICAS GLOBALES
+  onValue(statsRef, (snap) => {
+    const stats = snap.val() || {};
+    document.getElementById('totalVendidosPermanente').textContent = stats.total_vendidos || 0;
+    document.getElementById('totalBeaPermanente').textContent = `€${(stats.total_bea || 0).toFixed(2)}`;
+    document.getElementById('totalLauraPermanente').textContent = `€${(stats.total_laura || 0).toFixed(2)}`;
+    document.getElementById('diferenciaPermanente').textContent = `€${(stats.diferencia || 0).toFixed(2)}`;
+  });
+
+  // LISTENER PRODUCTOS
   onValue(productosRef, (snap) => {
     productos = snap.val() || {};
     mostrarEstadisticasCompletas();
@@ -168,83 +219,49 @@ function mostrarEstadisticasCompletas() {
   }).join('');
 }
 
-// --------- BOTONES EXTRA ---------
-window.volver = () => {
-  window.location.href = 'index.html';
-};
-
-window.imprimir = () => {
-  window.print();
-};
+// BOTONES
+window.volver = () => { window.location.href = 'index.html'; };
+window.imprimir = () => { window.print(); };
 
 window.descargarPDF = async () => {
   const { jsPDF } = window.jspdf;
-  
   const doc = new jsPDF('p', 'mm', 'a4');
-  
   const element = document.getElementById('cardEstadisticas');
   
-  // Capturar con html2canvas
   const canvas = await html2canvas(element, { 
     scale: 2,
     useCORS: true,
     logging: false,
+    letterRendering: true,
     windowHeight: element.scrollHeight
   });
   
-  const imgData = canvas.toDataURL('image/png');
-  
-  // Dimensiones del PDF
-  const pageWidth = 210; // mm (A4)
-  const pageHeight = 297; // mm (A4)
-  const margin = 10; // mm
+  const pageWidth = 210, pageHeight = 297, margin = 10;
   const contentWidth = pageWidth - (margin * 2);
-  
-  // Calcular altura de la imagen manteniendo proporción
   const imgWidth = contentWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  
-  // Altura disponible por página (dejando márgenes superiores e inferiores)
-  const marginTop = margin;
-  const marginBottom = 15; // Más espacio al final para evitar cortes
+  const marginTop = margin, marginBottom = 15;
   const availableHeight = pageHeight - marginTop - marginBottom;
   
-  let yPosition = marginTop;
-  let sourceY = 0;
-  let pageNum = 1;
+  let yPosition = marginTop, sourceY = 0, pageNum = 1;
   
-  // Iterar mientras haya contenido por mostrar
   while (sourceY < canvas.height) {
-    // Calcular cuánta altura de canvas cabe en la página actual
     const canvasHeightForPage = (availableHeight * canvas.width) / imgWidth;
     
-    // Si es la primera página o hay contenido pendiente
-    if (pageNum > 1) {
-      doc.addPage();
-      yPosition = marginTop;
-    }
+    if (pageNum > 1) { doc.addPage(); yPosition = marginTop; }
     
-    // Crear canvas temporal con solo la porción que cabe
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
     pageCanvas.height = Math.min(canvasHeightForPage, canvas.height - sourceY);
     
     const ctx = pageCanvas.getContext('2d');
-    ctx.drawImage(
-      canvas,
-      0, sourceY, 
-      canvas.width, pageCanvas.height,
-      0, 0, 
-      canvas.width, pageCanvas.height
-    );
+    ctx.drawImage(canvas, 0, sourceY, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
     
-    // Convertir a imagen y agregar al PDF
     const pageImgData = pageCanvas.toDataURL('image/png');
     const pageImgHeight = (pageCanvas.height * imgWidth) / canvas.width;
     
     doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, pageImgHeight);
     
-    // Actualizar posición
     sourceY += pageCanvas.height;
     pageNum++;
   }
@@ -253,7 +270,6 @@ window.descargarPDF = async () => {
 };
 </script>
 
-<!-- Librerías para generar PDF desde HTML (jsPDF + html2canvas) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
