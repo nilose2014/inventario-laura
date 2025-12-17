@@ -40,6 +40,7 @@ input[type="text"],select{padding:8px;border:1px solid #ddd;border-radius:5px;fo
 #estadisticasTable{width:100%;margin-top:15px}
 .hidden{display:none}
 .search-box{width:250px}
+.cero-ventas{background:#f8d7da;color:#721c24}
 </style>
 </head>
 <body>
@@ -65,6 +66,7 @@ input[type="text"],select{padding:8px;border:1px solid #ddd;border-radius:5px;fo
     <option value="bea-desc">Venta Bea ↓</option>
     <option value="laura-desc">Venta Laura ↓</option>
   </select>
+  <span id="productosConVentas">📦 Productos con ventas: 0</span>
 </div>
 
 <table id="estadisticasTable">
@@ -103,17 +105,14 @@ input[type="text"],select{padding:8px;border:1px solid #ddd;border-radius:5px;fo
 </div>
 
 <!-- SCRIPTS NECESARIOS -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-auth-compat.js"></script>
 
 <!-- LIBRERÍA HTML2PDF para exportación a PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
   authDomain: "inventario-laura.firebaseapp.com",
@@ -124,29 +123,44 @@ const firebaseConfig = {
   appId: "1:778807935660:web:947e223465f9347b17d509"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const productosRef = ref(db, "productos");
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const productosRef = db.ref("productos");
 
 let productos = [];
 
-onValue(productosRef, (snap) => {
+productosRef.on("value", (snap) => {
   const productosObj = snap.val() || {};
   productos = Object.entries(productosObj).map(([id, p]) => ({
     id,
     nombre: p.nombre || "Sin nombre",
+    // ✅ CÁLCULOS CORREGIDOS según tu estructura de datos
     vendidos: p.vendidos || 0,
-    bea: p.bea || 0,
-    laura: p.laura || 0,
-    vBea: p.vBea || 0,
-    vLaura: p.vLaura || 0
-  }));
+    vBea: Number(p.vBea || 0),
+    vLaura: Number(p.vLaura || 0),
+    bea: Number(p.bea || 0),
+    laura: Number(p.laura || 0),
+    stock: Number(p.stock || 0),
+    reservados: Number(p.reservados || 0)
+  })).filter(p => p.nombre !== "Sin nombre"); // Filtrar productos sin nombre
+  
+  console.log("🔍 Productos cargados:", productos.length);
+  console.log("📊 Primeros productos:", productos.slice(0, 3));
   
   mostrarEstadisticas();
 });
 
 function mostrarEstadisticas() {
-  const productosOrdenados = [...productos].sort((a, b) => b.vendidos - a.vendidos);
+  // ✅ SOLO mostrar productos CON VENTAS > 0 por defecto
+  let productosConVentas = productos.filter(p => (p.vendidos || 0) > 0 || p.vBea > 0 || p.vLaura > 0);
+  
+  // Si no hay con ventas, mostrar todos
+  if (productosConVentas.length === 0) {
+    productosConVentas = productos;
+  }
+  
+  const productosOrdenados = [...productosConVentas].sort((a, b) => (b.vendidos || 0) - (a.vendidos || 0));
   
   const tablaBody = document.getElementById('tablaBody');
   tablaBody.innerHTML = '';
@@ -156,27 +170,36 @@ function mostrarEstadisticas() {
   let totalVentaLaura = 0;
 
   productosOrdenados.forEach(p => {
-    const diferencia = p.vLaura - p.vBea;
-    const margen = p.vBea > 0 ? ((diferencia / p.vBea) * 100).toFixed(1) : '0.0';
+    // ✅ CÁLCULOS REALES de tu base de datos
+    const vendidos = p.vendidos || 0;
+    const ventaBea = p.vBea || 0;
+    const ventaLaura = p.vLaura || 0;
+    const diferencia = ventaLaura - ventaBea;
+    const margen = ventaBea > 0 ? ((diferencia / ventaBea) * 100).toFixed(1) : '0.0';
     
-    totalVendidos += p.vendidos;
-    totalVentaBea += p.vBea;
-    totalVentaLaura += p.vLaura;
+    totalVendidos += vendidos;
+    totalVentaBea += ventaBea;
+    totalVentaLaura += ventaLaura;
 
     const fila = document.createElement('tr');
-    fila.className = 'fila-estadistica';
+    const tieneVentas = vendidos > 0 || ventaBea > 0 || ventaLaura > 0;
+    fila.className = tieneVentas ? '' : 'cero-ventas';
     fila.innerHTML = `
       <td style="text-align:left;font-weight:bold">${p.nombre}</td>
-      <td>${p.vendidos}</td>
-      <td>€${p.vBea.toFixed(2)}</td>
-      <td>€${p.vLaura.toFixed(2)}</td>
+      <td style="font-weight:${vendidos > 0 ? 'bold' : 'normal'}">${vendidos}</td>
+      <td style="font-weight:${ventaBea > 0 ? 'bold' : 'normal'}">€${ventaBea.toFixed(2)}</td>
+      <td style="font-weight:${ventaLaura > 0 ? 'bold' : 'normal'}">€${ventaLaura.toFixed(2)}</td>
       <td style="color:${diferencia >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">€${diferencia.toFixed(2)}</td>
-      <td style="color:${margen >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">${margen}%</td>
+      <td style="color:${parseFloat(margen) >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">${margen}%</td>
     `;
     tablaBody.appendChild(fila);
   });
 
-  // TOTALES INFERIORES
+  // Actualizar contador
+  document.getElementById('productosConVentas').textContent = 
+    `📦 Productos con ventas: ${productos.filter(p => (p.vendidos || 0) > 0 || p.vBea > 0 || p.vLaura > 0).length}`;
+
+  // TOTALES GLOBALES
   const diferenciaTotalGlobal = totalVentaLaura - totalVentaBea;
   const margenGlobal = totalVentaBea > 0 ? ((diferenciaTotalGlobal / totalVentaBea) * 100).toFixed(1) : '0.0';
   
@@ -209,11 +232,14 @@ function mostrarEstadisticas() {
       <div class="value">${margenGlobal}%</div>
     </div>
   `;
+  
+  console.log("✅ Estadísticas actualizadas:", {totalVendidos, totalVentaBea, totalVentaLaura});
 }
 
+// Resto de funciones igual...
 window.filtrarTabla = () => {
   const termino = document.getElementById('searchInput').value.toLowerCase();
-  const filas = document.querySelectorAll('.fila-estadistica');
+  const filas = document.querySelectorAll('#tablaBody tr');
   
   filas.forEach(fila => {
     const producto = fila.cells[0].textContent.toLowerCase();
@@ -228,40 +254,56 @@ window.reordenarTabla = () => {
   let productosOrdenados = [...productos];
   
   productosOrdenados.sort((a, b) => {
-    let valorA = a[campo];
-    let valorB = b[campo];
+    let valorA, valorB;
     
-    if (campo === 'nombre') {
-      valorA = (a.nombre || '').toLowerCase();
-      valorB = (b.nombre || '').toLowerCase();
-      return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
+    switch(campo) {
+      case 'nombre':
+        valorA = (a.nombre || '').toLowerCase();
+        valorB = (b.nombre || '').toLowerCase();
+        return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
+      case 'vendidos':
+        valorA = a.vendidos || 0;
+        valorB = b.vendidos || 0;
+        break;
+      case 'bea':
+        valorA = a.vBea || 0;
+        valorB = b.vBea || 0;
+        break;
+      case 'laura':
+        valorA = a.vLaura || 0;
+        valorB = b.vLaura || 0;
+        break;
     }
     
     return dir === 'asc' ? valorA - valorB : valorB - valorA;
   });
   
+  // Recrear tabla con ordenamiento
   const tablaBody = document.getElementById('tablaBody');
   tablaBody.innerHTML = '';
   
   productosOrdenados.forEach(p => {
-    const diferencia = p.vLaura - p.vBea;
-    const margen = p.vBea > 0 ? ((diferencia / p.vBea) * 100).toFixed(1) : '0.0';
+    const vendidos = p.vendidos || 0;
+    const ventaBea = p.vBea || 0;
+    const ventaLaura = p.vLaura || 0;
+    const diferencia = ventaLaura - ventaBea;
+    const margen = ventaBea > 0 ? ((diferencia / ventaBea) * 100).toFixed(1) : '0.0';
     
     const fila = document.createElement('tr');
-    fila.className = 'fila-estadistica';
+    const tieneVentas = vendidos > 0 || ventaBea > 0 || ventaLaura > 0;
+    fila.className = tieneVentas ? '' : 'cero-ventas';
     fila.innerHTML = `
       <td style="text-align:left;font-weight:bold">${p.nombre}</td>
-      <td>${p.vendidos}</td>
-      <td>€${p.vBea.toFixed(2)}</td>
-      <td>€${p.vLaura.toFixed(2)}</td>
+      <td style="font-weight:${vendidos > 0 ? 'bold' : 'normal'}">${vendidos}</td>
+      <td style="font-weight:${ventaBea > 0 ? 'bold' : 'normal'}">€${ventaBea.toFixed(2)}</td>
+      <td style="font-weight:${ventaLaura > 0 ? 'bold' : 'normal'}">€${ventaLaura.toFixed(2)}</td>
       <td style="color:${diferencia >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">€${diferencia.toFixed(2)}</td>
-      <td style="color:${margen >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">${margen}%</td>
+      <td style="color:${parseFloat(margen) >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">${margen}%</td>
     `;
     tablaBody.appendChild(fila);
   });
 };
 
-// 📥 EXPORTAR A PDF
 window.exportarPDF = () => {
   const element = document.querySelector('.card');
   const opt = {
@@ -273,15 +315,12 @@ window.exportarPDF = () => {
   };
   
   html2pdf().set(opt).from(element).save();
-  alert('✅ PDF descargado correctamente');
 };
 
-// 🖨️ IMPRIMIR DIRECTAMENTE
 window.imprimirPagina = () => {
   window.print();
 };
 
-// ◀️ VOLVER AL INVENTARIO
 window.volverInventario = () => {
   window.location.href = 'index.html';
 };
