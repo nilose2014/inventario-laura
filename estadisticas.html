@@ -180,60 +180,73 @@ window.imprimir = () => {
 window.descargarPDF = async () => {
   const { jsPDF } = window.jspdf;
   
-  // Crear documento en orientación vertical
   const doc = new jsPDF('p', 'mm', 'a4');
   
   const element = document.getElementById('cardEstadisticas');
   
-  // Capturar con html2canvas a mayor escala para mejor calidad
+  // Capturar con html2canvas
   const canvas = await html2canvas(element, { 
     scale: 2,
     useCORS: true,
     logging: false,
-    windowHeight: element.scrollHeight // Captura la altura completa
+    windowHeight: element.scrollHeight
   });
   
   const imgData = canvas.toDataURL('image/png');
   
-  // Calcular dimensiones manteniendo proporción
-  const pdfWidth = doc.internal.pageSize.getWidth(); // 210mm
-  const pdfHeight = doc.internal.pageSize.getHeight(); // 297mm
+  // Dimensiones del PDF
+  const pageWidth = 210; // mm (A4)
+  const pageHeight = 297; // mm (A4)
+  const margin = 10; // mm
+  const contentWidth = pageWidth - (margin * 2);
   
-  const imgWidth = pdfWidth - 10; // Margen de 5mm
+  // Calcular altura de la imagen manteniendo proporción
+  const imgWidth = contentWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
   
-  let yPosition = 10;
-  let pageHeight = pdfHeight - 20;
+  // Altura disponible por página (dejando márgenes superiores e inferiores)
+  const marginTop = margin;
+  const marginBottom = 15; // Más espacio al final para evitar cortes
+  const availableHeight = pageHeight - marginTop - marginBottom;
   
-  // Si la imagen es más grande que una página, dividir en múltiples páginas
-  if (imgHeight > pageHeight) {
-    let remainingHeight = imgHeight;
-    let sourceY = 0;
+  let yPosition = marginTop;
+  let sourceY = 0;
+  let pageNum = 1;
+  
+  // Iterar mientras haya contenido por mostrar
+  while (sourceY < canvas.height) {
+    // Calcular cuánta altura de canvas cabe en la página actual
+    const canvasHeightForPage = (availableHeight * canvas.width) / imgWidth;
     
-    while (remainingHeight > 0) {
-      const canvasHeight = remainingHeight > pageHeight ? pageHeight : remainingHeight;
-      const sourceHeight = (canvasHeight * canvas.width) / imgWidth;
-      
-      const croppedCanvas = document.createElement('canvas');
-      croppedCanvas.width = canvas.width;
-      croppedCanvas.height = sourceHeight;
-      
-      const ctx = croppedCanvas.getContext('2d');
-      ctx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
-      
-      const croppedImgData = croppedCanvas.toDataURL('image/png');
-      doc.addImage(croppedImgData, 'PNG', 5, yPosition, imgWidth, canvasHeight);
-      
-      remainingHeight -= canvasHeight;
-      sourceY += sourceHeight;
-      yPosition = 10;
-      
-      if (remainingHeight > 0) {
-        doc.addPage();
-      }
+    // Si es la primera página o hay contenido pendiente
+    if (pageNum > 1) {
+      doc.addPage();
+      yPosition = marginTop;
     }
-  } else {
-    doc.addImage(imgData, 'PNG', 5, yPosition, imgWidth, imgHeight);
+    
+    // Crear canvas temporal con solo la porción que cabe
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = Math.min(canvasHeightForPage, canvas.height - sourceY);
+    
+    const ctx = pageCanvas.getContext('2d');
+    ctx.drawImage(
+      canvas,
+      0, sourceY, 
+      canvas.width, pageCanvas.height,
+      0, 0, 
+      canvas.width, pageCanvas.height
+    );
+    
+    // Convertir a imagen y agregar al PDF
+    const pageImgData = pageCanvas.toDataURL('image/png');
+    const pageImgHeight = (pageCanvas.height * imgWidth) / canvas.width;
+    
+    doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, pageImgHeight);
+    
+    // Actualizar posición
+    sourceY += pageCanvas.height;
+    pageNum++;
   }
   
   doc.save('estadisticas-inventario-laura.pdf');
