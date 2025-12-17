@@ -290,6 +290,12 @@ let backupRef = ref(db,'backup/ultimo');
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
 
+// 🔍 Leer parámetros de la URL (para ?editId=...)
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
 window.irEstadisticas = () => {
   window.location.href = 'estadisticas.html';
 };
@@ -568,9 +574,19 @@ function updateUI(){
   }
 }
 
+// 🔄 Carga de datos + detección de ?editId=...
 function loadData(){
   onValue(productosRef,(snap)=>{
     productos = snap.val() || {};
+
+    const editFromUrl = getQueryParam('editId');
+    if (editFromUrl && userRole === 'admin' && productos[editFromUrl]) {
+      editar(editFromUrl);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('editId');
+      window.history.replaceState({}, '', url.toString());
+    }
+
     totalesGlobales.bea=0; totalesGlobales.laura=0; totalesGlobales.vendidos=0; totalesGlobales.reservados=0;
     Object.values(productos).forEach(p=>{
       const vBeaReal = Number(p.vBea || p.vendidos*(p.bea||0) || 0);
