@@ -141,7 +141,11 @@ function mostrarEstadisticasCompletas() {
     return `
       <tr class="${clasePos}">
         <td style="font-weight:bold;font-size:16px">${index+1}</td>
-        <td style="text-align:left;font-weight:bold">${p.nombre}</td>
+        <td style="text-align:left;font-weight:bold">
+          <a href="index.html?editId=${encodeURIComponent(id)}" style="color:#007bff;text-decoration:underline;cursor:pointer">
+            ${p.nombre}
+          </a>
+        </td>
         <td style="font-size:18px;color:#28a745;font-weight:bold">${vendidos}</td>
         <td style="color:#28a745;font-weight:bold">€${beaTotal}</td>
         <td style="color:#007bff;font-weight:bold">€${lauraTotal}</td>
