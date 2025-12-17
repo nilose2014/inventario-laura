@@ -20,10 +20,15 @@ button:hover{background:#0056b3}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
 .error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
 
+/* Contenedor de tabla sin altura máxima para poder ver todos */
+.tabla-container{overflow:auto}
+
 /* Opcional: ocultar botones y fondo en impresión */
 @media print {
   body{background:white;padding:0;margin:0}
-  button, #status {display:none !important}
+  button, #status, h2 {display:none !important}
+  .card{box-shadow:none;padding:0}
+  .tabla-container{overflow:visible}
 }
 </style>
 </head>
@@ -45,7 +50,7 @@ button:hover{background:#0056b3}
       <button onclick="volver()">⬅️ Volver al Inventario</button>
     </div>
   </div>
-  <div style="overflow:auto;max-height:500px">
+  <div class="tabla-container">
     <table>
       <thead>
         <tr>
@@ -169,22 +174,68 @@ window.volver = () => {
 };
 
 window.imprimir = () => {
-  window.print(); // imprime la página con estilos actuales
+  window.print();
 };
 
 window.descargarPDF = async () => {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'pt', 'a4');
-
+  
+  // Crear documento en orientación vertical
+  const doc = new jsPDF('p', 'mm', 'a4');
+  
   const element = document.getElementById('cardEstadisticas');
-
-  const canvas = await html2canvas(element, { scale: 2 });
+  
+  // Capturar con html2canvas a mayor escala para mejor calidad
+  const canvas = await html2canvas(element, { 
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    windowHeight: element.scrollHeight // Captura la altura completa
+  });
+  
   const imgData = canvas.toDataURL('image/png');
-
-  const pdfWidth = doc.internal.pageSize.getWidth();
-  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-  doc.addImage(imgData, 'PNG', 0, 20, pdfWidth, pdfHeight);
+  
+  // Calcular dimensiones manteniendo proporción
+  const pdfWidth = doc.internal.pageSize.getWidth(); // 210mm
+  const pdfHeight = doc.internal.pageSize.getHeight(); // 297mm
+  
+  const imgWidth = pdfWidth - 10; // Margen de 5mm
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  
+  let yPosition = 10;
+  let pageHeight = pdfHeight - 20;
+  
+  // Si la imagen es más grande que una página, dividir en múltiples páginas
+  if (imgHeight > pageHeight) {
+    let remainingHeight = imgHeight;
+    let sourceY = 0;
+    
+    while (remainingHeight > 0) {
+      const canvasHeight = remainingHeight > pageHeight ? pageHeight : remainingHeight;
+      const sourceHeight = (canvasHeight * canvas.width) / imgWidth;
+      
+      const croppedCanvas = document.createElement('canvas');
+      croppedCanvas.width = canvas.width;
+      croppedCanvas.height = sourceHeight;
+      
+      const ctx = croppedCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+      
+      const croppedImgData = croppedCanvas.toDataURL('image/png');
+      doc.addImage(croppedImgData, 'PNG', 5, yPosition, imgWidth, canvasHeight);
+      
+      remainingHeight -= canvasHeight;
+      sourceY += sourceHeight;
+      yPosition = 10;
+      
+      if (remainingHeight > 0) {
+        doc.addPage();
+      }
+    }
+  } else {
+    doc.addImage(imgData, 'PNG', 5, yPosition, imgWidth, imgHeight);
+  }
+  
   doc.save('estadisticas-inventario-laura.pdf');
 };
 </script>
