@@ -53,7 +53,7 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
 .stock-editable{background:#fff3cd !important}
-/* ⭐ ESTILOS ULTRA DESTACADOS PARA PRÓXIMO STOCK */
+/* Próximo stock */
 .prox-input{
   background:#e8f5e8 !important;
   border:2px solid #28a745 !important;
@@ -98,12 +98,18 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 #backupText{font-family:monospace;background:#e9ecef;padding:15px;border-radius:5px;max-height:300px;overflow:auto;white-space:pre-wrap;font-size:12px}
 .download-link{display:inline-block;background:#28a745;color:white;padding:8px 15px;border-radius:5px;text-decoration:none;margin-top:10px;font-weight:bold}
 .download-link:hover{background:#218838}
-/* ⭐ SOLO LAURA NEGRO SIEMPRE (Reservados restaurado al tamaño original) */
-.laura-negro { 
-  color: black !important; 
-}
-.laura-negro strong { 
-  color: black !important; 
+.laura-negro { color: black !important; }
+.laura-negro strong { color: black !important; }
+
+/* MODAL ESTADÍSTICAS */
+#statsModal{
+  position:fixed;
+  top:10%;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:500px;
+  width:90%;
+  z-index:2000;
 }
 </style>
 </head>
@@ -111,7 +117,7 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK</h2>
 
-<!-- LOGIN OBLIGATORIO -->
+<!-- LOGIN -->
 <div class="card login-card" id="loginDiv">
   <h3>🔐 Iniciar Sesión</h3>
   <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
@@ -129,7 +135,7 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="mainApp" style="display:none">
 
-<!-- 🎯 TOTALES SUPERIORES - VISIBLES SIEMPRE -->
+<!-- TOTALES SUPERIORES -->
 <div class="totales-superiores">
   <div class="total-box-superior bea">
     <strong>💰 Venta Bea</strong><br>
@@ -155,7 +161,7 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="status" class="error">Cargando...</div>
 
-<!-- SECCIÓN NUEVO/EDITAR - SOLO ADMIN -->
+<!-- NUEVO/EDITAR -->
 <div class="card" id="nuevoProductoDiv">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
 Producto <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
@@ -169,31 +175,35 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 <div class="card">
 <div class="filtros">
-🔍 <div style="position:relative;display:inline-block">
-  <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
-  <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
-</div>
-<div class="contadores-filtrados">
-  <div id="productosVisibles">📦 0 productos</div>
-  <div id="stockVisible">📊 Stock: 0</div>
-</div>
-🆚 Ordenar: 
-<select id="ordenar" onchange="renderTablaSolo()">
-  <option value="nombre-asc">A → Z</option>
-  <option value="nombre-desc">Z → A</option>
-  <option value="stock-asc">Stock ↓</option>
-  <option value="stock-desc">Stock ↑</option>
-  <option value="proximo-desc">Próximo ↓</option>
-  <option value="proximo-asc">Próximo ↑</option>
-  <option value="vendidos-desc">Vendidos ↓</option>
-  <option value="vendidos-asc">Vendidos ↑</option>
-  <option value="reservados-desc">Reservados ↓</option>
-  <option value="reservados-asc">Reservados ↑</option>
-  <option value="bea-asc">Bea ↓</option>
-  <option value="bea-desc">Bea ↑</option>
-  <option value="laura-asc">Laura ↓</option>
-  <option value="laura-desc">Laura ↑</option>
-</select>
+  🔍 <div style="position:relative;display:inline-block">
+    <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
+    <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+  </div>
+
+  <!-- BOTÓN ESTADÍSTICAS SOLO ADMIN -->
+  <button id="statsBtn" style="margin-left:10px;display:none" title="Estadísticas productos más vendidos">📊</button>
+
+  <div class="contadores-filtrados">
+    <div id="productosVisibles">📦 0 productos</div>
+    <div id="stockVisible">📊 Stock: 0</div>
+  </div>
+  🆚 Ordenar: 
+  <select id="ordenar" onchange="renderTablaSolo()">
+    <option value="nombre-asc">A → Z</option>
+    <option value="nombre-desc">Z → A</option>
+    <option value="stock-asc">Stock ↓</option>
+    <option value="stock-desc">Stock ↑</option>
+    <option value="proximo-desc">Próximo ↓</option>
+    <option value="proximo-asc">Próximo ↑</option>
+    <option value="vendidos-desc">Vendidos ↓</option>
+    <option value="vendidos-asc">Vendidos ↑</option>
+    <option value="reservados-desc">Reservados ↓</option>
+    <option value="reservados-asc">Reservados ↑</option>
+    <option value="bea-asc">Bea ↓</option>
+    <option value="bea-desc">Bea ↑</option>
+    <option value="laura-asc">Laura ↓</option>
+    <option value="laura-desc">Laura ↑</option>
+  </select>
 </div><br>
 <table>
 <thead>
@@ -203,6 +213,14 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </thead>
 <tbody id="tabla"></tbody>
 </table>
+</div>
+
+<!-- MODAL ESTADÍSTICAS -->
+<div class="card hidden" id="statsModal">
+  <h3>📊 Top productos más vendidos (histórico)</h3>
+  <div id="statsContenido"></div>
+  <br>
+  <button onclick="cerrarStats()">Cerrar</button>
 </div>
 
 <!-- TOTALES INFERIORES -->
@@ -235,7 +253,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
-<!-- 🎯 SECCIÓN BACKUP - SOLO nilose2014@gmail.com - ABAJO DEL TODO -->
+<!-- BACKUP (solo admin) -->
 <div class="card hidden" id="backupSection">
   <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
@@ -274,6 +292,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
+const backupRef = ref(db, "backup/ultimo");
+const estadisticasRef = ref(db, "estadisticasProductos");
 
 let productos = {};
 let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
@@ -288,9 +308,11 @@ const EMAILJS_CONFIG = {
 };
 
 let ultimoBackup = null;
-let backupRef = ref(db, 'backup/ultimo');
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
+
+// estadísticas históricas (NO se resetean)
+let estadisticasProductos = {};
 
 window.toggleClearBtn = () => {
   const buscar = document.getElementById('buscar');
@@ -314,25 +336,17 @@ window.actualizarContadoresFiltrados = (count, stockTotal) => {
   document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
 };
 
-// ⭐ FUNCIÓN: AÑADIR STOCK PRÓXIMO AL STOCK REAL
+// AÑADIR STOCK PRÓXIMO
 window.anadirProximoStock = async (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede añadir stock próximo');
   const p = productos[id];
   const inputProx = document.querySelector(`input[data-producto="${id}"]`);
   const cantidad = Number(inputProx.value) || 0;
-  
   if (cantidad <= 0) return alert('❌ Cantidad inválida');
-  
   const nuevoStock = (p.stock || 0) + cantidad;
-  
-  await update(ref(db, 'productos/'+id), {
-    stock: nuevoStock,
-    proximo: 0
-  });
-  
+  await update(ref(db, 'productos/'+id), { stock: nuevoStock, proximo: 0 });
   inputProx.value = '0';
   inputProx.classList.remove('tiene-valor'); 
-  
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -340,30 +354,22 @@ window.anadirProximoStock = async (id) => {
     subject: '➕ STOCK AÑADIDO - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
-  
   alert(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`);
 };
 
-// ⭐ FUNCIÓN: MODIFICAR STOCK PRÓXIMO DIRECTAMENTE
 window.modificarProximoStock = (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede modificar stock próximo');
   const nuevoProximo = prompt('📦 Nuevo stock próximo:', productos[id]?.proximo || '0');
   if (nuevoProximo === null) return;
   const proximo = Math.max(0, Number(nuevoProximo));
   if (isNaN(proximo)) return alert('❌ Stock próximo inválido');
-  
-  update(ref(db, 'productos/'+id), { proximo: proximo })
-    .then(() => alert(`✅ Próximo actualizado: ${proximo}`));
+  update(ref(db, 'productos/'+id), { proximo: proximo }).then(() => alert(`✅ Próximo actualizado: ${proximo}`));
 };
 
-// ⭐ FUNCIÓN: ACTUALIZAR CLASE VISUAL DEL INPUT PRÓXIMO (ULTRA DESTACADO)
 window.updateProxInputVisual = (input) => {
   const valor = Number(input.value);
-  if (valor > 0) {
-    input.classList.add('tiene-valor'); 
-  } else {
-    input.classList.remove('tiene-valor'); 
-  }
+  if (valor > 0) input.classList.add('tiene-valor'); 
+  else input.classList.remove('tiene-valor'); 
 };
 
 window.renderTablaSolo = () => {
@@ -377,10 +383,8 @@ window.renderTablaSolo = () => {
 
   productosOrdenados.forEach(([id,p]) => {
     if(!p?.nombre?.toLowerCase().includes(filtro)) return;
-    
     productosVisiblesCount++;
     stockVisibleTotal += Number(p.stock || 0);
-    
     const stockDisponible = (p.stock||0);
     const proximoDisponible = (p.proximo||0);
     const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo' : '';
@@ -395,13 +399,13 @@ window.renderTablaSolo = () => {
         ${stockDisponible}
         ${userRole === 'admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
-    <td>
-  <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
-  ${userRole === 'admin' ? `
-    <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
-    <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
-  ` : ''}
-</td>
+      <td>
+        <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
+        ${userRole === 'admin' ? `
+          <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
+          <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
+        ` : ''}
+      </td>
       <td class="reservados">
         ${(p.reservados||0)}
         ${(p.reservados||0)>0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
@@ -432,7 +436,6 @@ window.renderTablaSolo = () => {
   actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
 };
 
-// ⭐ ACTUALIZAR INPUT PRÓXIMO EN FIREBASE + VISUAL
 window.updateProxInput = (id, value) => {
   const proximo = Math.max(0, Number(value));
   update(ref(db, 'productos/'+id), { proximo: proximo });
@@ -441,7 +444,6 @@ window.updateProxInput = (id, value) => {
 
 window.hacerBackup = async () => {
   if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
-  
   try {
     const backupData = {
       productos: productos,
@@ -450,12 +452,9 @@ window.hacerBackup = async () => {
       usuario: currentUser.email,
       timestamp: Date.now()
     };
-    
     await set(backupRef, backupData);
-    
     document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
     document.getElementById('backupDate').innerHTML = `<strong>📅 Backup creado: ${new Date().toLocaleString('es-ES')}</strong>`;
-    
     const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -464,13 +463,10 @@ window.hacerBackup = async () => {
     a.textContent = '💾 DESCARGAR BACKUP';
     a.className = 'download-link';
     document.getElementById('backupArea').appendChild(a);
-    
     const oldLink = document.querySelector('.download-link');
     if(oldLink && oldLink !== a) oldLink.remove();
-    
     ultimoBackup = backupData;
     alert('✅ Backup completado y descargado');
-    
   } catch(error) {
     alert('❌ Error en backup: ' + error.message);
   }
@@ -478,21 +474,15 @@ window.hacerBackup = async () => {
 
 window.restaurarBackup = async (event) => {
   if(currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede restaurar');
-  
   const file = event.target.files[0];
   if(!file) return;
-  
   if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
-  
   try {
     const text = await file.text();
     const backupData = JSON.parse(text);
-    
     await set(ref(db, 'productos'), backupData.productos);
-    
     alert('✅ Restauración completada. Recarga la página.');
     location.reload();
-    
   } catch(error) {
     alert('❌ Error restaurando: ' + error.message);
   }
@@ -555,21 +545,34 @@ window.resetLogin = () => {
   document.getElementById('userPass').value = '';
 };
 
+// CARGAR ESTADÍSTICAS HISTÓRICAS
+function loadEstadisticas() {
+  onValue(estadisticasRef, (snap) => {
+    estadisticasProductos = snap.val() || {};
+  });
+}
+
 function checkUserRole() {
+  const statsBtn = document.getElementById('statsBtn');
   if(currentUser.email === 'nilose2014@gmail.com') {
     userRole = 'admin';
     document.getElementById('backupSection').classList.remove('hidden');
+    if (statsBtn) statsBtn.style.display = 'inline-block';
+    loadEstadisticas();
   } else if(['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
     userRole = 'user';
     document.getElementById('backupSection').classList.add('hidden');
+    if (statsBtn) statsBtn.style.display = 'none';
   } else {
     userRole = 'user';
     document.getElementById('backupSection').classList.add('hidden');
+    if (statsBtn) statsBtn.style.display = 'none';
   }
   updateUI();
   toggleNuevoProducto();
   loadData();
   if(currentUser.email === 'nilose2014@gmail.com') cargarBackupFirebase();
+  if (statsBtn) statsBtn.onclick = () => abrirStats();
 }
 
 function toggleNuevoProducto() {
@@ -581,7 +584,6 @@ function updateUI() {
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
-  
   if(userRole === 'admin') {
     status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK (🔥 ULTRA DESTACADO) ✅`;
     status.className = 'admin';
@@ -600,19 +602,16 @@ function updateUI() {
 function loadData() {
   onValue(productosRef, (snap) => {
     productos = snap.val() || {};
-    
     totalesGlobales.bea = 0;
     totalesGlobales.laura = 0;
     totalesGlobales.vendidos = 0;
     totalesGlobales.reservados = 0;
-    
     Object.values(productos).forEach(p => {
       totalesGlobales.bea += Number(p.vBea || 0);
       totalesGlobales.laura += Number(p.vLaura || 0);
       totalesGlobales.vendidos += Number(p.vendidos || 0);
       totalesGlobales.reservados += Number(p.reservados || 0);
     });
-    
     actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
     renderTablaSolo();
   }, (error) => {
@@ -624,13 +623,10 @@ function loadData() {
 function ordenarProductos(productosObj) {
   const orden = document.getElementById('ordenar').value;
   const entradas = Object.entries(productosObj);
-  
   return entradas.sort((a, b) => {
     const pA = a[1], pB = b[1];
     const [campo, dir] = orden.split('-');
-    
     let valorA, valorB;
-    
     switch(campo) {
       case 'nombre':
         valorA = (pA.nombre || '').toLowerCase();
@@ -649,7 +645,6 @@ function ordenarProductos(productosObj) {
         valorB = pB.laura || 0;
         break;
     }
-    
     return dir === 'asc' ? valorA - valorB : valorB - valorA;
   });
 }
@@ -659,21 +654,17 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   document.getElementById('tLauraSup').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservadosSup').textContent = totalReservados;
   document.getElementById('tTotalVendidosSup').textContent = totalVendidos;
-  
   document.getElementById('tBea').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservados').textContent = totalReservados;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
-  
   const diferencia = totalLaura - totalBea;
   const diferenciaSup = document.getElementById('tDiferenciaSup');
   const diferenciaBoxSup = document.getElementById('diferenciaBoxSup');
   const diferenciaInf = document.getElementById('tDiferencia');
   const diferenciaBoxInf = document.getElementById('diferenciaBox');
-  
   diferenciaSup.textContent = `€${diferencia.toFixed(2)}`;
   diferenciaInf.textContent = `€${diferencia.toFixed(2)}`;
-  
   if(diferencia > 0) {
     diferenciaSup.className = 'diferencia-positiva';
     diferenciaBoxSup.className = 'total-box-superior diferencia bea';
@@ -696,15 +687,9 @@ window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
   if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
-  
   const nuevoStock = (p.stock||0)-cant;
   const nuevosReservados = (p.reservados||0)+cant;
-  
-  await update(ref(db, 'productos/'+id), {
-    stock: nuevoStock,
-    reservados: nuevosReservados
-  });
-  
+  await update(ref(db, 'productos/'+id), { stock: nuevoStock, reservados: nuevosReservados });
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -712,7 +697,6 @@ window.reservar = async (id, cant) => {
     subject: '⏳ RESERVA - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
-  
   alert(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`);
 };
 
@@ -720,17 +704,31 @@ window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
   if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
-  
   const nuevoStock = (p.stock||0)-cant;
   const eraStockCero = (p.stock||0) === 0;
-  
   await update(ref(db, 'productos/'+id), {
     stock: nuevoStock,
     vendidos: (p.vendidos||0)+cant,
     vBea: (p.vBea||0)+(p.bea||0)*cant,
     vLaura: (p.vLaura||0)+(p.laura||0)*cant
   });
-  
+
+  // ACTUALIZAR ESTADÍSTICAS HISTÓRICAS (NO SE RESETEAN)
+  const statsRef = ref(db, 'estadisticasProductos/'+id);
+  const incrementoVendidos = cant;
+  const incrementoBea = (p.bea || 0) * cant;
+  const incrementoLaura = (p.laura || 0) * cant;
+  onValue(statsRef, (snap) => {
+    const cur = snap.val() || {};
+    const nuevoStats = {
+      nombre: p.nombre,
+      totalVendidosHistorico: (cur.totalVendidosHistorico || 0) + incrementoVendidos,
+      totalVentaBea: (cur.totalVentaBea || 0) + incrementoBea,
+      totalVentaLaura: (cur.totalVentaLaura || 0) + incrementoLaura
+    };
+    set(statsRef, nuevoStats);
+  }, { onlyOnce: true });
+
   if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
     await update(ref(db, 'productos/'+id), { emailAgotadoEnviado: true });
     await enviarEmail({
@@ -741,7 +739,7 @@ window.vender = async (id, cant) => {
       fecha: new Date().toLocaleString('es-ES')
     });
   }
-  
+
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -749,7 +747,7 @@ window.vender = async (id, cant) => {
     subject: '🛒 VENTA - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
-  
+
   alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
 };
 
@@ -758,15 +756,9 @@ window.cancelarReserva = async (id, cant) => {
   cant = Number(cant);
   const reservados = p.reservados || 0;
   if(cant<=0 || cant>reservados) return alert('❌ Cantidad inválida');
-  
   const nuevoStock = (p.stock||0)+cant;
   const nuevosReservados = reservados - cant;
-  
-  await update(ref(db, 'productos/'+id), {
-    stock: nuevoStock,
-    reservados: nuevosReservados
-  });
-  
+  await update(ref(db, 'productos/'+id), { stock: nuevoStock, reservados: nuevosReservados });
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -774,7 +766,6 @@ window.cancelarReserva = async (id, cant) => {
     subject: '❌ RESERVA CANCELADA - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
-  
   alert(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`);
 };
 
@@ -783,21 +774,17 @@ window.eliminarUnaVenta = async (id) => {
   const p = productos[id];
   const vendidos = p.vendidos || 0;
   if (vendidos === 0) return alert('❌ No hay ventas para eliminar');
-  
   if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) return;
-  
   const nuevoStock = (p.stock || 0) + 1;
   const nuevosVendidos = vendidos - 1;
   const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
   const nuevoVLaura = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
-  
   await update(ref(db, 'productos/'+id), {
     stock: nuevoStock,
     vendidos: nuevosVendidos,
     vBea: nuevoVBea,
     vLaura: nuevoVLaura
   });
-  
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -805,7 +792,6 @@ window.eliminarUnaVenta = async (id) => {
     subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
-  
   alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`);
 };
 
@@ -815,21 +801,18 @@ window.modificarStock = (id) => {
   if (nuevoStock === null) return;
   const stock = Math.max(0, Number(nuevoStock));
   if (isNaN(stock)) return alert('❌ Stock inválido');
-  
-  update(ref(db, 'productos/'+id), { stock: stock })
-    .then(() => {
-      alert(`✅ Stock actualizado: ${stock}`);
-      if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
-        update(ref(db, 'productos/'+id), { emailAgotadoEnviado: false });
-      }
-    });
+  update(ref(db, 'productos/'+id), { stock: stock }).then(() => {
+    alert(`✅ Stock actualizado: ${stock}`);
+    if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
+      update(ref(db, 'productos/'+id), { emailAgotadoEnviado: false });
+    }
+  });
 };
 
 window.guardar = () => {
   if(userRole !== 'admin') return alert('❌ Solo ADMIN puede crear/editar');
   const nombre = document.getElementById('nombre').value.trim();
   if(!nombre) return alert('❌ Nombre requerido');
-  
   const data = {
     nombre, 
     stock: Math.max(0, Number(document.getElementById('stock').value)||0),
@@ -841,7 +824,6 @@ window.guardar = () => {
     vBea: editId ? (productos[editId]?.vBea||0) : 0,
     vLaura: editId ? (productos[editId]?.vLaura||0) : 0
   };
-
   if(editId) update(ref(db, 'productos/'+editId), data).then(() => {limpiarFormulario(); alert('✅ Actualizado')});
   else push(productosRef, data).then(() => {limpiarFormulario(); alert('✅ Guardado')});
 };
@@ -859,7 +841,6 @@ window.modificarPrecioLauraGlobal = () => {
   if(nuevoPrecio === null) return;
   const precio = Math.max(0, Number(nuevoPrecio));
   if(isNaN(precio)) return alert('❌ Precio inválido');
-  
   const updates = {};
   Object.entries(productos).forEach(([id]) => updates[`productos/${id}/laura`] = precio);
   update(ref(db), updates).then(() => alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
@@ -895,6 +876,7 @@ window.resetear = () => {
       updates[`productos/${id}/reservados`] = 0;
       updates[`productos/${id}/emailAgotadoEnviado`] = false;
     });
+    // NO tocamos estadisticasProductos → se mantienen históricos
     update(ref(db), updates).then(() => alert('✅ 🔄 RESET COMPLETO'));
   }
 };
@@ -909,6 +891,39 @@ function limpiarFormulario() {
   document.getElementById('laura').value = '';
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
+};
+
+// ABRIR/CERRAR ESTADÍSTICAS TOP VENDIDOS (HISTÓRICO)
+window.abrirStats = () => {
+  if (userRole !== 'admin') return;
+  const cont = document.getElementById('statsContenido');
+  const modal = document.getElementById('statsModal');
+  const lista = Object.entries(estadisticasProductos || {});
+  if (lista.length === 0) {
+    cont.innerHTML = '<p>No hay datos de ventas históricas todavía.</p>';
+  } else {
+    const top = lista
+      .sort((a,b) => (b[1].totalVendidosHistorico || 0) - (a[1].totalVendidosHistorico || 0))
+      .slice(0,5);
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    html += '<tr><th>Producto</th><th>Vendidos Hist.</th><th>€ Bea</th><th>€ Laura</th></tr>';
+    top.forEach(([id, s]) => {
+      html += `
+        <tr>
+          <td style="text-align:left">${s.nombre || id}</td>
+          <td>${s.totalVendidosHistorico || 0}</td>
+          <td>€${Number(s.totalVentaBea || 0).toFixed(2)}</td>
+          <td>€${Number(s.totalVentaLaura || 0).toFixed(2)}</td>
+        </tr>`;
+    });
+    html += '</table>';
+    cont.innerHTML = html;
+  }
+  modal.classList.remove('hidden');
+};
+
+window.cerrarStats = () => {
+  document.getElementById('statsModal').classList.add('hidden');
 };
 </script>
 </body>
