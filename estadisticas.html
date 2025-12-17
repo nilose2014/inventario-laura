@@ -2,117 +2,63 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>📊 Estadísticas de Productos Vendidos</title>
+<title>📊 Estadísticas Inventario Laura - Todos Vendidos</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
+body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1200px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
-table{width:100%;border-collapse:collapse;margin:20px 0}
-th,td{border:1px solid #ddd;padding:10px;text-align:center}
-th{background:#007bff;color:white;font-weight:bold}
-tr:hover{background:#f5f5f5}
-button{padding:10px 15px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-weight:bold;margin:5px;transition:all 0.3s ease}
-button:hover{background:#0056b3;transform:scale(1.05)}
-.pdf-btn{background:#dc3545 !important}
-.pdf-btn:hover{background:#c82333 !important}
-.print-btn{background:#28a745 !important}
-.print-btn:hover{background:#218838 !important}
-.volver-btn{background:#6c757d !important}
-.volver-btn:hover{background:#5a6268 !important}
-h1{color:#333;border-bottom:3px solid #007bff;padding-bottom:10px}
-h2{color:#555;margin-top:20px}
-.filtros{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap;align-items:center}
-input[type="text"],select{padding:8px;border:1px solid #ddd;border-radius:5px;font-size:14px}
-.stats-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}
-.stat-box{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:20px;border-radius:10px;text-align:center}
-.stat-box h3{margin:0;font-size:14px;opacity:0.9}
-.stat-box .value{font-size:28px;font-weight:bold;margin-top:10px}
-.red{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%) !important}
-.green{background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%) !important}
-.blue{background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%) !important}
-.orange{background:linear-gradient(135deg,#fa709a 0%,#fee140 100%) !important}
-.acciones{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-@media print{
-  body{margin:0;padding:0}
-  .acciones,button{display:none}
-  .card{box-shadow:none;page-break-inside:avoid}
-  table{width:100%}
-}
-#estadisticasTable{width:100%;margin-top:15px}
-.hidden{display:none}
-.search-box{width:250px}
-.cero-ventas{background:#f8d7da;color:#721c24}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:13px}
+th{background:linear-gradient(45deg,#28a745,#20c997);color:white}
+tr:nth-child(even){background:#f8f9fa}
+tr:hover{background:#e3f2fd}
+.pos1{background:#d4edda !important;font-weight:bold}
+.pos2{background:#fff3cd !important;font-weight:bold}
+.pos3{background:#cce7ff !important;font-weight:bold}
+h2{margin-top:0}
+button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-size:12px;font-weight:bold}
+button:hover{background:#0056b3}
+.admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
+.error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
 </style>
 </head>
 <body>
 
+<h2>📊 Estadísticas de Productos Vendidos (Histórico Completo)</h2>
+
+<div id="status" class="admin">Cargando...</div>
+
 <div class="card">
-<h1>📊 Estadísticas de Productos Vendidos</h1>
-
-<div class="acciones">
-  <button class="print-btn" onclick="imprimirPagina()" title="Imprimir directamente">🖨️ Imprimir</button>
-  <button class="pdf-btn" onclick="exportarPDF()" title="Descargar como PDF">📥 Descargar PDF</button>
-  <button class="volver-btn" onclick="volverInventario()">◀️ Volver al Inventario</button>
-</div>
-
-<div class="stats-container" id="statsContainer"></div>
-
-<div class="filtros">
-  🔍 <input type="text" class="search-box" id="searchInput" placeholder="Buscar producto..." onkeyup="filtrarTabla()">
-  🆚 <select id="ordenarSelect" onchange="reordenarTabla()">
-    <option value="vendidos-desc">Vendidos ↓</option>
-    <option value="vendidos-asc">Vendidos ↑</option>
-    <option value="nombre-asc">Nombre A-Z</option>
-    <option value="nombre-desc">Nombre Z-A</option>
-    <option value="bea-desc">Venta Bea ↓</option>
-    <option value="laura-desc">Venta Laura ↓</option>
-  </select>
-  <span id="productosConVentas">📦 Productos con ventas: 0</span>
-</div>
-
-<table id="estadisticasTable">
-<thead>
-  <tr>
-    <th>Producto</th>
-    <th>📦 Vendidos</th>
-    <th>💰 Bea (€)</th>
-    <th>💰 Laura (€)</th>
-    <th>📊 Diferencia (€)</th>
-    <th>💹 Margen %</th>
-  </tr>
-</thead>
-<tbody id="tablaBody"></tbody>
-</table>
-
-<div class="stats-container">
-  <div class="stat-box blue">
-    <h3>Total Vendidos</h3>
-    <div class="value" id="totalVendidos">0</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div>
+      <strong>Total productos con ventas:</strong> <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
+      <strong>Total unidades vendidas:</strong> <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span>
+    </div>
+    <div>
+      <button onclick="volver()">⬅️ Volver al Inventario</button>
+    </div>
   </div>
-  <div class="stat-box green">
-    <h3>Venta Bea Total</h3>
-    <div class="value" id="ventaBea">€0.00</div>
-  </div>
-  <div class="stat-box orange">
-    <h3>Venta Laura Total</h3>
-    <div class="value" id="ventaLaura">€0.00</div>
-  </div>
-  <div class="stat-box red">
-    <h3>Diferencia (L-B)</h3>
-    <div class="value" id="diferencia">€0.00</div>
+  <div style="overflow:auto;max-height:500px">
+    <table>
+      <thead>
+        <tr>
+          <th>Pos</th>
+          <th>Producto</th>
+          <th>Vendidos</th>
+          <th>Bea €</th>
+          <th>Laura €</th>
+          <th>% Vendidos</th>
+        </tr>
+      </thead>
+      <tbody id="tablaEstadisticas"></tbody>
+    </table>
   </div>
 </div>
 
-</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-<!-- SCRIPTS NECESARIOS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-app-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.1/firebase-auth-compat.js"></script>
-
-<!-- LIBRERÍA HTML2PDF para exportación a PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<script>
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
   authDomain: "inventario-laura.firebaseapp.com",
@@ -123,208 +69,95 @@ const firebaseConfig = {
   appId: "1:778807935660:web:947e223465f9347b17d509"
 };
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const productosRef = db.ref("productos");
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const productosRef = ref(db, "productos");
 
-let productos = [];
+let productos = {};
 
-productosRef.on("value", (snap) => {
-  const productosObj = snap.val() || {};
-  productos = Object.entries(productosObj).map(([id, p]) => ({
-    id,
-    nombre: p.nombre || "Sin nombre",
-    // ✅ CÁLCULOS CORREGIDOS según tu estructura de datos
-    vendidos: p.vendidos || 0,
-    vBea: Number(p.vBea || 0),
-    vLaura: Number(p.vLaura || 0),
-    bea: Number(p.bea || 0),
-    laura: Number(p.laura || 0),
-    stock: Number(p.stock || 0),
-    reservados: Number(p.reservados || 0)
-  })).filter(p => p.nombre !== "Sin nombre"); // Filtrar productos sin nombre
-  
-  console.log("🔍 Productos cargados:", productos.length);
-  console.log("📊 Primeros productos:", productos.slice(0, 3));
-  
-  mostrarEstadisticas();
+onAuthStateChanged(auth, (user) => {
+  const status = document.getElementById('status');
+  if (!user) {
+    status.className = 'error';
+    status.textContent = '❌ Debes iniciar sesión como ADMIN para ver las estadísticas.';
+    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+    return;
+  }
+  if (user.email !== 'nilose2014@gmail.com') {
+    status.className = 'error';
+    status.textContent = '❌ Solo el ADMIN (nilose2014@gmail.com) puede ver esta página.';
+    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+    return;
+  }
+  status.className = 'admin';
+  status.textContent = `👑 ADMIN: ${user.email} - Estadísticas completas cargadas ✅`;
+  cargarEstadisticas();
 });
 
-function mostrarEstadisticas() {
-  // ✅ SOLO mostrar productos CON VENTAS > 0 por defecto
-  let productosConVentas = productos.filter(p => (p.vendidos || 0) > 0 || p.vBea > 0 || p.vLaura > 0);
-  
-  // Si no hay con ventas, mostrar todos
-  if (productosConVentas.length === 0) {
-    productosConVentas = productos;
-  }
-  
-  const productosOrdenados = [...productosConVentas].sort((a, b) => (b.vendidos || 0) - (a.vendidos || 0));
-  
-  const tablaBody = document.getElementById('tablaBody');
-  tablaBody.innerHTML = '';
-  
-  let totalVendidos = 0;
-  let totalVentaBea = 0;
-  let totalVentaLaura = 0;
-
-  productosOrdenados.forEach(p => {
-    // ✅ CÁLCULOS REALES de tu base de datos
-    const vendidos = p.vendidos || 0;
-    const ventaBea = p.vBea || 0;
-    const ventaLaura = p.vLaura || 0;
-    const diferencia = ventaLaura - ventaBea;
-    const margen = ventaBea > 0 ? ((diferencia / ventaBea) * 100).toFixed(1) : '0.0';
-    
-    totalVendidos += vendidos;
-    totalVentaBea += ventaBea;
-    totalVentaLaura += ventaLaura;
-
-    const fila = document.createElement('tr');
-    const tieneVentas = vendidos > 0 || ventaBea > 0 || ventaLaura > 0;
-    fila.className = tieneVentas ? '' : 'cero-ventas';
-    fila.innerHTML = `
-      <td style="text-align:left;font-weight:bold">${p.nombre}</td>
-      <td style="font-weight:${vendidos > 0 ? 'bold' : 'normal'}">${vendidos}</td>
-      <td style="font-weight:${ventaBea > 0 ? 'bold' : 'normal'}">€${ventaBea.toFixed(2)}</td>
-      <td style="font-weight:${ventaLaura > 0 ? 'bold' : 'normal'}">€${ventaLaura.toFixed(2)}</td>
-      <td style="color:${diferencia >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">€${diferencia.toFixed(2)}</td>
-      <td style="color:${parseFloat(margen) >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">${margen}%</td>
-    `;
-    tablaBody.appendChild(fila);
+function cargarEstadisticas() {
+  onValue(productosRef, (snap) => {
+    productos = snap.val() || {};
+    mostrarEstadisticasCompletas();
+  }, (error) => {
+    const status = document.getElementById('status');
+    status.className = 'error';
+    status.textContent = '❌ Error cargando datos: ' + error.message;
   });
-
-  // Actualizar contador
-  document.getElementById('productosConVentas').textContent = 
-    `📦 Productos con ventas: ${productos.filter(p => (p.vendidos || 0) > 0 || p.vBea > 0 || p.vLaura > 0).length}`;
-
-  // TOTALES GLOBALES
-  const diferenciaTotalGlobal = totalVentaLaura - totalVentaBea;
-  const margenGlobal = totalVentaBea > 0 ? ((diferenciaTotalGlobal / totalVentaBea) * 100).toFixed(1) : '0.0';
-  
-  document.getElementById('totalVendidos').textContent = totalVendidos;
-  document.getElementById('ventaBea').textContent = `€${totalVentaBea.toFixed(2)}`;
-  document.getElementById('ventaLaura').textContent = `€${totalVentaLaura.toFixed(2)}`;
-  document.getElementById('diferencia').textContent = `€${diferenciaTotalGlobal.toFixed(2)}`;
-  
-  // STATS SUPERIORES
-  const statsContainer = document.getElementById('statsContainer');
-  statsContainer.innerHTML = `
-    <div class="stat-box green">
-      <h3>📦 Total Vendidos</h3>
-      <div class="value">${totalVendidos}</div>
-    </div>
-    <div class="stat-box blue">
-      <h3>💰 Venta Bea</h3>
-      <div class="value">€${totalVentaBea.toFixed(2)}</div>
-    </div>
-    <div class="stat-box orange">
-      <h3>💰 Venta Laura</h3>
-      <div class="value">€${totalVentaLaura.toFixed(2)}</div>
-    </div>
-    <div class="stat-box ${diferenciaTotalGlobal >= 0 ? 'green' : 'red'}">
-      <h3>📊 Diferencia (L-B)</h3>
-      <div class="value">€${diferenciaTotalGlobal.toFixed(2)}</div>
-    </div>
-    <div class="stat-box blue">
-      <h3>💹 Margen Global</h3>
-      <div class="value">${margenGlobal}%</div>
-    </div>
-  `;
-  
-  console.log("✅ Estadísticas actualizadas:", {totalVendidos, totalVentaBea, totalVentaLaura});
 }
 
-// Resto de funciones igual...
-window.filtrarTabla = () => {
-  const termino = document.getElementById('searchInput').value.toLowerCase();
-  const filas = document.querySelectorAll('#tablaBody tr');
-  
-  filas.forEach(fila => {
-    const producto = fila.cells[0].textContent.toLowerCase();
-    fila.style.display = producto.includes(termino) ? '' : 'none';
-  });
-};
+function mostrarEstadisticasCompletas() {
+  const tablaEstadisticas = document.getElementById('tablaEstadisticas');
+  const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
+  const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
 
-window.reordenarTabla = () => {
-  const orden = document.getElementById('ordenarSelect').value;
-  const [campo, dir] = orden.split('-');
-  
-  let productosOrdenados = [...productos];
-  
-  productosOrdenados.sort((a, b) => {
-    let valorA, valorB;
-    
-    switch(campo) {
-      case 'nombre':
-        valorA = (a.nombre || '').toLowerCase();
-        valorB = (b.nombre || '').toLowerCase();
-        return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
-      case 'vendidos':
-        valorA = a.vendidos || 0;
-        valorB = b.vendidos || 0;
-        break;
-      case 'bea':
-        valorA = a.vBea || 0;
-        valorB = b.vBea || 0;
-        break;
-      case 'laura':
-        valorA = a.vLaura || 0;
-        valorB = b.vLaura || 0;
-        break;
-    }
-    
-    return dir === 'asc' ? valorA - valorB : valorB - valorA;
-  });
-  
-  // Recrear tabla con ordenamiento
-  const tablaBody = document.getElementById('tablaBody');
-  tablaBody.innerHTML = '';
-  
-  productosOrdenados.forEach(p => {
-    const vendidos = p.vendidos || 0;
-    const ventaBea = p.vBea || 0;
-    const ventaLaura = p.vLaura || 0;
-    const diferencia = ventaLaura - ventaBea;
-    const margen = ventaBea > 0 ? ((diferencia / ventaBea) * 100).toFixed(1) : '0.0';
-    
-    const fila = document.createElement('tr');
-    const tieneVentas = vendidos > 0 || ventaBea > 0 || ventaLaura > 0;
-    fila.className = tieneVentas ? '' : 'cero-ventas';
-    fila.innerHTML = `
-      <td style="text-align:left;font-weight:bold">${p.nombre}</td>
-      <td style="font-weight:${vendidos > 0 ? 'bold' : 'normal'}">${vendidos}</td>
-      <td style="font-weight:${ventaBea > 0 ? 'bold' : 'normal'}">€${ventaBea.toFixed(2)}</td>
-      <td style="font-weight:${ventaLaura > 0 ? 'bold' : 'normal'}">€${ventaLaura.toFixed(2)}</td>
-      <td style="color:${diferencia >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">€${diferencia.toFixed(2)}</td>
-      <td style="color:${parseFloat(margen) >= 0 ? '#28a745' : '#dc3545'};font-weight:bold">${margen}%</td>
+  const todosConVentas = Object.entries(productos)
+    .filter(([id,p]) => Number(p.vendidos || 0) > 0)
+    .sort(([,a], [,b]) => Number(b.vendidos || 0) - Number(a.vendidos || 0));
+
+  const totalVendidosGlobal = todosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidos || 0), 0);
+
+  if (todosConVentas.length === 0) {
+    tablaEstadisticas.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">❌ No hay ventas registradas aún</td></tr>';
+    totalProductosVendidosEl.textContent = '0';
+    totalUnidadesVendidasEl.textContent = '0';
+    return;
+  }
+
+  totalProductosVendidosEl.textContent = String(todosConVentas.length);
+  totalUnidadesVendidasEl.textContent = String(totalVendidosGlobal);
+
+  tablaEstadisticas.innerHTML = todosConVentas.map(([id,p], index) => {
+    const vendidos = Number(p.vendidos || 0);
+    const beaTotal = Number(p.vBea || vendidos * (p.bea || 0) || 0).toFixed(2);
+    const lauraTotal = Number(p.vLaura || vendidos * (p.laura || 0) || 0).toFixed(2);
+    const porcentaje = totalVendidosGlobal > 0 ? ((vendidos / totalVendidosGlobal) * 100).toFixed(1) : 0;
+
+    let clasePos = '';
+    if(index === 0) clasePos = 'pos1';
+    else if(index === 1) clasePos = 'pos2';
+    else if(index === 2) clasePos = 'pos3';
+
+    return `
+      <tr class="${clasePos}">
+        <td style="font-weight:bold;font-size:16px">${index+1}</td>
+        <td style="text-align:left;font-weight:bold">
+          <a href="index.html?editId=${encodeURIComponent(id)}" style="color:#007bff;text-decoration:underline;cursor:pointer">
+            ${p.nombre}
+          </a>
+        </td>
+        <td style="font-size:18px;color:#28a745;font-weight:bold">${vendidos}</td>
+        <td style="color:#28a745;font-weight:bold">€${beaTotal}</td>
+        <td style="color:#007bff;font-weight:bold">€${lauraTotal}</td>
+        <td style="color:#ffc107;font-weight:bold">${porcentaje}%</td>
+      </tr>
     `;
-    tablaBody.appendChild(fila);
-  });
-};
+  }).join('');
+}
 
-window.exportarPDF = () => {
-  const element = document.querySelector('.card');
-  const opt = {
-    margin: 10,
-    filename: `estadisticas-inventario-${new Date().toISOString().slice(0, 10)}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-};
-
-window.imprimirPagina = () => {
-  window.print();
-};
-
-window.volverInventario = () => {
+window.volver = () => {
   window.location.href = 'index.html';
 };
 </script>
-
 </body>
 </html>
