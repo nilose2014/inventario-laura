@@ -19,11 +19,8 @@ button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:w
 button:hover{background:#0056b3}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
 .error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
-
-/* Contenedor de tabla sin altura máxima para poder ver todos */
 .tabla-container{overflow:auto}
 
-/* Opcional: ocultar botones y fondo en impresión */
 @media print {
   body{background:white;padding:0;margin:0}
   button, #status, h2 {display:none !important}
@@ -45,7 +42,10 @@ button:hover{background:#0056b3}
       <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
       <strong>Total unidades vendidas:</strong>
       <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span><br>
-      <!-- NUEVOS TOTALES ECONÓMICOS -->
+      <!-- TOTAL UNIDADES A LA VENTA (TODOS LOS PRODUCTOS) -->
+      <strong>Total unidades a la venta:</strong>
+      <span id="totalUnidadesVenta" style="color:#dc3545;font-weight:bold">0</span><br>
+      <!-- TOTALES ECONÓMICOS -->
       <strong>Total Bea €:</strong>
       <span id="totalBea" style="color:#28a745;font-weight:bold">€0.00</span><br>
       <strong>Total Laura €:</strong>
@@ -130,18 +130,29 @@ function mostrarEstadisticasCompletas() {
   const tablaEstadisticas = document.getElementById('tablaEstadisticas');
   const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
   const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
+  const totalUnidadesVentaEl = document.getElementById('totalUnidadesVenta');
   const totalBeaEl = document.getElementById('totalBea');
   const totalLauraEl = document.getElementById('totalLaura');
 
-  const todosConVentas = Object.entries(productos)
+  const todosProductos = Object.entries(productos);
+
+  // TOTAL UNIDADES A LA VENTA: suma del campo "stock" de TODOS los productos
+  // Cambia "stock" por el nombre real de tu campo si es distinto.
+  const totalUnidadesVenta = todosProductos.reduce((acc, [,p]) => {
+    return acc + Number(p.stock || 0);
+  }, 0);
+
+  const todosConVentas = todosProductos
     .filter(([id,p]) => Number(p.vendidos || 0) > 0)
     .sort(([,a], [,b]) => Number(b.vendidos || 0) - Number(a.vendidos || 0));
 
   const totalVendidosGlobal = todosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidos || 0), 0);
 
-  // Acumuladores para total económico
   let totalBeaGlobal = 0;
   let totalLauraGlobal = 0;
+
+  // Pintar total unidades a la venta
+  totalUnidadesVentaEl.textContent = String(totalUnidadesVenta);
 
   if (todosConVentas.length === 0) {
     tablaEstadisticas.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">❌ No hay ventas registradas aún</td></tr>';
@@ -158,7 +169,6 @@ function mostrarEstadisticasCompletas() {
   tablaEstadisticas.innerHTML = todosConVentas.map(([id,p], index) => {
     const vendidos = Number(p.vendidos || 0);
 
-    // Cálculos por producto (usando vBea / vLaura si existen, si no precio * vendidos)
     const beaTotalCalc = Number(
       p.vBea != null
         ? p.vBea
@@ -201,7 +211,6 @@ function mostrarEstadisticasCompletas() {
     `;
   }).join('');
 
-  // Totales económicos globales
   totalBeaEl.textContent = '€' + totalBeaGlobal.toFixed(2);
   totalLauraEl.textContent = '€' + totalLauraGlobal.toFixed(2);
 }
@@ -216,7 +225,7 @@ window.imprimir = () => {
 };
 
 window.descargarPDF = async () => {
-  const { jsPDF } = window.jspdf; // jsPDF UMD
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF('p', 'mm', 'a4');
   const element = document.getElementById('cardEstadisticas');
 
@@ -226,8 +235,6 @@ window.descargarPDF = async () => {
     logging: false,
     windowHeight: element.scrollHeight
   });
-
-  const imgData = canvas.toDataURL('image/png');
 
   const pageWidth = 210;
   const pageHeight = 297;
@@ -279,7 +286,6 @@ window.descargarPDF = async () => {
 };
 </script>
 
-<!-- Librerías para generar PDF desde HTML (jsPDF + html2canvas) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
