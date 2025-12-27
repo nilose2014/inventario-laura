@@ -41,8 +41,15 @@ button:hover{background:#0056b3}
 <div class="card" id="cardEstadisticas">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div>
-      <strong>Total productos con ventas:</strong> <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
-      <strong>Total unidades vendidas:</strong> <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span>
+      <strong>Total productos con ventas:</strong>
+      <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
+      <strong>Total unidades vendidas:</strong>
+      <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span><br>
+      <!-- NUEVOS TOTALES ECONÓMICOS -->
+      <strong>Total Bea €:</strong>
+      <span id="totalBea" style="color:#28a745;font-weight:bold">€0.00</span><br>
+      <strong>Total Laura €:</strong>
+      <span id="totalLaura" style="color:#007bff;font-weight:bold">€0.00</span>
     </div>
     <div>
       <button onclick="imprimir()">🖨️ Imprimir</button>
@@ -123,6 +130,8 @@ function mostrarEstadisticasCompletas() {
   const tablaEstadisticas = document.getElementById('tablaEstadisticas');
   const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
   const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
+  const totalBeaEl = document.getElementById('totalBea');
+  const totalLauraEl = document.getElementById('totalLaura');
 
   const todosConVentas = Object.entries(productos)
     .filter(([id,p]) => Number(p.vendidos || 0) > 0)
@@ -130,10 +139,16 @@ function mostrarEstadisticasCompletas() {
 
   const totalVendidosGlobal = todosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidos || 0), 0);
 
+  // Acumuladores para total económico
+  let totalBeaGlobal = 0;
+  let totalLauraGlobal = 0;
+
   if (todosConVentas.length === 0) {
     tablaEstadisticas.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">❌ No hay ventas registradas aún</td></tr>';
     totalProductosVendidosEl.textContent = '0';
     totalUnidadesVendidasEl.textContent = '0';
+    totalBeaEl.textContent = '€0.00';
+    totalLauraEl.textContent = '€0.00';
     return;
   }
 
@@ -142,9 +157,28 @@ function mostrarEstadisticasCompletas() {
 
   tablaEstadisticas.innerHTML = todosConVentas.map(([id,p], index) => {
     const vendidos = Number(p.vendidos || 0);
-    const beaTotal = Number(p.vBea || vendidos * (p.bea || 0) || 0).toFixed(2);
-    const lauraTotal = Number(p.vLaura || vendidos * (p.laura || 0) || 0).toFixed(2);
-    const porcentaje = totalVendidosGlobal > 0 ? ((vendidos / totalVendidosGlobal) * 100).toFixed(1) : 0;
+
+    // Cálculos por producto (usando vBea / vLaura si existen, si no precio * vendidos)
+    const beaTotalCalc = Number(
+      p.vBea != null
+        ? p.vBea
+        : vendidos * Number(p.bea || 0)
+    );
+    const lauraTotalCalc = Number(
+      p.vLaura != null
+        ? p.vLaura
+        : vendidos * Number(p.laura || 0)
+    );
+
+    totalBeaGlobal += beaTotalCalc;
+    totalLauraGlobal += lauraTotalCalc;
+
+    const beaTotal = beaTotalCalc.toFixed(2);
+    const lauraTotal = lauraTotalCalc.toFixed(2);
+
+    const porcentaje = totalVendidosGlobal > 0
+      ? ((vendidos / totalVendidosGlobal) * 100).toFixed(1)
+      : 0;
 
     let clasePos = '';
     if(index === 0) clasePos = 'pos1';
@@ -166,6 +200,10 @@ function mostrarEstadisticasCompletas() {
       </tr>
     `;
   }).join('');
+
+  // Totales económicos globales
+  totalBeaEl.textContent = '€' + totalBeaGlobal.toFixed(2);
+  totalLauraEl.textContent = '€' + totalLauraGlobal.toFixed(2);
 }
 
 // --------- BOTONES EXTRA ---------
@@ -178,57 +216,47 @@ window.imprimir = () => {
 };
 
 window.descargarPDF = async () => {
-  const { jsPDF } = window.jspdf;
-  
+  const { jsPDF } = window.jspdf; // jsPDF UMD
   const doc = new jsPDF('p', 'mm', 'a4');
-  
   const element = document.getElementById('cardEstadisticas');
-  
-  // Capturar con html2canvas
+
   const canvas = await html2canvas(element, { 
     scale: 2,
     useCORS: true,
     logging: false,
     windowHeight: element.scrollHeight
   });
-  
+
   const imgData = canvas.toDataURL('image/png');
-  
-  // Dimensiones del PDF
-  const pageWidth = 210; // mm (A4)
-  const pageHeight = 297; // mm (A4)
-  const margin = 10; // mm
+
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 10;
   const contentWidth = pageWidth - (margin * 2);
-  
-  // Calcular altura de la imagen manteniendo proporción
+
   const imgWidth = contentWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  
-  // Altura disponible por página (dejando márgenes superiores e inferiores)
+
   const marginTop = margin;
-  const marginBottom = 15; // Más espacio al final para evitar cortes
+  const marginBottom = 15;
   const availableHeight = pageHeight - marginTop - marginBottom;
-  
+
   let yPosition = marginTop;
   let sourceY = 0;
   let pageNum = 1;
-  
-  // Iterar mientras haya contenido por mostrar
+
   while (sourceY < canvas.height) {
-    // Calcular cuánta altura de canvas cabe en la página actual
     const canvasHeightForPage = (availableHeight * canvas.width) / imgWidth;
-    
-    // Si es la primera página o hay contenido pendiente
+
     if (pageNum > 1) {
       doc.addPage();
       yPosition = marginTop;
     }
-    
-    // Crear canvas temporal con solo la porción que cabe
+
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
     pageCanvas.height = Math.min(canvasHeightForPage, canvas.height - sourceY);
-    
+
     const ctx = pageCanvas.getContext('2d');
     ctx.drawImage(
       canvas,
@@ -237,18 +265,16 @@ window.descargarPDF = async () => {
       0, 0, 
       canvas.width, pageCanvas.height
     );
-    
-    // Convertir a imagen y agregar al PDF
+
     const pageImgData = pageCanvas.toDataURL('image/png');
     const pageImgHeight = (pageCanvas.height * imgWidth) / canvas.width;
-    
+
     doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, pageImgHeight);
-    
-    // Actualizar posición
+
     sourceY += pageCanvas.height;
     pageNum++;
   }
-  
+
   doc.save('estadisticas-inventario-laura.pdf');
 };
 </script>
