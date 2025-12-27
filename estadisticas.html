@@ -42,10 +42,10 @@ button:hover{background:#0056b3}
       <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
       <strong>Total unidades vendidas:</strong>
       <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span><br>
-      <!-- TOTAL UNIDADES A LA VENTA (TODOS LOS PRODUCTOS) -->
       <strong>Total unidades a la venta:</strong>
       <span id="totalUnidadesVenta" style="color:#dc3545;font-weight:bold">0</span><br>
-      <!-- TOTALES ECONÓMICOS -->
+      <strong>Total productos sin stock:</strong>
+      <span id="totalSinStock" style="color:#6c757d;font-weight:bold">0</span><br>
       <strong>Total Bea €:</strong>
       <span id="totalBea" style="color:#28a745;font-weight:bold">€0.00</span><br>
       <strong>Total Laura €:</strong>
@@ -131,16 +131,19 @@ function mostrarEstadisticasCompletas() {
   const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
   const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
   const totalUnidadesVentaEl = document.getElementById('totalUnidadesVenta');
+  const totalSinStockEl = document.getElementById('totalSinStock');
   const totalBeaEl = document.getElementById('totalBea');
   const totalLauraEl = document.getElementById('totalLaura');
 
   const todosProductos = Object.entries(productos);
 
-  // TOTAL UNIDADES A LA VENTA: suma del campo "stock" de TODOS los productos
-  // Cambia "stock" por el nombre real de tu campo si es distinto.
+  // Total unidades a la venta (suma de "stock" de todos los productos)
   const totalUnidadesVenta = todosProductos.reduce((acc, [,p]) => {
     return acc + Number(p.stock || 0);
   }, 0);
+
+  // Total productos sin stock (stock == 0 o no definido)
+  const totalSinStock = todosProductos.filter(([,p]) => Number(p.stock || 0) === 0).length; [web:81][web:93]
 
   const todosConVentas = todosProductos
     .filter(([id,p]) => Number(p.vendidos || 0) > 0)
@@ -151,8 +154,8 @@ function mostrarEstadisticasCompletas() {
   let totalBeaGlobal = 0;
   let totalLauraGlobal = 0;
 
-  // Pintar total unidades a la venta
   totalUnidadesVentaEl.textContent = String(totalUnidadesVenta);
+  totalSinStockEl.textContent = String(totalSinStock);
 
   if (todosConVentas.length === 0) {
     tablaEstadisticas.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">❌ No hay ventas registradas aún</td></tr>';
