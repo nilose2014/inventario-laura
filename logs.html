@@ -6,6 +6,7 @@
     <style>
         body { font-family: Arial; background: #f0f2f5; padding: 20px; max-width: 1400px; margin: 0 auto; }
         .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .login-card { background: #fff3cd; border: 2px solid #ffeaa7; }
         .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .log-table th, .log-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
         .log-table th { background: #dc3545; color: white; font-size: 12px; }
@@ -15,7 +16,7 @@
         .log-cancelacion { background: #fff3cd !important; }
         .log-eliminacion { background: #f8d7da !important; }
         .log-tipo { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 3px; margin: 1px; }
-        .tipo-venta { background: #28a5 !important; color: white !important; }
+        .tipo-venta { background: #28a745 !important; color: white !important; }
         .tipo-reserva { background: #17a2b8 !important; color: white !important; }
         .tipo-cancel-reserva { background: #ffc107 !important; color: black !important; }
         .tipo-elim-venta { background: #dc3545 !important; color: white !important; }
@@ -26,33 +27,52 @@
         button:hover { background: #0056b3; }
         .red { background: #dc3545; color: white; }
         #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
+        #status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
+        .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .hiden { display: none; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
-        <div class="filtros-logs">
-            <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
-            <input type="date" id="logFechaDesde" onchange="cargarLogs()">
-            <input type="date" id="logFechaHasta" onchange="cargarLogs()">
-            <button onclick="cargarLogs()">Recargar</button>
-            <button class="red" onclick="window.close()">Cerrar</button>
+    <!-- LOGIN -->
+    <div class="card login-card" id="loginDiv">
+        <h3>Iniciar Sesión</h3>
+        <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
+        <input id="userPass" type="password" placeholder="Contraseña"><br><br>
+        <datalist id="userList">
+            <option value="nilose2014@gmail.com">ADMIN</option>
+        </datalist>
+        <button onclick="login()">Entrar</button>
+        <button class="red" onclick="resetLogin()">Limpiar</button>
+    </div>
+
+    <!-- APP -->
+    <div id="mainApp" class="hiden">
+        <div id="status">Cargando...</div>
+        <div class="card">
+            <h2>HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
+            <div class="filtros-logs">
+                <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+                <input type="date" id="logFechaDesde" onchange="cargarLogs()">
+                <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+                <button onclick="cargarLogs()">Recargar</button>
+                <button class="red" onclick="logout()">Cerrar Sesión</button>
+            </div>
+            <div id="logCount"></div>
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaLogs"></tbody>
+            </table>
         </div>
-        <div id="logCount"></div>
-        <table class="log-table">
-            <thead>
-                <tr>
-                    <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
-                </tr>
-            </thead>
-            <tbody id="tablaLogs"></tbody>
-        </table>
     </div>
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -66,8 +86,26 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app);
         const logsRef = ref(db, 'logs');
         let todosLogs = [];
+        let currentUser = null;
+
+        window.login = () => {
+            const email = document.getElementById('userEmail').value.trim();
+            const pass = document.getElementById('userPass').value;
+            if (!email || !pass) return alert('Email y contraseña requeridos');
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert('Error: ' + e.message));
+        };
+
+        window.logout = () => {
+            signOut(auth).catch(e => alert('Error: ' + e.message));
+        };
+
+        window.resetLogin = () => {
+            document.getElementById('userEmail').value = '';
+            document.getElementById('userPass').value = '';
+        };
 
         window.cargarLogs = () => {
             const desde = document.getElementById('logFechaDesde').value;
@@ -125,15 +163,28 @@
             document.getElementById('logCount').textContent = `${logs.length} movimientos encontrados`;
         };
 
-        // Cargar logs al abrir ventana
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.email === 'nilose2014@gmail.com') {
+                currentUser = user;
+                document.getElementById('loginDiv').classList.add('hiden');
+                document.getElementById('mainApp').classList.remove('hiden');
+                document.getElementById('status').innerHTML = `<strong>ADMIN</strong> ${user.email}<br>Logs cargando...`;
+                document.getElementById('status').className = 'admin';
+                cargarLogs();
+            } else {
+                document.getElementById('mainApp').classList.add('hiden');
+                document.getElementById('loginDiv').classList.remove('hiden');
+                document.getElementById('status').innerHTML = 'Sesión requerida';
+            }
+        });
+
+        // Cargar fechas por defecto
         window.onload = () => {
             const hoy = new Date().toISOString().split('T')[0];
             const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
             document.getElementById('logFechaDesde').value = hace7dias;
             document.getElementById('logFechaHasta').value = hoy;
-            cargarLogs();
         };
     </script>
 </body>
 </html>
-
