@@ -15,14 +15,20 @@
         .log-reserva { background: #e8f4fd !important; }
         .log-cancelacion { background: #fff3cd !important; }
         .log-eliminacion { background: #f8d7da !important; }
-        .log-tipo { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 3px; margin: 1px; }
+        .log-tipico { background: #e2e3e5 !important; }
+        .log-tipo { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 3px; margin: 1px; display: inline-block; }
         .tipo-venta { background: #28a745 !important; color: white !important; }
         .tipo-reserva { background: #17a2b8 !important; color: white !important; }
         .tipo-cancel-reserva { background: #ffc107 !important; color: black !important; }
         .tipo-elim-venta { background: #dc3545 !important; color: white !important; }
+        .tipo-backup { background: #6f42c1 !important; color: white !important; }
+        .tipo-stock { background: #20c997 !important; color: white !important; }
+        .tipo-precio { background: #007bff !important; color: white !important; }
+        .tipo-reset { background: #343a40 !important; color: white !important; }
         .filtros-logs { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
         #logFechaDesde, #logFechaHasta { width: 140px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; }
         #logBuscar { width: 200px; padding: 8px; }
+        #logTipo { padding: 6px; border-radius: 5px; border: 1px solid #ddd; }
         button { padding: 8px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold; margin: 2px; }
         button:hover { background: #0056b3; }
         .red { background: #dc3545; color: white; }
@@ -53,9 +59,28 @@
         <div class="card">
             <h2>HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
             <div class="filtros-logs">
-                <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+                <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="aplicarFiltros()">
                 <input type="date" id="logFechaDesde" onchange="cargarLogs()">
                 <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+                <!-- ⭐ NUEVO: filtro por tipo -->
+                <select id="logTipo" onchange="aplicarFiltros()" title="Filtrar por tipo de movimiento">
+                    <option value="todos">Todos los tipos</option>
+                    <option value="venta">Solo VENTAS</option>
+                    <option value="reserva">Solo RESERVAS</option>
+                    <option value="cancelacion-reserva">Solo CANCEL. RESERVA</option>
+                    <option value="eliminacion-venta">Solo ELIMINACIÓN VENTA</option>
+                    <option value="backup-creado">Backups creados</option>
+                    <option value="backup-restaurado">Backups restaurados</option>
+                    <option value="stock-anadido">Stock añadido</option>
+                    <option value="stock-modificado">Stock modificado</option>
+                    <option value="proximo-modificado">Próximo modificado</option>
+                    <option value="precio-laura">Precio Laura</option>
+                    <option value="precio-laura-global">Precio Laura GLOBAL</option>
+                    <option value="producto-creado">Producto creado</option>
+                    <option value="producto-editado">Producto editado</option>
+                    <option value="producto-borrado">Producto borrado</option>
+                    <option value="reset-completo">Reset COMPLETO</option>
+                </select>
                 <button onclick="cargarLogs()">Recargar</button>
                 <button class="clean-logs" onclick="limpiarTodosLogs()" title="⚠️ BORRA TODOS los logs permanentemente">LIMPIAR TODOS LOGS</button>
                 <button class="red" onclick="logout()">Cerrar Sesión</button>
@@ -110,19 +135,20 @@
             document.getElementById('userPass').value = '';
         };
 
-        // ⭐ NUEVO: LIMPIAR TODOS LOS LOGS
+        // ⭐ LIMPIAR TODOS LOS LOGS
         window.limpiarTodosLogs = async () => {
             if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?\n\nEsta acción NO se puede deshacer.')) return;
-            
             try {
                 await remove(logsRef);
                 alert('✅ TODOS los logs han sido eliminados');
-                cargarLogs(); // Recargar tabla vacía
+                todosLogs = [];
+                renderLogsFiltrados([]);
             } catch (error) {
                 alert('❌ Error al limpiar logs: ' + error.message);
             }
         };
 
+        // Cargar logs (respetando rango de fechas)
         window.cargarLogs = () => {
             const desde = document.getElementById('logFechaDesde').value;
             const hasta = document.getElementById('logFechaHasta').value;
@@ -138,41 +164,76 @@
                     }
                 });
                 todosLogs.sort((a,b) => b.timestamp - a.timestamp);
-                renderLogs();
+                aplicarFiltros();
             });
         };
 
-        window.filtrarLogs = () => {
-            const filtro = document.getElementById('logBuscar').value.toLowerCase();
-            const filtrados = todosLogs.filter(log =>
-                log.productoNombre.toLowerCase().includes(filtro) ||
-                log.usuario.toLowerCase().includes(filtro)
-            );
+        // ⭐ NUEVO: aplicar filtros combinados (texto + tipo)
+        window.aplicarFiltros = () => {
+            const filtroTexto = document.getElementById('logBuscar').value.toLowerCase();
+            const tipoSeleccionado = document.getElementById('logTipo').value; // 'todos' o tipo exacto
+
+            const filtrados = todosLogs.filter(log => {
+                const coincideTexto =
+                    log.productoNombre.toLowerCase().includes(filtroTexto) ||
+                    log.usuario.toLowerCase().includes(filtroTexto) ||
+                    (log.detalles || '').toLowerCase().includes(filtroTexto);
+
+                const coincideTipo =
+                    tipoSeleccionado === 'todos' ||
+                    log.tipo === tipoSeleccionado;
+
+                return coincideTexto && coincideTipo;
+            });
+
             renderLogsFiltrados(filtrados);
         };
-
-        window.renderLogs = () => renderLogsFiltrados(todosLogs);
 
         window.renderLogsFiltrados = (logs) => {
             const tabla = document.getElementById('tablaLogs');
             tabla.innerHTML = '';
             logs.forEach(log => {
-                const claseTipo = log.tipo === 'venta' ? 'tipo-venta' :
-                                log.tipo === 'reserva' ? 'tipo-reserva' :
-                                log.tipo === 'cancelacion-reserva' ? 'tipo-cancel-reserva' :
-                                log.tipo === 'eliminacion-venta' ? 'tipo-elim-venta' : '';
-                const claseFila = log.tipo === 'venta' ? 'log-venta' :
-                                log.tipo === 'reserva' ? 'log-reserva' :
-                                log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
-                                log.tipo === 'eliminacion-venta' ? 'log-eliminacion' : '';
+                let claseTipo = '';
+                let claseFila = '';
+
+                // Colores por tipo
+                switch (log.tipo) {
+                    case 'venta':
+                        claseTipo = 'tipo-venta'; claseFila = 'log-venta'; break;
+                    case 'reserva':
+                        claseTipo = 'tipo-reserva'; claseFila = 'log-reserva'; break;
+                    case 'cancelacion-reserva':
+                        claseTipo = 'tipo-cancel-reserva'; claseFila = 'log-cancelacion'; break;
+                    case 'eliminacion-venta':
+                        claseTipo = 'tipo-elim-venta'; claseFila = 'log-eliminacion'; break;
+                    case 'backup-creado':
+                    case 'backup-restaurado':
+                        claseTipo = 'tipo-backup'; claseFila = 'log-tipico'; break;
+                    case 'stock-anadido':
+                    case 'stock-modificado':
+                    case 'proximo-modificado':
+                        claseTipo = 'tipo-stock'; claseFila = 'log-tipico'; break;
+                    case 'precio-laura':
+                    case 'precio-laura-global':
+                        claseTipo = 'tipo-precio'; claseFila = 'log-tipico'; break;
+                    case 'producto-creado':
+                    case 'producto-editado':
+                    case 'producto-borrado':
+                        claseTipo = 'tipo-precio'; claseFila = 'log-tipico'; break;
+                    case 'reset-completo':
+                        claseTipo = 'tipo-reset'; claseFila = 'log-tipico'; break;
+                    default:
+                        claseTipo = ''; claseFila = ''; break;
+                }
+
                 tabla.innerHTML += `
                     <tr class="${claseFila}">
                         <td>${log.fecha}</td>
                         <td><span class="log-tipo ${claseTipo}">${log.tipo.replace(/-/g, ' ').toUpperCase()}</span></td>
-                        <td style="text-align:left">${log.productoNombre}</td>
+                        <td style="text-align:left">${log.productoNombre || ''}</td>
                         <td>${log.cantidad}</td>
                         <td>${log.usuario}</td>
-                        <td style="text-align:left;font-size:11px">${log.detalles}</td>
+                        <td style="text-align:left;font-size:11px">${log.detalles || ''}</td>
                     </tr>
                 `;
             });
@@ -194,7 +255,7 @@
             }
         });
 
-        // Cargar fechas por defecto
+        // Fechas por defecto
         window.onload = () => {
             const hoy = new Date().toISOString().split('T')[0];
             const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
