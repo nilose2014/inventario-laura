@@ -34,6 +34,8 @@
         .red { background: #dc3545; color: white; }
         .clean-logs { background: #dc3545 !important; font-size: 14px !important; padding: 12px 20px !important; }
         .clean-logs:hover { background: #c82333 !important; }
+        .debug-btn { background: #6f42c1 !important; }
+        .debug-btn:hover { background: #5a32a3 !important; }
         #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
         #status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
         .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
@@ -62,7 +64,7 @@
                 <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="aplicarFiltros()">
                 <input type="date" id="logFechaDesde" onchange="cargarLogs()">
                 <input type="date" id="logFechaHasta" onchange="cargarLogs()">
-                <!-- ⭐ NUEVO: filtro por tipo -->
+                <!-- Filtro por tipo -->
                 <select id="logTipo" onchange="aplicarFiltros()" title="Filtrar por tipo de movimiento">
                     <option value="todos">Todos los tipos</option>
                     <option value="venta">Solo VENTAS</option>
@@ -82,6 +84,8 @@
                     <option value="reset-completo">Reset COMPLETO</option>
                 </select>
                 <button onclick="cargarLogs()">Recargar</button>
+                <!-- ⭐ NUEVO: Botón DEBUG -->
+                <button class="debug-btn" onclick="irDebug()" title="Abrir página de depuración">🔧 DEBUG</button>
                 <button class="clean-logs" onclick="limpiarTodosLogs()" title="⚠️ BORRA TODOS los logs permanentemente">LIMPIAR TODOS LOGS</button>
                 <button class="red" onclick="logout()">Cerrar Sesión</button>
             </div>
@@ -135,7 +139,12 @@
             document.getElementById('userPass').value = '';
         };
 
-        // ⭐ LIMPIAR TODOS LOS LOGS
+        // ⭐ NUEVO: Ir a debug.html
+        window.irDebug = () => {
+            window.open('https://nilose2014.github.io/inventario-laura/debug.html', '_blank');
+        };
+
+        // LIMPIAR TODOS LOS LOGS
         window.limpiarTodosLogs = async () => {
             if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?\n\nEsta acción NO se puede deshacer.')) return;
             try {
@@ -168,10 +177,10 @@
             });
         };
 
-        // ⭐ NUEVO: aplicar filtros combinados (texto + tipo)
+        // Aplicar filtros combinados (texto + tipo)
         window.aplicarFiltros = () => {
             const filtroTexto = document.getElementById('logBuscar').value.toLowerCase();
-            const tipoSeleccionado = document.getElementById('logTipo').value; // 'todos' o tipo exacto
+            const tipoSeleccionado = document.getElementById('logTipo').value;
 
             const filtrados = todosLogs.filter(log => {
                 const coincideTexto =
