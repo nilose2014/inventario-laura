@@ -367,8 +367,8 @@ window.renderTablaSolo = () => {
     stockVisibleTotal += Number(p.stock || 0);
     const stockDisponible = p.stock || 0;
     const proximoDisponible = p.proximo || 0;
-    const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo':'';
-    const stockCellClass = userRole==='admin' ? 'stock-editable':'';
+    const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo':'';  
+    const stockCellClass = userRole==='admin' ? 'stock-editable':'';  
     const filaClass = (p.reservados||0)>0 ? 'reservado':stockClass;
     const tieneProximo = proximoDisponible>0;
 
@@ -392,7 +392,7 @@ window.renderTablaSolo = () => {
       </td>
       <td class="vendidos">
         ${p.vendidos||0}
-        ${userRole==='admin' && (p.vendidos||0)>0?`<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>`:''}
+        ${(p.vendidos||0)>0?`<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>`:''}
       </td>
       <td>${Number(p.bea||0).toFixed(2)}</td>
       <td class="editable laura-negro">
@@ -423,8 +423,39 @@ window.updateProxInput = (id,value)=>{
   updateProxInputVisual(document.querySelector(`input[data-producto="${id}"]`));
 };
 
+// ✅ FUNCIÓN ELIMINAR VENTA - AHORA PARA TODOS LOS USUARIOS
+window.eliminarUnaVenta = async (id) => {
+  const p = productos[id];
+  const vendidos = p.vendidos || 0;
+  if (vendidos === 0) return alert('❌ No hay ventas para eliminar');
+  
+  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) return;
+  
+  const nuevoStock = (p.stock || 0) + 1;
+  const nuevosVendidos = vendidos - 1;
+  const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
+  const nuevoVLaura = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
+  
+  await update(ref(db, 'productos/' + id), {
+    stock: nuevoStock,
+    vendidos: nuevosVendidos,
+    vBea: nuevoVBea,
+    vLaura: nuevoVLaura
+  });
+  
+  await enviarEmail({
+    producto: p.nombre,
+    stock: nuevoStock,
+    detalles: `↩️ 1 VENTA CORREGIDA | +1 stock | Vendidos: ${nuevosVendidos}`,
+    subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
+    fecha: new Date().toLocaleString('es-ES')
+  });
+  
+  alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`);
+};
+
 window.hacerBackup = async ()=>{
-  if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
+  if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede hacer backup');
   try{
     const backupData = {
       productos,
@@ -454,7 +485,7 @@ window.hacerBackup = async ()=>{
 };
 
 window.restaurarBackup = async (event)=>{
-  if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede restaurar');
+  if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede restaurar');
   const file = event.target.files[0];
   if(!file) return;
   if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
@@ -564,7 +595,7 @@ function updateUI(){
     if(btnEstadisticas) btnEstadisticas.style.display='inline-block';
     if(btnEstadisticasTop) btnEstadisticasTop.style.display='inline-block';
   }else{
-    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura ✅`;
+    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + CORREGIR VENTAS ✅`;
     status.className='user';
     guardarBtn.disabled=true; guardarBtn.className='disabled';
     resetBtn.disabled=true; resetBtn.className='disabled';
@@ -728,32 +759,6 @@ window.cancelarReserva = async (id,cant)=>{
     fecha:new Date().toLocaleString('es-ES')
   });
   alert(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`);
-};
-
-window.eliminarUnaVenta = async (id)=>{
-  if(userRole!=='admin') return alert('❌ Solo ADMIN puede eliminar ventas');
-  const p = productos[id];
-  const vendidos = p.vendidos || 0;
-  if(vendidos===0) return alert('❌ No hay ventas para eliminar');
-  if(!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) return;
-  const nuevoStock = (p.stock||0)+1;
-  const nuevosVendidos = vendidos-1;
-  const nuevoVBea = Math.max(0,(p.vBea||0)-(p.bea||0));
-  const nuevoVLaura = Math.max(0,(p.vLaura||0)-(p.laura||0));
-  await update(ref(db,'productos/'+id),{
-    stock:nuevoStock,
-    vendidos:nuevosVendidos,
-    vBea:nuevoVBea,
-    vLaura:nuevoVLaura
-  });
-  await enviarEmail({
-    producto:p.nombre,
-    stock:nuevoStock,
-    detalles:`↩️ 1 VENTA ELIMINADA | +1 stock | Vendidos: ${nuevosVendidos}`,
-    subject:'↩️ VENTA CORREGIDA - '+p.nombre,
-    fecha:new Date().toLocaleString('es-ES')
-  });
-  alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`);
 };
 
 window.modificarStock = (id)=>{
