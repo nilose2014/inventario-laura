@@ -26,6 +26,8 @@
         button { padding: 8px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold; margin: 2px; }
         button:hover { background: #0056b3; }
         .red { background: #dc3545; color: white; }
+        .clean-logs { background: #dc3545 !important; font-size: 14px !important; padding: 12px 20px !important; }
+        .clean-logs:hover { background: #c82333 !important; }
         #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
         #status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
         .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
@@ -55,6 +57,7 @@
                 <input type="date" id="logFechaDesde" onchange="cargarLogs()">
                 <input type="date" id="logFechaHasta" onchange="cargarLogs()">
                 <button onclick="cargarLogs()">Recargar</button>
+                <button class="clean-logs" onclick="limpiarTodosLogs()" title="⚠️ BORRA TODOS los logs permanentemente">LIMPIAR TODOS LOGS</button>
                 <button class="red" onclick="logout()">Cerrar Sesión</button>
             </div>
             <div id="logCount"></div>
@@ -71,7 +74,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
         const firebaseConfig = {
@@ -105,6 +108,19 @@
         window.resetLogin = () => {
             document.getElementById('userEmail').value = '';
             document.getElementById('userPass').value = '';
+        };
+
+        // ⭐ NUEVO: LIMPIAR TODOS LOS LOGS
+        window.limpiarTodosLogs = async () => {
+            if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?\n\nEsta acción NO se puede deshacer.')) return;
+            
+            try {
+                await remove(logsRef);
+                alert('✅ TODOS los logs han sido eliminados');
+                cargarLogs(); // Recargar tabla vacía
+            } catch (error) {
+                alert('❌ Error al limpiar logs: ' + error.message);
+            }
         };
 
         window.cargarLogs = () => {
