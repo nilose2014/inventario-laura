@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK</title>
+<title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -98,11 +98,28 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .download-link:hover{background:#218838}
 .laura-negro{color:black !important}
 .laura-negro strong{color:black !important}
+/* LOGS */
+.log-btn{background:#dc3545 !important;color:white !important;font-weight:bold !important}
+.log-btn:hover{background:#c82333 !important}
+.log-table{font-size:12px !important}
+.log-table th{padding:6px !important;font-size:12px !important}
+.log-table td{padding:6px !important}
+.log-venta{background:#d4edda !important}
+.log-reserva{background:#e8f4fd !important}
+.log-cancelacion{background:#fff3cd !important}
+.log-eliminacion{background:#f8d7da !important}
+.log-tipo{font-weight:bold;font-size:11px !important;padding:2px 6px !important;border-radius:3px !important;margin:1px !important}
+.tipo-venta{background:#28a5 !important;color:white !important}
+.tipo-reserva{background:#17a2b8 !important;color:white !important}
+.tipo-cancel-reserva{background:#ffc107 !important;color:black !important}
+.tipo-elim-venta{background:#dc3545 !important;color:white !important}
+.filtros-logs{display:flex;gap:10px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
+#logFechaDesde,#logFechaHasta{width:140px;padding:6px}
 </style>
 </head>
 <body>
 
-<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK</h2>
+<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS</h2>
 
 <!-- LOGIN -->
 <div class="card login-card" id="loginDiv">
@@ -170,8 +187,11 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
   <div id="stockVisible">📊 Stock: 0</div>
 </div>
 
-<button id="btnEstadisticasTop" onclick="irEstadisticas()" style="background:#6f42c1;color:white;font-weight:bold">
+<button id="btnEstadisticasTop" onclick="irEstadisticas()" style="background:#6f42c1;color:white;font-weight:bold;display:none">
   📊 Ver Estadísticas
+</button>
+<button id="btnLogsTop" onclick="irLogs()" class="log-btn" style="display:none;font-size:13px !important;padding:8px 12px !important">
+  📋 Ver LOGS
 </button>
 
 🆚 Ordenar: 
@@ -229,7 +249,8 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <div class="card" style="text-align:center">
 <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
 <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
-<button id="btnEstadisticas" onclick="irEstadisticas()" style="background:#6f42c1">📊 Ver Estadísticas</button>
+<button id="btnEstadisticas" onclick="irEstadisticas()" style="background:#6f42c1;display:none">📊 Ver Estadísticas</button>
+<button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none;font-size:14px !important;padding:10px 15px !important">📋 Ver LOGS</button>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
@@ -255,7 +276,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue, update, remove, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, update, remove, push, set, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -272,6 +293,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
+const logsRef = ref(db, "logs");
 
 let productos = {};
 let totalesGlobales = { bea:0, laura:0, vendidos:0, reservados:0 };
@@ -290,14 +312,32 @@ let backupRef = ref(db,'backup/ultimo');
 let productosVisiblesCount = 0;
 let stockVisibleTotal = 0;
 
-// 🔍 Leer parámetros de la URL (para ?editId=...)
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
   return params.get(name);
 }
 
 window.irEstadisticas = () => {
-  window.location.href = 'estadisticas.html';
+  window.open('estadisticas.html', '_blank');
+};
+
+window.irLogs = () => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede ver LOGS');
+  window.open('logs.html', '_blank');
+};
+
+window.guardarLog = async (tipo, productoId, productoNombre, cantidad, usuario, detalles = '') => {
+  const logData = {
+    timestamp: Date.now(),
+    tipo,
+    productoId,
+    productoNombre,
+    cantidad: Number(cantidad),
+    usuario,
+    detalles,
+    fecha: new Date().toLocaleString('es-ES')
+  };
+  await push(logsRef, logData);
 };
 
 window.toggleClearBtn = () => {
@@ -328,6 +368,7 @@ window.anadirProximoStock = async (id) => {
   await update(ref(db,'productos/'+id),{stock:nuevoStock,proximo:0});
   inputProx.value = '0';
   inputProx.classList.remove('tiene-valor');
+  await guardarLog('stock-anadido', id, p.nombre, cantidad, currentUser.email, `Stock real: ${nuevoStock}`);
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
@@ -344,7 +385,10 @@ window.modificarProximoStock = (id) => {
   if (nuevoProximo === null) return;
   const proximo = Math.max(0, Number(nuevoProximo));
   if (isNaN(proximo)) return alert('❌ Stock próximo inválido');
-  update(ref(db,'productos/'+id),{proximo}).then(()=>alert(`✅ Próximo actualizado: ${proximo}`));
+  update(ref(db,'productos/'+id),{proximo}).then(()=>{
+    guardarLog('proximo-modificado', id, productos[id].nombre, proximo, currentUser.email);
+    alert(`✅ Próximo actualizado: ${proximo}`);
+  });
 };
 
 window.updateProxInputVisual = (input) => {
@@ -423,7 +467,7 @@ window.updateProxInput = (id,value)=>{
   updateProxInputVisual(document.querySelector(`input[data-producto="${id}"]`));
 };
 
-// ✅ FUNCIÓN ELIMINAR VENTA - AHORA PARA TODOS LOS USUARIOS
+// ✅ FUNCIÓN ELIMINAR VENTA - CON LOG
 window.eliminarUnaVenta = async (id) => {
   const p = productos[id];
   const vendidos = p.vendidos || 0;
@@ -443,6 +487,8 @@ window.eliminarUnaVenta = async (id) => {
     vLaura: nuevoVLaura
   });
   
+  await guardarLog('eliminacion-venta', id, p.nombre, 1, currentUser.email, `Stock devuelto: ${nuevoStock}`);
+  
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -460,6 +506,7 @@ window.hacerBackup = async ()=>{
     const backupData = {
       productos,
       totalesGlobales,
+      logs: true, // Solo marca que existen logs
       fecha:new Date().toISOString(),
       usuario:currentUser.email,
       timestamp:Date.now()
@@ -478,6 +525,7 @@ window.hacerBackup = async ()=>{
     const oldLink = document.querySelector('.download-link');
     if(oldLink && oldLink!==a) oldLink.remove();
     ultimoBackup = backupData;
+    await guardarLog('backup-creado', null, 'BACKUP', 1, currentUser.email);
     alert('✅ Backup completado y descargado');
   }catch(error){
     alert('❌ Error en backup: '+error.message);
@@ -488,11 +536,12 @@ window.restaurarBackup = async (event)=>{
   if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede restaurar');
   const file = event.target.files[0];
   if(!file) return;
-  if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se actualizan todos los totales')) return;
+  if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se mantienen LOGS')) return;
   try{
     const text = await file.text();
     const backupData = JSON.parse(text);
     await set(ref(db,'productos'),backupData.productos);
+    await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
     alert('✅ Restauración completada. Recarga la página.');
     location.reload();
   }catch(error){
@@ -561,9 +610,17 @@ function checkUserRole(){
   if(currentUser.email==='nilose2014@gmail.com'){
     userRole='admin';
     document.getElementById('backupSection').classList.remove('hidden');
+    document.getElementById('btnEstadisticasTop').style.display='inline-block';
+    document.getElementById('btnLogsTop').style.display='inline-block';
+    document.getElementById('btnEstadisticas').style.display='inline-block';
+    document.getElementById('btnLogs').style.display='inline-block';
   }else if(['djsubixj@gmail.com','xiomaralamasmala@gmail.com'].includes(currentUser.email)){
     userRole='user';
     document.getElementById('backupSection').classList.add('hidden');
+    document.getElementById('btnEstadisticasTop').style.display='none';
+    document.getElementById('btnLogsTop').style.display='none';
+    document.getElementById('btnEstadisticas').style.display='none';
+    document.getElementById('btnLogs').style.display='none';
   }else{
     userRole='user';
     document.getElementById('backupSection').classList.add('hidden');
@@ -583,29 +640,22 @@ function updateUI(){
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
-  const btnEstadisticas = document.getElementById('btnEstadisticas');
-  const btnEstadisticasTop = document.getElementById('btnEstadisticasTop');
 
   if(userRole==='admin'){
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK + 📊 ESTADÍSTICAS ✅`;
+    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK + 📊 ESTADÍSTICAS + 📋 LOGS ✅`;
     status.className='admin';
     guardarBtn.disabled=false; guardarBtn.className='';
     resetBtn.disabled=false; resetBtn.className='';
     precioGlobalBtn.disabled=false;
-    if(btnEstadisticas) btnEstadisticas.style.display='inline-block';
-    if(btnEstadisticasTop) btnEstadisticasTop.style.display='inline-block';
   }else{
     status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + CORREGIR VENTAS ✅`;
     status.className='user';
     guardarBtn.disabled=true; guardarBtn.className='disabled';
     resetBtn.disabled=true; resetBtn.className='disabled';
     precioGlobalBtn.disabled=false; precioGlobalBtn.className='';
-    if(btnEstadisticas) btnEstadisticas.style.display='none';
-    if(btnEstadisticasTop) btnEstadisticasTop.style.display='none';
   }
 }
 
-// 🔄 Carga de datos + detección de ?editId=...
 function loadData(){
   onValue(productosRef,(snap)=>{
     productos = snap.val() || {};
@@ -701,6 +751,7 @@ window.reservar = async (id,cant)=>{
   const nuevoStock = (p.stock||0)-cant;
   const nuevosReservados = (p.reservados||0)+cant;
   await update(ref(db,'productos/'+id),{stock:nuevoStock,reservados:nuevosReservados});
+  await guardarLog('reserva', id, p.nombre, cant, currentUser.email);
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
@@ -723,6 +774,7 @@ window.vender = async (id,cant)=>{
     vBea:(p.vBea||0)+(p.bea||0)*cant,
     vLaura:(p.vLaura||0)+(p.laura||0)*cant
   });
+  await guardarLog('venta', id, p.nombre, cant, currentUser.email, `Bea:€${p.bea?.toFixed(2)} Laura:€${p.laura?.toFixed(2)}`);
   if(nuevoStock===0 && !eraStockCero && !p.emailAgotadoEnviado){
     await update(ref(db,'productos/'+id),{emailAgotadoEnviado:true});
     await enviarEmail({
@@ -751,6 +803,7 @@ window.cancelarReserva = async (id,cant)=>{
   const nuevoStock = (p.stock||0)+cant;
   const nuevosReservados = reservados-cant;
   await update(ref(db,'productos/'+id),{stock:nuevoStock,reservados:nuevosReservados});
+  await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
@@ -768,6 +821,7 @@ window.modificarStock = (id)=>{
   const stock = Math.max(0,Number(nuevoStock));
   if(isNaN(stock)) return alert('❌ Stock inválido');
   update(ref(db,'productos/'+id),{stock}).then(()=>{
+    guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
     alert(`✅ Stock actualizado: ${stock}`);
     if(stock>0 && productos[id]?.emailAgotadoEnviado){
       update(ref(db,'productos/'+id),{emailAgotadoEnviado:false});
@@ -790,8 +844,19 @@ window.guardar = ()=>{
     vBea:editId ? (productos[editId]?.vBea||0):0,
     vLaura:editId ? (productos[editId]?.vLaura||0):0
   };
-  if(editId) update(ref(db,'productos/'+editId),data).then(()=>{limpiarFormulario();alert('✅ Actualizado')});
-  else push(productosRef,data).then(()=>{limpiarFormulario();alert('✅ Guardado')});
+  if(editId){
+    update(ref(db,'productos/'+editId),data).then(()=>{
+      guardarLog('producto-editado', editId, nombre, 0, currentUser.email);
+      limpiarFormulario();
+      alert('✅ Actualizado');
+    });
+  }else{
+    push(productosRef,data).then((newRef)=>{
+      guardarLog('producto-creado', newRef.key, nombre, 0, currentUser.email);
+      limpiarFormulario();
+      alert('✅ Guardado');
+    });
+  }
 };
 
 window.modificarPrecioLaura = (id)=>{
@@ -799,7 +864,10 @@ window.modificarPrecioLaura = (id)=>{
   if(nuevoPrecio===null) return;
   const precio = Math.max(0,Number(nuevoPrecio));
   if(isNaN(precio)) return alert('❌ Precio inválido');
-  update(ref(db,'productos/'+id),{laura:precio}).then(()=>alert(`✅ Laura: €${precio.toFixed(2)}`));
+  update(ref(db,'productos/'+id),{laura:precio}).then(()=>{
+    guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+    alert(`✅ Laura: €${precio.toFixed(2)}`);
+  });
 };
 
 window.modificarPrecioLauraGlobal = ()=>{
@@ -808,7 +876,10 @@ window.modificarPrecioLauraGlobal = ()=>{
   const precio = Math.max(0,Number(nuevoPrecio));
   if(isNaN(precio)) return alert('❌ Precio inválido');
   const updates = {};
-  Object.entries(productos).forEach(([id])=>updates[`productos/${id}/laura`]=precio);
+  Object.entries(productos).forEach(([id])=>{
+    updates[`productos/${id}/laura`]=precio;
+    guardarLog('precio-laura-global', id, productos[id].nombre, precio, currentUser.email);
+  });
   update(ref(db),updates).then(()=>alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
 };
 
@@ -827,6 +898,7 @@ window.editar = id=>{
 window.borrar = id=>{
   if(userRole!=='admin') return alert('❌ Solo ADMIN puede borrar');
   if(confirm(`🗑️ Borrar "${productos[id]?.nombre||'Producto'}"?`)){
+    guardarLog('producto-borrado', id, productos[id].nombre, 0, currentUser.email);
     remove(ref(db,'productos/'+id)).then(()=>alert('✅ Borrado'));
   }
 };
@@ -842,6 +914,7 @@ window.resetear = ()=>{
       updates[`productos/${id}/reservados`]=0;
       updates[`productos/${id}/emailAgotadoEnviado`]=false;
     });
+    guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
     update(ref(db),updates).then(()=>alert('✅ 🔄 RESET COMPLETO'));
   }
 };
@@ -858,5 +931,162 @@ function limpiarFormulario(){
   document.getElementById('cancelBtn').style.display='none';
 }
 </script>
+
+<!-- PÁGINA DE LOGS EMBEBIDA (se abre en ventana nueva) -->
+<script>
+const logsHTML = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>📋 LOGS - Inventario Laura</title>
+<style>
+body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
+.card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+.log-table{width:100%;border-collapse:collapse;font-size:12px}
+.log-table th, .log-table td{border:1px solid #ddd;padding:6px;text-align:center}
+.log-table th{background:#dc3545;color:white;font-size:12px}
+.log-table tr:nth-child(even){background:#f8f9fa}
+.log-venta{background:#d4edda !important}
+.log-reserva{background:#e8f4fd !important}
+.log-cancelacion{background:#fff3cd !important}
+.log-eliminacion{background:#f8d7da !important}
+.log-tipo{font-weight:bold;font-size:11px;padding:2px 6px;border-radius:3px;margin:1px}
+.tipo-venta{background:#28a5 !important;color:white !important}
+.tipo-reserva{background:#17a2b8 !important;color:white !important}
+.tipo-cancel-reserva{background:#ffc107 !important;color:black !important}
+.tipo-elim-venta{background:#dc3545 !important;color:white !important}
+.filtros-logs{display:flex;gap:10px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
+#logFechaDesde,#logFechaHasta{width:140px;padding:6px;border:1px solid #ddd;border-radius:5px}
+#logBuscar{width:200px;padding:8px}
+button{padding:8px 15px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-weight:bold;margin:2px}
+button:hover{background:#0056b3}
+.red{background:#dc3545;color:white}
+#logCount{background:#007bff;color:white;padding:8px 12px;border-radius:5px;font-weight:bold;display:inline-block}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>📋 HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
+<div class="filtros-logs">
+🔍 <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+Desde: <input type="date" id="logFechaDesde" onchange="cargarLogs()">
+Hasta: <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+<button onclick="cargarLogs()">🔄 Recargar</button>
+<button class="red" onclick="window.close()">❌ Cerrar</button>
+</div>
+<div id="logCount"></div>
+<table class="log-table">
+<thead>
+<tr>
+<th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
+</tr>
+</thead>
+<tbody id="tablaLogs"></tbody>
+</table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
+  authDomain: "inventario-laura.firebaseapp.com",
+  databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "inventario-laura",
+  storageBucket: "inventario-laura.firebasestorage.app",
+  messagingSenderId: "778807935660",
+  appId: "1:778807935660:web:947e223465f9347b17d509"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const logsRef = ref(db, "logs");
+
+let todosLogs = [];
+
+window.cargarLogs = () => {
+  const desde = document.getElementById('logFechaDesde').value;
+  const hasta = document.getElementById('logFechaHasta').value;
+  
+  onValue(logsRef, (snap) => {
+    todosLogs = [];
+    snap.forEach(child => {
+      const log = child.val();
+      const fecha = new Date(log.timestamp);
+      const fechaStr = fecha.toISOString().split('T')[0];
+      
+      if ((desde === '' || fechaStr >= desde) && (hasta === '' || fechaStr <= hasta)) {
+        todosLogs.push({...log, key: child.key});
+      }
+    });
+    todosLogs.sort((a,b) => b.timestamp - a.timestamp);
+    renderLogs();
+  });
+};
+
+window.filtrarLogs = () => {
+  const filtro = document.getElementById('logBuscar').value.toLowerCase();
+  const filtrados = todosLogs.filter(log => 
+    log.productoNombre.toLowerCase().includes(filtro) ||
+    log.usuario.toLowerCase().includes(filtro)
+  );
+  renderLogsFiltrados(filtrados);
+};
+
+window.renderLogs = () => {
+  renderLogsFiltrados(todosLogs);
+};
+
+window.renderLogsFiltrados = (logs) => {
+  const tabla = document.getElementById('tablaLogs');
+  tabla.innerHTML = '';
+  
+  logs.forEach(log => {
+    const claseTipo = log.tipo === 'venta' ? 'tipo-venta' :
+                     log.tipo === 'reserva' ? 'tipo-reserva' :
+                     log.tipo === 'cancelacion-reserva' ? 'tipo-cancel-reserva' :
+                     log.tipo === 'eliminacion-venta' ? 'tipo-elim-venta' : '';
+    
+    const claseFila = log.tipo === 'venta' ? 'log-venta' :
+                     log.tipo === 'reserva' ? 'log-reserva' :
+                     log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
+                     log.tipo === 'eliminacion-venta' ? 'log-eliminacion' : '';
+    
+    tabla.innerHTML += \`
+      <tr class="\${claseFila}">
+        <td>\${log.fecha}</td>
+        <td><span class="log-tipo \${claseTipo}">\${log.tipo.replace(/-/g, ' ').toUpperCase()}</span></td>
+        <td style="text-align:left">\${log.productoNombre}</td>
+        <td>\${log.cantidad}</td>
+        <td>\${log.usuario}</td>
+        <td style="text-align:left;font-size:11px">\${log.detalles || ''}</td>
+      </tr>\`;
+  });
+  
+  document.getElementById('logCount').textContent = \`\${logs.length} movimientos encontrados\`;
+};
+
+// Cargar logs al abrir ventana
+window.onload = () => {
+  const hoy = new Date().toISOString().split('T')[0];
+  const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+  document.getElementById('logFechaDesde').value = hace7dias;
+  document.getElementById('logFechaHasta').value = hoy;
+  cargarLogs();
+};
+</script>
+</body>
+</html>`;
+
+if (userRole === 'admin') {
+  // Crear archivo logs.html para ventana nueva
+  const blob = new Blob([logsHTML], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  window.logsURL = url;
+}
+</script>
+
 </body>
 </html>
