@@ -1,1 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>LOGS - Inventario Laura</title>
+    <style>
+        body { font-family: Arial; background: #f0f2f5; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .log-table th, .log-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        .log-table th { background: #dc3545; color: white; font-size: 12px; }
+        .log-table tr:nth-child(even) { background: #f8f9fa; }
+        .log-venta { background: #d4edda !important; }
+        .log-reserva { background: #e8f4fd !important; }
+        .log-cancelacion { background: #fff3cd !important; }
+        .log-eliminacion { background: #f8d7da !important; }
+        .log-tipo { font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 3px; margin: 1px; }
+        .tipo-venta { background: #28a5 !important; color: white !important; }
+        .tipo-reserva { background: #17a2b8 !important; color: white !important; }
+        .tipo-cancel-reserva { background: #ffc107 !important; color: black !important; }
+        .tipo-elim-venta { background: #dc3545 !important; color: white !important; }
+        .filtros-logs { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+        #logFechaDesde, #logFechaHasta { width: 140px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; }
+        #logBuscar { width: 200px; padding: 8px; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold; margin: 2px; }
+        button:hover { background: #0056b3; }
+        .red { background: #dc3545; color: white; }
+        #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
+        <div class="filtros-logs">
+            <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+            <input type="date" id="logFechaDesde" onchange="cargarLogs()">
+            <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+            <button onclick="cargarLogs()">Recargar</button>
+            <button class="red" onclick="window.close()">Cerrar</button>
+        </div>
+        <div id="logCount"></div>
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
+                </tr>
+            </thead>
+            <tbody id="tablaLogs"></tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
+            authDomain: "inventario-laura.firebaseapp.com",
+            databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "inventario-laura",
+            storageBucket: "inventario-laura.firebasestorage.app",
+            messagingSenderId: "778807935660",
+            appId: "1778807935660web947e223465f9347b17d509"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const logsRef = ref(db, 'logs');
+        let todosLogs = [];
+
+        window.cargarLogs = () => {
+            const desde = document.getElementById('logFechaDesde').value;
+            const hasta = document.getElementById('logFechaHasta').value;
+            
+            onValue(logsRef, (snap) => {
+                todosLogs = [];
+                snap.forEach((child) => {
+                    const log = child.val();
+                    const fecha = new Date(log.timestamp);
+                    const fechaStr = fecha.toISOString().split('T')[0];
+                    if ((desde === '' || fechaStr >= desde) && (hasta === '' || fechaStr <= hasta)) {
+                        todosLogs.push({...log, key: child.key});
+                    }
+                });
+                todosLogs.sort((a,b) => b.timestamp - a.timestamp);
+                renderLogs();
+            });
+        };
+
+        window.filtrarLogs = () => {
+            const filtro = document.getElementById('logBuscar').value.toLowerCase();
+            const filtrados = todosLogs.filter(log =>
+                log.productoNombre.toLowerCase().includes(filtro) ||
+                log.usuario.toLowerCase().includes(filtro)
+            );
+            renderLogsFiltrados(filtrados);
+        };
+
+        window.renderLogs = () => renderLogsFiltrados(todosLogs);
+
+        window.renderLogsFiltrados = (logs) => {
+            const tabla = document.getElementById('tablaLogs');
+            tabla.innerHTML = '';
+            logs.forEach(log => {
+                const claseTipo = log.tipo === 'venta' ? 'tipo-venta' :
+                                log.tipo === 'reserva' ? 'tipo-reserva' :
+                                log.tipo === 'cancelacion-reserva' ? 'tipo-cancel-reserva' :
+                                log.tipo === 'eliminacion-venta' ? 'tipo-elim-venta' : '';
+                const claseFila = log.tipo === 'venta' ? 'log-venta' :
+                                log.tipo === 'reserva' ? 'log-reserva' :
+                                log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
+                                log.tipo === 'eliminacion-venta' ? 'log-eliminacion' : '';
+                tabla.innerHTML += `
+                    <tr class="${claseFila}">
+                        <td>${log.fecha}</td>
+                        <td><span class="log-tipo ${claseTipo}">${log.tipo.replace(/-/g, ' ').toUpperCase()}</span></td>
+                        <td style="text-align:left">${log.productoNombre}</td>
+                        <td>${log.cantidad}</td>
+                        <td>${log.usuario}</td>
+                        <td style="text-align:left;font-size:11px">${log.detalles}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('logCount').textContent = `${logs.length} movimientos encontrados`;
+        };
+
+        // Cargar logs al abrir ventana
+        window.onload = () => {
+            const hoy = new Date().toISOString().split('T')[0];
+            const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+            document.getElementById('logFechaDesde').value = hace7dias;
+            document.getElementById('logFechaHasta').value = hoy;
+            cargarLogs();
+        };
+    </script>
+</body>
+</html>
 
