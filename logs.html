@@ -36,6 +36,9 @@
         .clean-logs:hover { background: #c82333 !important; }
         .debug-btn { background: #6f42c1 !important; }
         .debug-btn:hover { background: #5a32a3 !important; }
+        .totales-logs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; font-size: 18px; font-weight: bold; padding: 15px; margin-bottom: 15px; background: #f8f9fa; border-radius: 10px; }
+        .total-bea { background: #d4edda; color: #155724; border: 2px solid #28a745; padding: 10px; border-radius: 8px; }
+        .total-cant { background: #cce7ff; color: #004085; border: 2px solid #007bff; padding: 10px; border-radius: 8px; }
         #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
         #status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
         .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
@@ -64,7 +67,6 @@
                 <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="aplicarFiltros()">
                 <input type="date" id="logFechaDesde" onchange="cargarLogs()">
                 <input type="date" id="logFechaHasta" onchange="cargarLogs()">
-                <!-- Filtro por tipo -->
                 <select id="logTipo" onchange="aplicarFiltros()" title="Filtrar por tipo de movimiento">
                     <option value="todos">Todos los tipos</option>
                     <option value="venta">Solo VENTAS</option>
@@ -84,11 +86,24 @@
                     <option value="reset-completo">Reset COMPLETO</option>
                 </select>
                 <button onclick="cargarLogs()">Recargar</button>
-                <!-- ⭐ NUEVO: Botón DEBUG -->
                 <button class="debug-btn" onclick="irDebug()" title="Abrir página de depuración">🔧 DEBUG</button>
                 <button class="clean-logs" onclick="limpiarTodosLogs()" title="⚠️ BORRA TODOS los logs permanentemente">LIMPIAR TODOS LOGS</button>
+                <div style="flex: 1;"></div>
                 <button class="red" onclick="logout()">Cerrar Sesión</button>
             </div>
+
+            <!-- ⭐ NUEVOS TOTALES -->
+            <div class="totales-logs">
+                <div class="total-bea">
+                    <strong>💰 TOTAL BEA (filtrados)</strong><br>
+                    <span id="totalBeaLogs" style="font-size: 24px; color: #28a745;">0.00 €</span>
+                </div>
+                <div class="total-cant">
+                    <strong>📦 TOTAL CANTIDAD (filtrados)</strong><br>
+                    <span id="totalCantidadLogs" style="font-size: 24px; color: #007bff;">0</span>
+                </div>
+            </div>
+
             <div id="logCount"></div>
             <table class="log-table">
                 <thead>
@@ -139,12 +154,10 @@
             document.getElementById('userPass').value = '';
         };
 
-        // ⭐ NUEVO: Ir a debug.html
         window.irDebug = () => {
             window.open('https://nilose2014.github.io/inventario-laura/debug.html', '_blank');
         };
 
-        // LIMPIAR TODOS LOS LOGS
         window.limpiarTodosLogs = async () => {
             if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?\n\nEsta acción NO se puede deshacer.')) return;
             try {
@@ -157,7 +170,30 @@
             }
         };
 
-        // Cargar logs (respetando rango de fechas)
+        // ⭐ NUEVO: Calcular totales de los logs filtrados
+        window.calcularTotalesLogs = (logs) => {
+            let totalBea = 0;
+            let totalCantidad = 0;
+
+            logs.forEach(log => {
+                // Sumar cantidad para TODOS los movimientos
+                if (log.cantidad) {
+                    totalCantidad += Number(log.cantidad);
+                }
+
+                // Parsear Bea de detalles para ventas/eliminaciones
+                if (log.detalles && (log.tipo === 'venta' || log.tipo === 'eliminacion-venta')) {
+                    const matchBea = log.detalles.match(/Bea[€\s]*([\d.,]+)/i);
+                    if (matchBea) {
+                        totalBea += parseFloat(matchBea[1].replace(',', '.'));
+                    }
+                }
+            });
+
+            document.getElementById('totalBeaLogs').textContent = totalBea.toFixed(2) + ' €';
+            document.getElementById('totalCantidadLogs').textContent = totalCantidad.toLocaleString();
+        };
+
         window.cargarLogs = () => {
             const desde = document.getElementById('logFechaDesde').value;
             const hasta = document.getElementById('logFechaHasta').value;
@@ -177,7 +213,6 @@
             });
         };
 
-        // Aplicar filtros combinados (texto + tipo)
         window.aplicarFiltros = () => {
             const filtroTexto = document.getElementById('logBuscar').value.toLowerCase();
             const tipoSeleccionado = document.getElementById('logTipo').value;
@@ -201,11 +236,14 @@
         window.renderLogsFiltrados = (logs) => {
             const tabla = document.getElementById('tablaLogs');
             tabla.innerHTML = '';
+            
+            // ⭐ CALCULAR TOTALES de logs filtrados
+            calcularTotalesLogs(logs);
+
             logs.forEach(log => {
                 let claseTipo = '';
                 let claseFila = '';
 
-                // Colores por tipo
                 switch (log.tipo) {
                     case 'venta':
                         claseTipo = 'tipo-venta'; claseFila = 'log-venta'; break;
@@ -264,7 +302,6 @@
             }
         });
 
-        // Fechas por defecto
         window.onload = () => {
             const hoy = new Date().toISOString().split('T')[0];
             const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
