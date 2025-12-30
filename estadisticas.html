@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>📊 Estadísticas Inventario Laura - Todos Vendidos</title>
+<title>📊 Estadísticas Inventario Laura - Histórico</title>
+
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1200px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
@@ -29,6 +30,7 @@ button:hover{background:#0056b3}
 }
 </style>
 </head>
+
 <body>
 
 <h2>📊 Estadísticas de Productos Vendidos (Histórico Completo)</h2>
@@ -38,25 +40,29 @@ button:hover{background:#0056b3}
 <div class="card" id="cardEstadisticas">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div>
-      <strong>Total productos con ventas:</strong>
+      <strong>Total productos vendidos:</strong>
       <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
+
       <strong>Total unidades vendidas:</strong>
       <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span><br>
-      <!-- TOTAL UNIDADES A LA VENTA (TODOS LOS PRODUCTOS) -->
+
       <strong>Total unidades a la venta:</strong>
       <span id="totalUnidadesVenta" style="color:#dc3545;font-weight:bold">0</span><br>
-      <!-- TOTALES ECONÓMICOS -->
+
       <strong>Total Bea €:</strong>
       <span id="totalBea" style="color:#28a745;font-weight:bold">€0.00</span><br>
+
       <strong>Total Laura €:</strong>
       <span id="totalLaura" style="color:#007bff;font-weight:bold">€0.00</span>
     </div>
+
     <div>
       <button onclick="imprimir()">🖨️ Imprimir</button>
       <button onclick="descargarPDF()">⬇️ Descargar PDF</button>
-      <button onclick="volver()">⬅️ Volver al Inventario</button>
+      <button onclick="volver()">⬅️ Volver</button>
     </div>
   </div>
+
   <div class="tabla-container">
     <table>
       <thead>
@@ -66,7 +72,7 @@ button:hover{background:#0056b3}
           <th>Vendidos</th>
           <th>Bea €</th>
           <th>Laura €</th>
-          <th>% Vendidos</th>
+          <th>% del total</th>
         </tr>
       </thead>
       <tbody id="tablaEstadisticas"></tbody>
@@ -97,197 +103,95 @@ const productosRef = ref(db, "productos");
 let productos = {};
 
 onAuthStateChanged(auth, (user) => {
-  const status = document.getElementById('status');
-  if (!user) {
-    status.className = 'error';
-    status.textContent = '❌ Debes iniciar sesión como ADMIN para ver las estadísticas.';
-    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+  const status = document.getElementById("status");
+
+  if (!user || user.email !== "nilose2014@gmail.com") {
+    status.className = "error";
+    status.textContent = "❌ Acceso solo para ADMIN";
+    setTimeout(() => location.href = "index.html", 2000);
     return;
   }
-  if (user.email !== 'nilose2014@gmail.com') {
-    status.className = 'error';
-    status.textContent = '❌ Solo el ADMIN (nilose2014@gmail.com) puede ver esta página.';
-    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
-    return;
-  }
-  status.className = 'admin';
-  status.textContent = `👑 ADMIN: ${user.email} - Estadísticas completas cargadas ✅`;
+
+  status.className = "admin";
+  status.textContent = "👑 ADMIN conectado - Estadísticas cargadas";
   cargarEstadisticas();
 });
 
 function cargarEstadisticas() {
-  onValue(productosRef, (snap) => {
+  onValue(productosRef, snap => {
     productos = snap.val() || {};
-    mostrarEstadisticasCompletas();
-  }, (error) => {
-    const status = document.getElementById('status');
-    status.className = 'error';
-    status.textContent = '❌ Error cargando datos: ' + error.message;
+    mostrarEstadisticas();
   });
 }
 
-function mostrarEstadisticasCompletas() {
-  const tablaEstadisticas = document.getElementById('tablaEstadisticas');
-  const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
-  const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
-  const totalUnidadesVentaEl = document.getElementById('totalUnidadesVenta');
-  const totalBeaEl = document.getElementById('totalBea');
-  const totalLauraEl = document.getElementById('totalLaura');
+function mostrarEstadisticas() {
+  const tabla = document.getElementById("tablaEstadisticas");
 
-  const todosProductos = Object.entries(productos);
+  const totalProductosVendidosEl = document.getElementById("totalProductosVendidos");
+  const totalUnidadesVendidasEl = document.getElementById("totalUnidadesVendidas");
+  const totalUnidadesVentaEl = document.getElementById("totalUnidadesVenta");
+  const totalBeaEl = document.getElementById("totalBea");
+  const totalLauraEl = document.getElementById("totalLaura");
 
-  // TOTAL UNIDADES A LA VENTA: suma del campo "stock" de TODOS los productos
-  // Cambia "stock" por el nombre real de tu campo si es distinto.
-  const totalUnidadesVenta = todosProductos.reduce((acc, [,p]) => {
-    return acc + Number(p.stock || 0);
-  }, 0);
+  const lista = Object.entries(productos);
 
-  const todosConVentas = todosProductos
-    .filter(([id,p]) => Number(p.vendidos || 0) > 0)
-    .sort(([,a], [,b]) => Number(b.vendidos || 0) - Number(a.vendidos || 0));
+  const totalUnidadesVenta = lista.reduce((acc, [,p]) => acc + Number(p.stock || 0), 0);
+  totalUnidadesVentaEl.textContent = totalUnidadesVenta;
 
-  const totalVendidosGlobal = todosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidos || 0), 0);
+  const vendidosProductos = lista
+    .filter(([,p]) => Number(p.vendidosTotal || 0) > 0)
+    .sort(([,a],[,b]) => Number(b.vendidosTotal || 0) - Number(a.vendidosTotal || 0));
 
-  let totalBeaGlobal = 0;
-  let totalLauraGlobal = 0;
+  const totalVendidosGlobal = vendidosProductos.reduce(
+    (acc, [,p]) => acc + Number(p.vendidosTotal || 0), 0
+  );
 
-  // Pintar total unidades a la venta
-  totalUnidadesVentaEl.textContent = String(totalUnidadesVenta);
+  let totalBea = 0;
+  let totalLaura = 0;
 
-  if (todosConVentas.length === 0) {
-    tablaEstadisticas.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">❌ No hay ventas registradas aún</td></tr>';
-    totalProductosVendidosEl.textContent = '0';
-    totalUnidadesVendidasEl.textContent = '0';
-    totalBeaEl.textContent = '€0.00';
-    totalLauraEl.textContent = '€0.00';
+  totalProductosVendidosEl.textContent = vendidosProductos.length;
+  totalUnidadesVendidasEl.textContent = totalVendidosGlobal;
+
+  if (vendidosProductos.length === 0) {
+    tabla.innerHTML = `<tr><td colspan="6">❌ No hay ventas</td></tr>`;
     return;
   }
 
-  totalProductosVendidosEl.textContent = String(todosConVentas.length);
-  totalUnidadesVendidasEl.textContent = String(totalVendidosGlobal);
+  tabla.innerHTML = vendidosProductos.map(([id,p], i) => {
+    const vendidos = Number(p.vendidosTotal || 0);
+    const bea = Number(p.vBea || 0);
+    const laura = Number(p.vLaura || 0);
 
-  tablaEstadisticas.innerHTML = todosConVentas.map(([id,p], index) => {
-    const vendidos = Number(p.vendidos || 0);
+    totalBea += bea;
+    totalLaura += laura;
 
-    const beaTotalCalc = Number(
-      p.vBea != null
-        ? p.vBea
-        : vendidos * Number(p.bea || 0)
-    );
-    const lauraTotalCalc = Number(
-      p.vLaura != null
-        ? p.vLaura
-        : vendidos * Number(p.laura || 0)
-    );
+    const porcentaje = ((vendidos / totalVendidosGlobal) * 100).toFixed(1);
 
-    totalBeaGlobal += beaTotalCalc;
-    totalLauraGlobal += lauraTotalCalc;
-
-    const beaTotal = beaTotalCalc.toFixed(2);
-    const lauraTotal = lauraTotalCalc.toFixed(2);
-
-    const porcentaje = totalVendidosGlobal > 0
-      ? ((vendidos / totalVendidosGlobal) * 100).toFixed(1)
-      : 0;
-
-    let clasePos = '';
-    if(index === 0) clasePos = 'pos1';
-    else if(index === 1) clasePos = 'pos2';
-    else if(index === 2) clasePos = 'pos3';
+    const clase = i === 0 ? "pos1" : i === 1 ? "pos2" : i === 2 ? "pos3" : "";
 
     return `
-      <tr class="${clasePos}">
-        <td style="font-weight:bold;font-size:16px">${index+1}</td>
-        <td style="text-align:left;font-weight:bold">
-          <a href="index.html?editId=${encodeURIComponent(id)}" style="color:#007bff;text-decoration:underline;cursor:pointer">
-            ${p.nombre}
-          </a>
-        </td>
-        <td style="font-size:18px;color:#28a745;font-weight:bold">${vendidos}</td>
-        <td style="color:#28a745;font-weight:bold">€${beaTotal}</td>
-        <td style="color:#007bff;font-weight:bold">€${lauraTotal}</td>
-        <td style="color:#ffc107;font-weight:bold">${porcentaje}%</td>
+      <tr class="${clase}">
+        <td>${i+1}</td>
+        <td style="text-align:left;font-weight:bold">${p.nombre}</td>
+        <td style="font-size:18px;font-weight:bold;color:#28a745">${vendidos}</td>
+        <td style="font-weight:bold;color:#28a745">€${bea.toFixed(2)}</td>
+        <td style="font-weight:bold;color:#007bff">€${laura.toFixed(2)}</td>
+        <td style="font-weight:bold;color:#ffc107">${porcentaje}%</td>
       </tr>
     `;
-  }).join('');
+  }).join("");
 
-  totalBeaEl.textContent = '€' + totalBeaGlobal.toFixed(2);
-  totalLauraEl.textContent = '€' + totalLauraGlobal.toFixed(2);
+  totalBeaEl.textContent = "€" + totalBea.toFixed(2);
+  totalLauraEl.textContent = "€" + totalLaura.toFixed(2);
 }
 
-// --------- BOTONES EXTRA ---------
-window.volver = () => {
-  window.location.href = 'index.html';
-};
-
-window.imprimir = () => {
-  window.print();
-};
-
-window.descargarPDF = async () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'mm', 'a4');
-  const element = document.getElementById('cardEstadisticas');
-
-  const canvas = await html2canvas(element, { 
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    windowHeight: element.scrollHeight
-  });
-
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 10;
-  const contentWidth = pageWidth - (margin * 2);
-
-  const imgWidth = contentWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  const marginTop = margin;
-  const marginBottom = 15;
-  const availableHeight = pageHeight - marginTop - marginBottom;
-
-  let yPosition = marginTop;
-  let sourceY = 0;
-  let pageNum = 1;
-
-  while (sourceY < canvas.height) {
-    const canvasHeightForPage = (availableHeight * canvas.width) / imgWidth;
-
-    if (pageNum > 1) {
-      doc.addPage();
-      yPosition = marginTop;
-    }
-
-    const pageCanvas = document.createElement('canvas');
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = Math.min(canvasHeightForPage, canvas.height - sourceY);
-
-    const ctx = pageCanvas.getContext('2d');
-    ctx.drawImage(
-      canvas,
-      0, sourceY, 
-      canvas.width, pageCanvas.height,
-      0, 0, 
-      canvas.width, pageCanvas.height
-    );
-
-    const pageImgData = pageCanvas.toDataURL('image/png');
-    const pageImgHeight = (pageCanvas.height * imgWidth) / canvas.width;
-
-    doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, pageImgHeight);
-
-    sourceY += pageCanvas.height;
-    pageNum++;
-  }
-
-  doc.save('estadisticas-inventario-laura.pdf');
-};
+window.volver = () => location.href = "index.html";
+window.imprimir = () => window.print();
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 </body>
 </html>
+
