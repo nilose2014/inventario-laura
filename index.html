@@ -1076,17 +1076,7 @@ window.onload = () => {
   document.getElementById('logFechaHasta').value = hoy;
   cargarLogs();
 };
-</script>
-</body>
-</html>`;
 
-if (userRole === 'admin') {
-  // Crear archivo logs.html para ventana nueva
-  const blob = new Blob([logsHTML], {type: 'text/html'});
-  const url = URL.createObjectURL(blob);
-  window.logsURL = url;
-}
-</script>
 
 </body>
 </html>
