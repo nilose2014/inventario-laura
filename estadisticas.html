@@ -135,9 +135,7 @@ function mostrarEstadisticas() {
 
   const lista = Object.entries(productos);
 
-  const totalUnidadesVenta = lista.reduce(
-    (acc, [,p]) => acc + Number(p.stock || 0), 0
-  );
+  const totalUnidadesVenta = lista.reduce((acc, [,p]) => acc + Number(p.stock || 0), 0);
   totalUnidadesVentaEl.textContent = totalUnidadesVenta;
 
   const vendidosProductos = lista
@@ -162,13 +160,12 @@ function mostrarEstadisticas() {
   tabla.innerHTML = vendidosProductos.map(([id,p], i) => {
     const vendidos = Number(p.vendidosTotal || 0);
 
-    const bea = p.vBea != null
-      ? Number(p.vBea)
-      : vendidos * Number(p.bea || 0);
+    // Convertir cualquier precio a número, eliminando símbolos
+    const beaUnit = Number(String(p.bea || "0").replace(/[^0-9.-]+/g,""));
+    const lauraUnit = Number(String(p.laura || "0").replace(/[^0-9.-]+/g,""));
 
-    const laura = p.vLaura != null
-      ? Number(p.vLaura)
-      : vendidos * Number(p.laura || 0);
+    const bea = p.vBea != null ? Number(p.vBea) : vendidos * beaUnit;
+    const laura = p.vLaura != null ? Number(p.vLaura) : vendidos * lauraUnit;
 
     totalBea += bea;
     totalLaura += laura;
@@ -192,8 +189,52 @@ function mostrarEstadisticas() {
   totalLauraEl.textContent = "€" + totalLaura.toFixed(2);
 }
 
+// --------- BOTONES ---------
 window.volver = () => location.href = "index.html";
 window.imprimir = () => window.print();
+
+// PDF multipágina y confiable
+window.descargarPDF = async () => {
+  const element = document.getElementById("cardEstadisticas");
+  // Esperar a que la tabla se renderice
+  await new Promise(r => setTimeout(r, 500));
+
+  const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 10;
+  const imgWidth = pageWidth - 2*margin;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  const doc = new jsPDF("p","mm","a4");
+
+  // Si la imagen cabe en una página
+  if(imgHeight < pageHeight - 2*margin){
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, imgWidth, imgHeight);
+  } else {
+    // Multipágina
+    let remainingHeight = canvas.height;
+    let position = 0;
+    const pageCanvas = document.createElement("canvas");
+    const ctx = pageCanvas.getContext("2d");
+
+    while(remainingHeight > 0){
+      const sliceHeight = Math.min(canvas.height, (pageHeight - 2*margin) * (canvas.width / imgWidth));
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceHeight;
+      ctx.clearRect(0,0,pageCanvas.width,pageCanvas.height);
+      ctx.drawImage(canvas, 0, position, canvas.width, sliceHeight, 0,0, canvas.width, sliceHeight);
+      const imgData = pageCanvas.toDataURL("image/png");
+      const imgH = (sliceHeight * imgWidth)/canvas.width;
+      doc.addImage(imgData, "PNG", margin, margin, imgWidth, imgH);
+      position += sliceHeight;
+      remainingHeight -= sliceHeight;
+      if(remainingHeight > 0) doc.addPage();
+    }
+  }
+
+  doc.save("estadisticas-inventario-laura.pdf");
+};
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
