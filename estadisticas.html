@@ -159,8 +159,9 @@ function mostrarEstadisticas() {
     const beaUnit = Number(String(p.bea || 0).replace(/[^0-9.-]+/g,''));
     const lauraUnit = Number(String(p.laura || 0).replace(/[^0-9.-]+/g,''));
 
-    const beaTotal = p.vBea != null ? Number(p.vBea) : vendidos * beaUnit;
-    const lauraTotal = p.vLaura != null ? Number(p.vLaura) : vendidos * lauraUnit;
+    // Calculamos los totales de cada producto
+    const beaTotal = (p.vBea != null ? Number(p.vBea) : vendidos * beaUnit);
+    const lauraTotal = (p.vLaura != null ? Number(p.vLaura) : vendidos * lauraUnit);
 
     totalBea += beaTotal;
     totalLaura += lauraTotal;
