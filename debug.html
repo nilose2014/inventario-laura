@@ -2,170 +2,101 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>DIAGNÓSTICO - Inventario Laura Online - LOGS DEBUG</title>
+    <title>🔒 DEBUG ADMIN - Inventario Laura Online</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .debug-panel {
-            background: #fff3cd !important;
-            border: 2px solid #ffc107;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            max-height: 400px;
-            overflow: auto;
-            white-space: pre-wrap;
-            margin: 10px 0;
-        }
-        .log-btn {
-            background: #dc3545 !important;
-            color: white !important;
-            font-weight: bold !important;
-            padding: 10px 15px !important;
-            font-size: 14px !important;
-        }
-        .status {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-        }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; max-width: 1400px; margin: 0 auto; line-height: 1.6; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .debug-panel { background: #fff3cd !important; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; max-height: 400px; overflow: auto; white-space: pre-wrap; margin: 10px 0; }
+        .log-btn { background: #dc3545 !important; color: white !important; font-weight: bold !important; padding: 10px 15px !important; font-size: 14px !important; }
+        .status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
         .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
         .success { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
-        button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 2px;
-        }
+        .login-card { background: #e2e3e5; border: 2px solid #6c757d; text-align: center; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold; margin: 2px; }
         button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
         .red { background: #dc3545; }
         .red:hover { background: #c82333; }
-        .logs-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px !important;
-            margin-top: 15px;
-        }
-        .logs-table th, .logs-table td {
-            border: 1px solid #ddd;
-            padding: 6px !important;
-            text-align: center;
-        }
+        .logs-table { width: 100%; border-collapse: collapse; font-size: 12px !important; margin-top: 15px; }
+        .logs-table th, .logs-table td { border: 1px solid #ddd; padding: 6px !important; text-align: center; }
         .logs-table th { background: #dc3545; color: white; font-size: 12px !important; }
         .log-venta { background: #d4edda !important; }
         .log-reserva { background: #e8f4fd !important; }
         .log-cancelacion { background: #fff3cd !important; }
         .log-eliminacion { background: #f8d7da !important; }
-        .filtros-logs {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        #logFechaDesde, #logFechaHasta {
-            width: 140px;
-            padding: 6px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        #logBuscar {
-            width: 200px;
-            padding: 8px;
-        }
-        .log-count {
-            background: #007bff;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            font-weight: bold;
-            display: inline-block;
-        }
-        #debugConsole {
-            background: #000;
-            color: #0f0;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow: auto;
-            white-space: pre-wrap;
-            margin-top: 10px;
-        }
+        .filtros-logs { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+        #logFechaDesde, #logFechaHasta { width: 140px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; }
+        #logBuscar { width: 200px; padding: 8px; }
+        .log-count { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
+        #debugConsole { background: #000; color: #0f0; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow: auto; white-space: pre-wrap; margin-top: 10px; }
+        .admin-only { display: none; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>🔍 DIAGNÓSTICO COMPLETO - Inventario Laura Online</h2>
-        <div id="status" class="status error">Cargando diagnóstico...</div>
-        
-        <button onclick="testFirebase()">🧪 Test Firebase</button>
-        <button onclick="testEmailJS()">📧 Test EmailJS</button>
-        <button onclick="testAuth()">🔐 Test Auth</button>
-        <button onclick="testLogs()">📋 Ver LOGS Completos</button>
-        <button onclick="clearConsole()" class="red">🗑️ Limpiar Consola</button>
-        <button onclick="downloadDebug()" class="red">💾 Descargar Debug</button>
+    <!-- LOGIN OBLIGATORIO -->
+    <div id="loginPanel" class="card login-card">
+        <h2>🔐 ACCESO ADMINISTRADOR REQUERIDO</h2>
+        <p><strong>SOLO nilose2014@gmail.com</strong> puede usar Debug</p>
+        <input id="adminEmail" type="email" placeholder="nilose2014@gmail.com" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
+        <br>
+        <input id="adminPass" type="password" placeholder="Contraseña" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
+        <br>
+        <button onclick="loginAdmin()" style="padding: 12px 30px; font-size: 16px; background: #28a745;">🚀 ENTRAR COMO ADMIN</button>
+        <div id="loginStatus"></div>
     </div>
 
-    <div class="card">
-        <h3>📊 Consola de Errores del Navegador</h3>
-        <div id="debugConsole">Esperando errores...</div>
-    </div>
-
-    <div class="card" id="firebasePanel" style="display: none;">
-        <h3>🔥 Estado Firebase</h3>
-        <div id="firebaseStatus" class="debug-panel">Testeando conexión...</div>
-    </div>
-
-    <div class="card" id="logsPanel" style="display: none;">
-        <h3>📋 Historial Completo de LOGS</h3>
-        <div class="filtros-logs">
-            <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
-            <input type="date" id="logFechaDesde" onchange="cargarLogs()">
-            <input type="date" id="logFechaHasta" onchange="cargarLogs()">
-            <button onclick="cargarLogs()">Recargar</button>
-            <button class="red" onclick="document.getElementById('logsPanel').style.display='none'">Cerrar</button>
+    <!-- CONTENIDO ADMIN SOLO -->
+    <div id="adminPanel" class="admin-only">
+        <div class="card">
+            <h2>🔍 DIAGNÓSTICO COMPLETO - Inventario Laura Online</h2>
+            <div id="status" class="status error">Cargando...</div>
+            
+            <button onclick="testFirebase()">🧪 Test Firebase</button>
+            <button onclick="testEmailJS()">📧 Test EmailJS</button>
+            <button onclick="testLogs()">📋 Ver LOGS Completos</button>
+            <button onclick="testBackup()">💾 Test Backup</button>
+            <button onclick="clearConsole()" class="red">🗑️ Limpiar Consola</button>
+            <button onclick="downloadDebug()" class="red">💾 Descargar Debug</button>
+            <button onclick="logoutAdmin()" class="red">🚪 SALIR</button>
         </div>
-        <div id="logCount"></div>
-        <table class="logs-table">
-            <thead>
-                <tr>
-                    <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
-                </tr>
-            </thead>
-            <tbody id="tablaLogs"></tbody>
-        </table>
+
+        <div class="card">
+            <h3>📊 Consola de Errores</h3>
+            <div id="debugConsole">Esperando errores...</div>
+        </div>
+
+        <div class="card" id="firebasePanel" style="display: none;">
+            <h3>🔥 Estado Firebase</h3>
+            <div id="firebaseStatus" class="debug-panel">Testeando...</div>
+        </div>
+
+        <div class="card" id="logsPanel" style="display: none;">
+            <h3>📋 Historial Completo de LOGS</h3>
+            <div class="filtros-logs">
+                <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+                <input type="date" id="logFechaDesde" onchange="cargarLogs()">
+                <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+                <button onclick="cargarLogs()">Recargar</button>
+                <button class="red" onclick="document.getElementById('logsPanel').style.display='none'">Cerrar</button>
+            </div>
+            <div id="logCount"></div>
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaLogs"></tbody>
+            </table>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4/dist/email.min.js"></script>
     <script type="module">
-        // Configuración Firebase (tu config original)
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, onValue, set, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -180,18 +111,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
-        const logsRef = ref(db, 'logs');
-        
-        const EMAILJS_CONFIG = {
-            service: 'service65ryfan',
-            template: 'template06j67bo',
-            publicKey: 'q6b-zVGH0aBXeREzv'
-        };
+        const ADMIN_EMAIL = "nilose2014@gmail.com";
+        const EMAILJS_CONFIG = { service: 'service65ryfan', template: 'template06j67bo', publicKey: 'q6b-zVGH0aBXeREzv' };
 
         let todosLogs = [];
         let debugInfo = [];
+        let isAdmin = false;
 
-        // CONSOLA DEBUG PERSONALIZADA
         function logDebug(mensaje, tipo = 'INFO') {
             const timestamp = new Date().toLocaleString('es-ES');
             const log = `[${timestamp}] [${tipo}] ${mensaje}`;
@@ -205,91 +131,77 @@
             document.getElementById('debugConsole').scrollTop = document.getElementById('debugConsole').scrollHeight;
         }
 
-        // CAPTURA DE ERRORES GLOBAL
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            logDebug(`ERROR: ${msg} en ${url}:${lineNo}:${columnNo}`, 'ERROR');
-            return false;
+        // CAPTURA ERRORES
+        window.onerror = (msg, url, lineNo) => logDebug(`ERROR: ${msg} en ${url}:${lineNo}`, 'ERROR');
+        window.addEventListener('unhandledrejection', (e) => logDebug(`PROMISE ERROR: ${e.reason}`, 'ERROR'));
+
+        // LOGIN SOLO ADMIN
+        window.loginAdmin = async () => {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            
+            if (email !== ADMIN_EMAIL) {
+                document.getElementById('loginStatus').innerHTML = '<span style="color: red;">❌ SOLO nilose2014@gmail.com</span>';
+                return;
+            }
+
+            try {
+                document.getElementById('loginStatus').innerHTML = '🔄 Iniciando...';
+                await signInWithEmailAndPassword(auth, email, pass);
+                logDebug('✅ ADMIN LOGUEADO CORRECTAMENTE');
+                document.getElementById('loginPanel').style.display = 'none';
+                document.getElementById('adminPanel').classList.remove('admin-only');
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').innerHTML = '✅ ADMINISTRADOR AUTORIZADO';
+            } catch (error) {
+                logDebug(`❌ LOGIN FALLÓ: ${error.message}`, 'ERROR');
+                document.getElementById('loginStatus').innerHTML = `<span style="color: red;">❌ ${error.message}</span>`;
+            }
         };
 
-        window.addEventListener('unhandledrejection', function(event) {
-            logDebug(`PROMISE REJECTED: ${event.reason}`, 'ERROR');
-        });
+        window.logoutAdmin = async () => {
+            await signOut(auth);
+            location.reload();
+        };
 
         // TESTS
         window.testFirebase = async () => {
-            logDebug('🧪 Iniciando test Firebase...');
+            logDebug('🧪 Test Firebase ADMIN...');
+            document.getElementById('firebasePanel').style.display = 'block';
+            document.getElementById('firebaseStatus').textContent = 'Conectando...\n';
+
+            // Test reglas escritura (solo admin)
             try {
-                document.getElementById('firebasePanel').style.display = 'block';
-                document.getElementById('firebaseStatus').textContent = 'Conectando a Firebase...\n';
-                
-                // Test DB
-                onValue(logsRef, (snap) => {
-                    const count = snap.size || 0;
-                    logDebug(`✅ Firebase DB OK - ${count} logs encontrados`);
-                    document.getElementById('firebaseStatus').textContent += `✅ Database: ${count} logs\n`;
-                }, (error) => {
-                    logDebug(`❌ Firebase DB ERROR: ${error.message}`, 'ERROR');
-                    document.getElementById('firebaseStatus').textContent += `❌ Database: ${error.message}\n`;
-                });
-
-                // Test Auth
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        logDebug(`✅ Auth: Usuario logueado ${user.email}`);
-                        document.getElementById('firebaseStatus').textContent += `✅ Auth: ${user.email}\n`;
-                    } else {
-                        logDebug('⚠️ Auth: No hay usuario logueado');
-                        document.getElementById('firebaseStatus').textContent += '⚠️ Auth: No logueado\n';
-                    }
-                });
-
-                document.getElementById('status').className = 'status success';
-                document.getElementById('status').innerHTML = '✅ Tests Firebase ejecutados correctamente';
-                
-            } catch (error) {
-                logDebug(`❌ Test Firebase falló: ${error.message}`, 'ERROR');
+                const testRef = ref(db, 'logs/admin-test');
+                await set(testRef, { admin: true, time: Date.now() });
+                await remove(testRef);
+                document.getElementById('firebaseStatus').textContent += '✅ Reglas ADMIN OK\n';
+            } catch (e) {
+                document.getElementById('firebaseStatus').textContent += `❌ Reglas: ${e.message}\n`;
             }
+
+            onValue(ref(db, 'logs'), (snap) => {
+                document.getElementById('firebaseStatus').textContent += `✅ Logs: ${snap.size || 0} registros\n`;
+            });
         };
 
-        window.testEmailJS = async () => {
-            logDebug('📧 Testeando EmailJS...');
-            if (!window.emailjs) {
-                logDebug('❌ EmailJS no cargado', 'ERROR');
-                return;
-            }
+        window.testEmailJS = () => {
+            logDebug('📧 Test EmailJS...');
+            if (!window.emailjs) return logDebug('❌ EmailJS no cargado', 'ERROR');
             emailjs.init(EMAILJS_CONFIG.publicKey);
-            logDebug('✅ EmailJS inicializado correctamente');
-            
-            try {
-                // Test real (comentado para no spamear)
-                // await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, {subject: 'TEST DEBUG'});
-                logDebug('✅ EmailJS listo para enviar (test simulado)');
-            } catch (err) {
-                logDebug(`❌ EmailJS error: ${err.message}`, 'ERROR');
-            }
+            logDebug('✅ EmailJS listo');
         };
 
-        window.testAuth = async () => {
-            logDebug('🔐 Testeando Auth...');
-            const email = prompt('Email para test:');
-            const pass = prompt('Contraseña:');
-            if (!email || !pass) return;
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                logDebug('✅ Auth OK');
-            } catch (error) {
-                logDebug(`❌ Auth falló: ${error.message}`, 'ERROR');
-            }
+        window.testLogs = () => {
+            document.getElementById('logsPanel').style.display = 'block';
+            cargarLogs();
         };
 
-        // LOGS COMPLETOS
         window.cargarLogs = () => {
             const desde = document.getElementById('logFechaDesde').value;
             const hasta = document.getElementById('logFechaHasta').value;
             
-            todosLogs = [];
-            onValue(logsRef, (snap) => {
+            onValue(ref(db, 'logs'), (snap) => {
                 todosLogs = [];
                 snap.forEach((child) => {
                     const log = child.val();
@@ -317,13 +229,7 @@
         window.renderLogs = (logs) => {
             const tabla = document.getElementById('tablaLogs');
             tabla.innerHTML = '';
-            
             logs.forEach(log => {
-                const claseTipo = log.tipo === 'venta' ? 'tipo-venta' :
-                                log.tipo === 'reserva' ? 'tipo-reserva' :
-                                log.tipo === 'cancelacion-reserva' ? 'tipo-cancel-reserva' :
-                                log.tipo === 'eliminacion-venta' ? 'tipo-elim-venta' : '';
-                
                 const claseFila = log.tipo === 'venta' ? 'log-venta' :
                                 log.tipo === 'reserva' ? 'log-reserva' :
                                 log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
@@ -332,7 +238,7 @@
                 tabla.innerHTML += `
                     <tr class="${claseFila}">
                         <td>${log.fecha}</td>
-                        <td><span class="log-tipo ${claseTipo}">${log.tipo?.replace(/-/g, ' ').toUpperCase()}</span></td>
+                        <td>${log.tipo?.replace(/-/g, ' ').toUpperCase()}</td>
                         <td style="text-align:left">${log.productoNombre}</td>
                         <td>${log.cantidad}</td>
                         <td>${log.usuario}</td>
@@ -340,16 +246,7 @@
                     </tr>
                 `;
             });
-            document.getElementById('logCount').innerHTML = `<span class="log-count">${logs.length} movimientos encontrados</span>`;
-        };
-
-        window.testLogs = () => {
-            document.getElementById('logsPanel').style.display = 'block';
-            cargarLogs();
-            const hoy = new Date().toISOString().split('T')[0];
-            const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
-            document.getElementById('logFechaDesde').value = hace7dias;
-            document.getElementById('logFechaHasta').value = hoy;
+            document.getElementById('logCount').innerHTML = `<span class="log-count">${logs.length} movimientos</span>`;
         };
 
         window.clearConsole = () => {
@@ -361,30 +258,24 @@
         window.downloadDebug = () => {
             const data = {
                 timestamp: new Date().toISOString(),
+                admin: ADMIN_EMAIL,
                 debugLogs: debugInfo,
-                navegador: navigator.userAgent,
-                url: window.location.href,
-                firebaseConfig: Object.keys(firebaseConfig).map(k => `${k}: ${firebaseConfig[k].substring(0,20)}...`)
+                navegador: navigator.userAgent
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `debug-inventario-${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `debug-admin-${new Date().toISOString().slice(0,10)}.json`;
             a.click();
-            logDebug('💾 Debug descargado');
         };
 
         // INICIALIZACIÓN
         window.onload = () => {
-            logDebug('🚀 DEBUG PAGE CARGADA CORRECTAMENTE');
-            logDebug(`🌐 URL: ${window.location.href}`);
-            logDebug(`💻 Navegador: ${navigator.userAgent}`);
-            logDebug(`🔗 Firebase Config cargado`);
-            testFirebase();
-            
-            document.getElementById('status').className = 'status admin';
-            document.getElementById('status').innerHTML = '✅ Sistema de diagnóstico ACTIVADO<br>Usa los botones para testear';
+            logDebug('🚀 DEBUG ADMIN CARGADO');
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') loginAdmin();
+            });
         };
     </script>
 </body>
