@@ -135,7 +135,9 @@ function mostrarEstadisticas() {
 
   const lista = Object.entries(productos);
 
-  const totalUnidadesVenta = lista.reduce((acc, [,p]) => acc + Number(p.stock || 0), 0);
+  const totalUnidadesVenta = lista.reduce(
+    (acc, [,p]) => acc + Number(p.stock || 0), 0
+  );
   totalUnidadesVentaEl.textContent = totalUnidadesVenta;
 
   const vendidosProductos = lista
@@ -159,19 +161,24 @@ function mostrarEstadisticas() {
 
   tabla.innerHTML = vendidosProductos.map(([id,p], i) => {
     const vendidos = Number(p.vendidosTotal || 0);
-    const bea = Number(p.vBea || 0);
-    const laura = Number(p.vLaura || 0);
+
+    const bea = p.vBea != null
+      ? Number(p.vBea)
+      : vendidos * Number(p.bea || 0);
+
+    const laura = p.vLaura != null
+      ? Number(p.vLaura)
+      : vendidos * Number(p.laura || 0);
 
     totalBea += bea;
     totalLaura += laura;
 
     const porcentaje = ((vendidos / totalVendidosGlobal) * 100).toFixed(1);
-
     const clase = i === 0 ? "pos1" : i === 1 ? "pos2" : i === 2 ? "pos3" : "";
 
     return `
       <tr class="${clase}">
-        <td>${i+1}</td>
+        <td>${i + 1}</td>
         <td style="text-align:left;font-weight:bold">${p.nombre}</td>
         <td style="font-size:18px;font-weight:bold;color:#28a745">${vendidos}</td>
         <td style="font-weight:bold;color:#28a745">€${bea.toFixed(2)}</td>
@@ -194,4 +201,3 @@ window.imprimir = () => window.print();
 
 </body>
 </html>
-
