@@ -36,9 +36,8 @@
         .clean-logs:hover { background: #c82333 !important; }
         .debug-btn { background: #6f42c1 !important; }
         .debug-btn:hover { background: #5a32a3 !important; }
-        .totales-logs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center; font-size: 18px; font-weight: bold; padding: 15px; margin-bottom: 15px; background: #f8f9fa; border-radius: 10px; }
-        .total-bea-vendido { background: #d4edda; color: #155724; border: 2px solid #28a745; padding: 10px; border-radius: 8px; }
-        .total-bea-nosold { background: #fff3cd; color: #856404; border: 2px solid #ffc107; padding: 10px; border-radius: 8px; }
+        .totales-logs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; font-size: 18px; font-weight: bold; padding: 15px; margin-bottom: 15px; background: #f8f9fa; border-radius: 10px; }
+        .total-bea-total { background: #d4edda; color: #155724; border: 2px solid #28a745; padding: 10px; border-radius: 8px; }
         .total-cant { background: #cce7ff; color: #004085; border: 2px solid #007bff; padding: 10px; border-radius: 8px; }
         #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
         #status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
@@ -93,18 +92,14 @@
                 <button class="red" onclick="logout()">Cerrar Sesión</button>
             </div>
 
-            <!-- ⭐ TOTALES ACTUALIZADOS -->
+            <!-- ⭐ TOTAL BEA del INDEX (TODOS los productos) -->
             <div class="totales-logs">
-                <div class="total-bea-vendido">
-                    <strong>💰 TOTAL BEA VENDIDO</strong><br>
-                    <span id="totalBeaVendido" style="font-size: 24px; color: #28a745;">0.00 €</span>
-                </div>
-                <div class="total-bea-nosold">
-                    <strong>💰 TOTAL BEA NO VENDIDO</strong><br>
-                    <span id="totalBeaNoVendido" style="font-size: 24px; color: #856404;">0.00 €</span>
+                <div class="total-bea-total">
+                    <strong>💰 TOTAL BEA INDEX</strong><br>
+                    <span id="totalBeaIndex" style="font-size: 24px; color: #28a745;">0.00 €</span>
                 </div>
                 <div class="total-cant">
-                    <strong>📦 TOTAL CANTIDAD</strong><br>
+                    <strong>📦 TOTAL CANTIDAD (filtrados)</strong><br>
                     <span id="totalCantidadLogs" style="font-size: 24px; color: #007bff;">0</span>
                 </div>
             </div>
@@ -140,7 +135,9 @@
         const db = getDatabase(app);
         const auth = getAuth(app);
         const logsRef = ref(db, 'logs');
+        const productosRef = ref(db, 'productos'); // ⭐ PARA TOTAL BEA INDEX
         let todosLogs = [];
+        let todosProductos = {};
         let currentUser = null;
 
         window.login = () => {
@@ -175,49 +172,31 @@
             }
         };
 
-        // ⭐ CALCULAR TOTALES: Vendido vs NO Vendido
-        window.calcularTotalesLogs = (logs) => {
-            let totalBeaVendido = 0;
-            let totalBeaNoVendido = 0;
-            let totalCantidad = 0;
+        // ⭐ CALCULAR TOTAL BEA del INDEX (suma bea de TODOS los productos)
+        window.calcularTotalBeaIndex = () => {
+            let totalBea = 0;
+            Object.values(todosProductos).forEach(producto => {
+                totalBea += Number(producto.bea || 0);
+            });
+            document.getElementById('totalBeaIndex').textContent = totalBea.toFixed(2) + ' €';
+        };
 
+        // Calcular totales de logs filtrados (solo cantidad)
+        window.calcularTotalesLogs = (logs) => {
+            let totalCantidad = 0;
             logs.forEach(log => {
-                // Sumar cantidad para TODOS los movimientos
                 if (log.cantidad) {
                     totalCantidad += Number(log.cantidad);
                 }
-
-                // ⭐ VENDIDO: ventas y eliminaciones (Bea del log)
-                if (log.detalles && (log.tipo === 'venta' || log.tipo === 'eliminacion-venta')) {
-                    const matchBea = log.detalles.match(/Bea[€\s]*([\d.,]+)/i);
-                    if (matchBea) {
-                        // Para ventas: SUMAR Bea
-                        if (log.tipo === 'venta') {
-                            totalBeaVendido += parseFloat(matchBea[1].replace(',', '.'));
-                        }
-                        // Para eliminaciones: RESTAR Bea (devuelve dinero)
-                        else if (log.tipo === 'eliminacion-venta') {
-                            totalBeaVendido -= parseFloat(matchBea[1].replace(',', '.'));
-                        }
-                    }
-                }
-
-                // ⭐ NO VENDIDO: TODOS los demás movimientos que NO son ventas/eliminaciones
-                if (log.detalles && log.tipo !== 'venta' && log.tipo !== 'eliminacion-venta') {
-                    const matchBea = log.detalles.match(/Bea[€\s]*([\d.,]+)/i);
-                    if (matchBea) {
-                        totalBeaNoVendido += parseFloat(matchBea[1].replace(',', '.'));
-                    }
-                }
             });
-
-            // Asegurar que no sea negativo
-            totalBeaVendido = Math.max(0, totalBeaVendido);
-
-            document.getElementById('totalBeaVendido').textContent = totalBeaVendido.toFixed(2) + ' €';
-            document.getElementById('totalBeaNoVendido').textContent = totalBeaNoVendido.toFixed(2) + ' €';
             document.getElementById('totalCantidadLogs').textContent = totalCantidad.toLocaleString();
         };
+
+        // Cargar PRODUCTOS para total Bea Index
+        onValue(productosRef, (snap) => {
+            todosProductos = snap.val() || {};
+            calcularTotalBeaIndex();
+        });
 
         window.cargarLogs = () => {
             const desde = document.getElementById('logFechaDesde').value;
@@ -262,7 +241,7 @@
             const tabla = document.getElementById('tablaLogs');
             tabla.innerHTML = '';
             
-            // ⭐ CALCULAR TOTALES de logs filtrados
+            // Calcular totales de logs filtrados
             calcularTotalesLogs(logs);
 
             logs.forEach(log => {
