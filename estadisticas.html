@@ -99,7 +99,7 @@ onAuthStateChanged(auth, (user) => {
   if (!user || user.email !== 'nilose2014@gmail.com') {
     status.className = 'error';
     status.textContent = '❌ Solo el ADMIN puede ver esta página';
-    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+    setTimeout(() => window.location.href = 'index.html', 2000);
     return;
   }
   status.className = 'admin';
@@ -108,18 +108,18 @@ onAuthStateChanged(auth, (user) => {
 });
 
 function cargarEstadisticas() {
-  onValue(productosRef, (snap) => {
+  onValue(productosRef, snap => {
     productos = snap.val() || {};
-    mostrarEstadisticasCompletas();
-  }, (error) => {
+    mostrarEstadisticas();
+  }, error => {
     const status = document.getElementById('status');
     status.className = 'error';
     status.textContent = '❌ Error cargando datos: ' + error.message;
   });
 }
 
-function mostrarEstadisticasCompletas() {
-  const tablaEstadisticas = document.getElementById('tablaEstadisticas');
+function mostrarEstadisticas() {
+  const tabla = document.getElementById('tablaEstadisticas');
   const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
   const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
   const totalUnidadesVentaEl = document.getElementById('totalUnidadesVenta');
@@ -129,20 +129,19 @@ function mostrarEstadisticasCompletas() {
   const todosProductos = Object.entries(productos);
 
   const totalUnidadesVenta = todosProductos.reduce((acc, [,p]) => acc + Number(p.stock || 0), 0);
+  totalUnidadesVentaEl.textContent = totalUnidadesVenta;
 
-  const todosConVentas = todosProductos
-    .filter(([id,p]) => Number(p.vendidosTotal || 0) > 0) // <-- Usamos vendidosTotal aquí
-    .sort(([,a], [,b]) => Number(b.vendidosTotal || 0) - Number(a.vendidosTotal || 0));
+  const productosConVentas = todosProductos
+    .filter(([,p]) => Number(p.vendidosTotal || 0) > 0)
+    .sort(([,a],[,b]) => Number(b.vendidosTotal || 0) - Number(a.vendidosTotal || 0));
 
-  const totalVendidosGlobal = todosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidosTotal || 0), 0);
+  const totalVendidosGlobal = productosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidosTotal || 0), 0);
 
-  let totalBeaGlobal = 0;
-  let totalLauraGlobal = 0;
+  let totalBea = 0;
+  let totalLaura = 0;
 
-  totalUnidadesVentaEl.textContent = String(totalUnidadesVenta);
-
-  if (todosConVentas.length === 0) {
-    tablaEstadisticas.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">❌ No hay ventas registradas aún</td></tr>';
+  if(productosConVentas.length === 0){
+    tabla.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px">❌ No hay ventas</td></tr>';
     totalProductosVendidosEl.textContent = '0';
     totalUnidadesVendidasEl.textContent = '0';
     totalBeaEl.textContent = '€0.00';
@@ -150,120 +149,62 @@ function mostrarEstadisticasCompletas() {
     return;
   }
 
-  totalProductosVendidosEl.textContent = String(todosConVentas.length);
-  totalUnidadesVendidasEl.textContent = String(totalVendidosGlobal);
+  totalProductosVendidosEl.textContent = productosConVentas.length;
+  totalUnidadesVendidasEl.textContent = totalVendidosGlobal;
 
-  tablaEstadisticas.innerHTML = todosConVentas.map(([id,p], index) => {
-    const vendidos = Number(p.vendidosTotal || 0); // <-- Usamos vendidosTotal
+  tabla.innerHTML = productosConVentas.map(([id,p], i) => {
+    const vendidos = Number(p.vendidosTotal || 0);
 
-    const beaTotalCalc = Number(
-      p.vBea != null ? p.vBea : vendidos * Number(p.bea || 0)
-    );
-    const lauraTotalCalc = Number(
-      p.vLaura != null ? p.vLaura : vendidos * Number(p.laura || 0)
-    );
+    // Convertimos precio a número por si viene como string con €
+    const beaUnit = Number(String(p.bea || 0).replace(/[^0-9.-]+/g,''));
+    const lauraUnit = Number(String(p.laura || 0).replace(/[^0-9.-]+/g,''));
 
-    totalBeaGlobal += beaTotalCalc;
-    totalLauraGlobal += lauraTotalCalc;
+    const beaTotal = p.vBea != null ? Number(p.vBea) : vendidos * beaUnit;
+    const lauraTotal = p.vLaura != null ? Number(p.vLaura) : vendidos * lauraUnit;
 
-    const beaTotal = beaTotalCalc.toFixed(2);
-    const lauraTotal = lauraTotalCalc.toFixed(2);
+    totalBea += beaTotal;
+    totalLaura += lauraTotal;
 
-    const porcentaje = totalVendidosGlobal > 0 ? ((vendidos / totalVendidosGlobal) * 100).toFixed(1) : 0;
-
-    let clasePos = '';
-    if(index === 0) clasePos = 'pos1';
-    else if(index === 1) clasePos = 'pos2';
-    else if(index === 2) clasePos = 'pos3';
+    const porcentaje = totalVendidosGlobal > 0 ? ((vendidos / totalVendidosGlobal)*100).toFixed(1) : 0;
+    const clasePos = i===0?'pos1':i===1?'pos2':i===2?'pos3':'';
 
     return `
       <tr class="${clasePos}">
-        <td style="font-weight:bold;font-size:16px">${index+1}</td>
-        <td style="text-align:left;font-weight:bold">
-          <a href="index.html?editId=${encodeURIComponent(id)}" style="color:#007bff;text-decoration:underline;cursor:pointer">
-            ${p.nombre}
-          </a>
-        </td>
+        <td style="font-weight:bold;font-size:16px">${i+1}</td>
+        <td style="text-align:left;font-weight:bold">${p.nombre}</td>
         <td style="font-size:18px;color:#28a745;font-weight:bold">${vendidos}</td>
-        <td style="color:#28a745;font-weight:bold">€${beaTotal}</td>
-        <td style="color:#007bff;font-weight:bold">€${lauraTotal}</td>
+        <td style="color:#28a745;font-weight:bold">€${beaTotal.toFixed(2)}</td>
+        <td style="color:#007bff;font-weight:bold">€${lauraTotal.toFixed(2)}</td>
         <td style="color:#ffc107;font-weight:bold">${porcentaje}%</td>
       </tr>
     `;
   }).join('');
 
-  totalBeaEl.textContent = '€' + totalBeaGlobal.toFixed(2);
-  totalLauraEl.textContent = '€' + totalLauraGlobal.toFixed(2);
+  totalBeaEl.textContent = '€' + totalBea.toFixed(2);
+  totalLauraEl.textContent = '€' + totalLaura.toFixed(2);
 }
 
-// --------- BOTONES EXTRA ---------
+// --------- BOTONES ---------
 window.volver = () => window.location.href = 'index.html';
 window.imprimir = () => window.print();
 
 window.descargarPDF = async () => {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'mm', 'a4');
+  const doc = new jsPDF('p','mm','a4');
   const element = document.getElementById('cardEstadisticas');
+  const canvas = await html2canvas(element, {scale:2,useCORS:true,logging:false,windowHeight:element.scrollHeight});
 
-  const canvas = await html2canvas(element, { 
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    windowHeight: element.scrollHeight
-  });
+  const pageWidth = 210, pageHeight = 297, margin = 10;
+  const imgWidth = pageWidth - 2*margin;
+  const imgHeight = (canvas.height*imgWidth)/canvas.width;
 
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 10;
-  const contentWidth = pageWidth - (margin * 2);
-
-  const imgWidth = contentWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  const marginTop = margin;
-  const marginBottom = 15;
-  const availableHeight = pageHeight - marginTop - marginBottom;
-
-  let yPosition = marginTop;
-  let sourceY = 0;
-  let pageNum = 1;
-
-  while (sourceY < canvas.height) {
-    const canvasHeightForPage = (availableHeight * canvas.width) / imgWidth;
-
-    if (pageNum > 1) {
-      doc.addPage();
-      yPosition = marginTop;
-    }
-
-    const pageCanvas = document.createElement('canvas');
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = Math.min(canvasHeightForPage, canvas.height - sourceY);
-
-    const ctx = pageCanvas.getContext('2d');
-    ctx.drawImage(
-      canvas,
-      0, sourceY, 
-      canvas.width, pageCanvas.height,
-      0, 0, 
-      canvas.width, pageCanvas.height
-    );
-
-    const pageImgData = pageCanvas.toDataURL('image/png');
-    const pageImgHeight = (pageCanvas.height * imgWidth) / canvas.width;
-
-    doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, pageImgHeight);
-
-    sourceY += pageCanvas.height;
-    pageNum++;
-  }
-
+  doc.addImage(canvas.toDataURL('image/png'),'PNG',margin,margin,imgWidth,imgHeight);
   doc.save('estadisticas-inventario-laura.pdf');
 };
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 </body>
 </html>
