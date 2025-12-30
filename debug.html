@@ -37,8 +37,8 @@
     <!-- LOGIN OBLIGATORIO -->
     <div id="loginPanel" class="card login-card">
         <h2>🔐 ACCESO ADMINISTRADOR REQUERIDO</h2>
-        <p><strong>SOLO nilose2014@gmail.com</strong> puede usar Debug</p>
-        <input id="adminEmail" type="email" placeholder="nilose2014@gmail.com" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
+        <p><strong>SOLO [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede usar Debug</strong></p>
+        <input id="adminEmail" type="email" placeholder="Email administrador" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
         <br>
         <input id="adminPass" type="password" placeholder="Contraseña" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
         <br>
@@ -141,7 +141,7 @@
             const pass = document.getElementById('adminPass').value;
             
             if (email !== ADMIN_EMAIL) {
-                document.getElementById('loginStatus').innerHTML = '<span style="color: red;">❌ SOLO nilose2014@gmail.com</span>';
+                document.getElementById('loginStatus').innerHTML = '<span style="color: red;">❌ ACCESO DENEGADO</span>';
                 return;
             }
 
@@ -155,7 +155,7 @@
                 document.getElementById('status').innerHTML = '✅ ADMINISTRADOR AUTORIZADO';
             } catch (error) {
                 logDebug(`❌ LOGIN FALLÓ: ${error.message}`, 'ERROR');
-                document.getElementById('loginStatus').innerHTML = `<span style="color: red;">❌ ${error.message}</span>`;
+                document.getElementById('loginStatus').innerHTML = `<span style="color: red;">❌ Contraseña incorrecta</span>`;
             }
         };
 
@@ -258,7 +258,7 @@
         window.downloadDebug = () => {
             const data = {
                 timestamp: new Date().toISOString(),
-                admin: ADMIN_EMAIL,
+                admin: "AUTORIZADO",
                 debugLogs: debugInfo,
                 navegador: navigator.userAgent
             };
@@ -273,6 +273,8 @@
         // INICIALIZACIÓN
         window.onload = () => {
             logDebug('🚀 DEBUG ADMIN CARGADO');
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPass').value = '';
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') loginAdmin();
             });
