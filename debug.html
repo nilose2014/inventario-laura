@@ -118,6 +118,9 @@
         let debugInfo = [];
         let isAdmin = false;
 
+        // 🔹 NUEVO REF PARA BACKUP
+        const productosRef = ref(db, 'productos');
+
         function logDebug(mensaje, tipo = 'INFO') {
             const timestamp = new Date().toLocaleString('es-ES');
             const log = `[${timestamp}] [${tipo}] ${mensaje}`;
@@ -170,7 +173,6 @@
             document.getElementById('firebasePanel').style.display = 'block';
             document.getElementById('firebaseStatus').textContent = 'Conectando...\n';
 
-            // Test reglas escritura (solo admin)
             try {
                 const testRef = ref(db, 'logs/admin-test');
                 await set(testRef, { admin: true, time: Date.now() });
@@ -195,6 +197,25 @@
         window.testLogs = () => {
             document.getElementById('logsPanel').style.display = 'block';
             cargarLogs();
+        };
+
+        // 🔹 NUEVA FUNCIÓN TEST BACKUP
+        window.testBackup = async () => {
+            logDebug('💾 Test Backup iniciado...');
+            try {
+                const snapshot = await new Promise((resolve, reject) => {
+                    onValue(productosRef, resolve, { onlyOnce: true });
+                });
+
+                let total = 0;
+                snapshot.forEach(() => total++);
+
+                logDebug(`✅ Backup OK — ${total} productos encontrados`);
+                alert(`✅ Test Backup correcto\nProductos encontrados: ${total}`);
+            } catch (error) {
+                logDebug(`❌ Backup ERROR: ${error.message}`, 'ERROR');
+                alert('❌ Error en Test Backup');
+            }
         };
 
         window.cargarLogs = () => {
