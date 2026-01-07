@@ -31,6 +31,7 @@
         .log-count { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
         #debugConsole { background: #000; color: #0f0; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow: auto; white-space: pre-wrap; margin-top: 10px; }
         .admin-only { display: none; }
+        #emailTestPanel { display: none; }
     </style>
 </head>
 <body>
@@ -69,6 +70,11 @@
         <div class="card" id="firebasePanel" style="display: none;">
             <h3>🔥 Estado Firebase</h3>
             <div id="firebaseStatus" class="debug-panel">Testeando...</div>
+        </div>
+
+        <div class="card" id="emailTestPanel">
+            <h3>📧 Resultado Test EmailJS</h3>
+            <div id="emailTestStatus" class="debug-panel">Esperando test...</div>
         </div>
 
         <div class="card" id="logsPanel" style="display: none;">
@@ -187,11 +193,59 @@
             });
         };
 
-        window.testEmailJS = () => {
-            logDebug('📧 Test EmailJS...');
-            if (!window.emailjs) return logDebug('❌ EmailJS no cargado', 'ERROR');
-            emailjs.init(EMAILJS_CONFIG.publicKey);
-            logDebug('✅ EmailJS listo');
+        // 🔹 FUNCIÓN TEST EMAILJS COMPLETA
+        window.testEmailJS = async () => {
+            logDebug('📧 Test EmailJS COMPLETO iniciado...');
+            document.getElementById('emailTestPanel').style.display = 'block';
+            const statusPanel = document.getElementById('emailTestStatus');
+            statusPanel.textContent = '🔄 Iniciando test EmailJS...\n';
+
+            try {
+                // 1. Verificar EmailJS cargado
+                if (!window.emailjs) {
+                    statusPanel.textContent += '❌ EmailJS no cargado\n';
+                    logDebug('❌ EmailJS SDK no disponible', 'ERROR');
+                    return;
+                }
+                statusPanel.textContent += '✅ EmailJS SDK cargado\n';
+
+                // 2. Inicializar EmailJS
+                emailjs.init(EMAILJS_CONFIG.publicKey);
+                statusPanel.textContent += '✅ EmailJS inicializado con Public Key\n';
+
+                // 3. Test real de envío
+                const testParams = {
+                    to_email: ADMIN_EMAIL,
+                    to_name: 'Admin Laura',
+                    subject: '🧪 TEST DEBUG ADMIN - EmailJS OK',
+                    message: `Test EmailJS ejecutado el ${new Date().toLocaleString('es-ES')}\n\n✅ EmailJS funciona correctamente.\nAdmin: ${ADMIN_EMAIL}\nDebug Panel: OK`,
+                    timestamp: new Date().toISOString()
+                };
+
+                statusPanel.textContent += '🔄 Enviando email de prueba...\n';
+                
+                const result = await emailjs.send(
+                    EMAILJS_CONFIG.service, 
+                    EMAILJS_CONFIG.template, 
+                    testParams
+                );
+
+                statusPanel.textContent += `✅ EMAIL ENVIADO CORRECTAMENTE!\n`;
+                statusPanel.textContent += `📧 ID: ${result}\n`;
+                statusPanel.textContent += `📨 Destinatario: ${ADMIN_EMAIL}\n`;
+                statusPanel.textContent += `⏰ ${new Date().toLocaleString('es-ES')}\n`;
+
+                logDebug(`✅ EmailJS TEST OK - ID: ${result}`);
+                statusPanel.style.background = '#d4edda';
+                statusPanel.style.borderColor = '#28a745';
+
+            } catch (error) {
+                statusPanel.textContent += `❌ ERROR EmailJS: ${error.text || error.message}\n`;
+                statusPanel.textContent += `📋 Status Code: ${error.status || 'N/A'}\n`;
+                logDebug(`❌ EmailJS ERROR: ${error.text || error.message}`, 'ERROR');
+                statusPanel.style.background = '#f8d7da';
+                statusPanel.style.borderColor = '#dc3545';
+            }
         };
 
         window.testLogs = () => {
@@ -303,3 +357,4 @@
     </script>
 </body>
 </html>
+
