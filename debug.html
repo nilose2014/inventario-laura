@@ -98,7 +98,10 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4/dist/email.min.js"></script>
+    <!-- ✅ EmailJS CARGA MÚLTIPLE PARA EVITAR PROBLEMAS -->
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4.0.0/dist/email.min.js"></script>
+    <script src="https://cdn.emailjs.com/sdk/2.3.2/email.min.js"></script>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, onValue, set, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
@@ -143,6 +146,30 @@
         // CAPTURA ERRORES
         window.onerror = (msg, url, lineNo) => logDebug(`ERROR: ${msg} en ${url}:${lineNo}`, 'ERROR');
         window.addEventListener('unhandledrejection', (e) => logDebug(`PROMISE ERROR: ${e.reason}`, 'ERROR'));
+
+        // 🔹 FUNCIÓN PARA VERIFICAR Y CARGAR EmailJS
+        function verificarEmailJS() {
+            return new Promise((resolve) => {
+                let intentos = 0;
+                const maxIntentos = 10;
+
+                const checkInterval = setInterval(() => {
+                    intentos++;
+                    
+                    // Verificar múltiples versiones de EmailJS
+                    if (window.emailjs || window.EmailJS || emailjs) {
+                        clearInterval(checkInterval);
+                        resolve(true);
+                        return;
+                    }
+
+                    if (intentos >= maxIntentos) {
+                        clearInterval(checkInterval);
+                        resolve(false);
+                    }
+                }, 300); // Chequea cada 300ms
+            });
+        }
 
         // LOGIN SOLO ADMIN
         window.loginAdmin = async () => {
@@ -193,27 +220,40 @@
             });
         };
 
-        // 🔹 FUNCIÓN TEST EMAILJS COMPLETA
+        // 🔹 FUNCIÓN TEST EMAILJS CORREGIDA Y ROBUSTA
         window.testEmailJS = async () => {
             logDebug('📧 Test EmailJS COMPLETO iniciado...');
             document.getElementById('emailTestPanel').style.display = 'block';
             const statusPanel = document.getElementById('emailTestStatus');
-            statusPanel.textContent = '🔄 Iniciando test EmailJS...\n';
+            statusPanel.textContent = '🔄 Verificando EmailJS...\n';
 
             try {
-                // 1. Verificar EmailJS cargado
-                if (!window.emailjs) {
-                    statusPanel.textContent += '❌ EmailJS no cargado\n';
-                    logDebug('❌ EmailJS SDK no disponible', 'ERROR');
+                // 1. Esperar y verificar EmailJS (múltiples versiones)
+                const emailjsDisponible = await verificarEmailJS();
+                if (!emailjsDisponible) {
+                    statusPanel.textContent += '❌ EmailJS NO disponible después de 3s\n';
+                    statusPanel.textContent += '💡 Scripts cargados pero objeto no accesible\n';
+                    logDebug('❌ EmailJS NO disponible tras espera', 'ERROR');
+                    
+                    // Intentar carga dinámica como fallback
+                    statusPanel.textContent += '🔄 Intentando carga dinámica...\n';
+                    await cargarEmailJSDinamico(statusPanel);
                     return;
                 }
-                statusPanel.textContent += '✅ EmailJS SDK cargado\n';
 
-                // 2. Inicializar EmailJS
-                emailjs.init(EMAILJS_CONFIG.publicKey);
-                statusPanel.textContent += '✅ EmailJS inicializado con Public Key\n';
+                statusPanel.textContent += '✅ EmailJS SDK detectado\n';
 
-                // 3. Test real de envío
+                // 2. Obtener referencia al objeto EmailJS
+                let emailjsObj = window.emailjs || window.EmailJS || emailjs;
+                statusPanel.textContent += `📦 EmailJS versión detectada: ${typeof emailjsObj}\n`;
+
+                // 3. Inicializar
+                if (emailjsObj.init) {
+                    emailjsObj.init(EMAILJS_CONFIG.publicKey);
+                    statusPanel.textContent += '✅ EmailJS inicializado\n';
+                }
+
+                // 4. Test real de envío
                 const testParams = {
                     to_email: ADMIN_EMAIL,
                     to_name: 'Admin Laura',
@@ -224,11 +264,12 @@
 
                 statusPanel.textContent += '🔄 Enviando email de prueba...\n';
                 
-                const result = await emailjs.send(
-                    EMAILJS_CONFIG.service, 
-                    EMAILJS_CONFIG.template, 
-                    testParams
-                );
+                let result;
+                if (emailjsObj.send) {
+                    result = await emailjsObj.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, testParams);
+                } else {
+                    throw new Error('Método send() no disponible');
+                }
 
                 statusPanel.textContent += `✅ EMAIL ENVIADO CORRECTAMENTE!\n`;
                 statusPanel.textContent += `📧 ID: ${result}\n`;
@@ -240,13 +281,32 @@
                 statusPanel.style.borderColor = '#28a745';
 
             } catch (error) {
-                statusPanel.textContent += `❌ ERROR EmailJS: ${error.text || error.message}\n`;
-                statusPanel.textContent += `📋 Status Code: ${error.status || 'N/A'}\n`;
-                logDebug(`❌ EmailJS ERROR: ${error.text || error.message}`, 'ERROR');
+                statusPanel.textContent += `❌ ERROR EmailJS: ${error.message || error.text}\n`;
+                statusPanel.textContent += `📋 Detalles: ${JSON.stringify(error, null, 2)}\n`;
+                logDebug(`❌ EmailJS ERROR: ${error.message || error.text}`, 'ERROR');
                 statusPanel.style.background = '#f8d7da';
                 statusPanel.style.borderColor = '#dc3545';
             }
         };
+
+        // 🔹 FALLBACK: CARGA DINÁMICA EmailJS
+        async function cargarEmailJSDinamico(statusPanel) {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+                script.onload = () => {
+                    statusPanel.textContent += '✅ EmailJS cargado dinámicamente\n';
+                    logDebug('✅ EmailJS cargado vía fallback dinámico');
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    statusPanel.textContent += '❌ Fallback dinámico falló\n';
+                    logDebug('❌ Fallback EmailJS falló', 'ERROR');
+                    resolve(false);
+                };
+                document.head.appendChild(script);
+            });
+        }
 
         window.testLogs = () => {
             document.getElementById('logsPanel').style.display = 'block';
@@ -353,8 +413,18 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') loginAdmin();
             });
+            
+            // Verificar EmailJS al cargar
+            setTimeout(() => {
+                verificarEmailJS().then(disponible => {
+                    if (disponible) {
+                        logDebug('✅ EmailJS disponible al inicio');
+                    } else {
+                        logDebug('⚠️ EmailJS NO disponible al inicio - se intentará en test', 'WARN');
+                    }
+                });
+            }, 1000);
         };
     </script>
 </body>
 </html>
-
