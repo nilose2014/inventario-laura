@@ -152,6 +152,8 @@
         <button class="gray" onclick="setQuickFilter('reset-completo', this)">Resets</button>
       </div>
 
+      <div id="alertasInteligentes" class="card" style="margin-bottom:15px;background:#fff7ed;border:2px solid #fdba74;padding:14px"></div>
+
       <div class="totales-logs">
         <div class="total-box total-bea">
           <div>💰 TOTAL BEA INDEX</div>
@@ -195,6 +197,8 @@
               <th onclick="ordenarPor('bea')">Bea ⬍</th>
               <th onclick="ordenarPor('laura')">Laura ⬍</th>
               <th onclick="ordenarPor('margen')">Margen ⬍</th>
+              <th onclick="ordenarPor('ip')">IP ⬍</th>
+              <th onclick="ordenarPor('dispositivo')">Dispositivo ⬍</th>
               <th>Acción</th>
               <th>Detalles</th>
             </tr>
@@ -267,10 +271,51 @@
       const cantidad = Number(log?.cantidad || 0);
       const beaUnit = beaDirect || (beaMatch ? Number(beaMatch[1]) : 0);
       const lauraUnit = lauraDirect || (lauraMatch ? Number(lauraMatch[1]) : 0);
-      const bea = beaDirect && log?.totalBea ? Number(log.totalBea) : beaUnit * cantidad;
-      const laura = lauraDirect && log?.totalLaura ? Number(log.totalLaura) : lauraUnit * cantidad;
+      const bea = log?.totalBea != null ? Number(log.totalBea) : beaUnit * cantidad;
+      const laura = log?.totalLaura != null ? Number(log.totalLaura) : lauraUnit * cantidad;
       const margen = laura - bea;
       return { bea, laura, margen };
+    }
+
+    function resumirDispositivo(userAgent){
+      const ua = String(userAgent || '');
+      const navegador = /Edg/i.test(ua) ? 'Edge' : /OPR|Opera/i.test(ua) ? 'Opera' : /Chrome/i.test(ua) ? 'Chrome' : /Firefox/i.test(ua) ? 'Firefox' : /Safari/i.test(ua) ? 'Safari' : 'Navegador';
+      const sistema = /Windows/i.test(ua) ? 'Windows' : /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iOS/i.test(ua) ? 'iPhone/iPad' : /Mac OS|Macintosh/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : 'SO';
+      return `${navegador} / ${sistema}`;
+    }
+
+    function detectarAlertas(logs){
+      let correcciones = 0;
+      let cambiosPrecio = 0;
+      let ventasGrandes = 0;
+      const ips = new Set();
+
+      logs.forEach(log => {
+        if (log.tipo === 'eliminacion-venta') correcciones++;
+        if (log.tipo === 'precio-laura' || log.tipo === 'precio-laura-global') cambiosPrecio++;
+        if (log.tipo === 'venta' && Number(log.cantidad || 0) >= 10) ventasGrandes++;
+        if (log.ip && log.ip !== 'IP desconocida') ips.add(log.ip);
+      });
+
+      return {
+        correcciones,
+        cambiosPrecio,
+        ventasGrandes,
+        ipsDistintas: ips.size
+      };
+    }
+
+    function actualizarAlertas(logs){
+      const alertas = detectarAlertas(logs);
+      document.getElementById('alertasInteligentes').innerHTML = `
+        <div style="font-weight:bold;font-size:16px;margin-bottom:8px">🛡️ Alertas inteligentes</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <span class="mini-counter reset">Correcciones de venta: ${alertas.correcciones}</span>
+          <span class="mini-counter backup">IPs distintas: ${alertas.ipsDistintas}</span>
+          <span class="mini-counter precio">Cambios de precio: ${alertas.cambiosPrecio}</span>
+          <span class="mini-counter venta">Ventas grandes (10+): ${alertas.ventasGrandes}</span>
+        </div>
+      `;
     }
 
     function actualizarTotalBea(){
@@ -325,6 +370,8 @@
           case 'bea': va = Number(a.beaCalc || 0); vb = Number(b.beaCalc || 0); break;
           case 'laura': va = Number(a.lauraCalc || 0); vb = Number(b.lauraCalc || 0); break;
           case 'margen': va = Number(a.margenCalc || 0); vb = Number(b.margenCalc || 0); break;
+          case 'ip': va = safeLower(a.ip); vb = safeLower(b.ip); break;
+          case 'dispositivo': va = safeLower(a.dispositivoResumen); vb = safeLower(b.dispositivoResumen); break;
           default: va = Number(a.timestamp || 0); vb = Number(b.timestamp || 0);
         }
 
@@ -340,9 +387,10 @@
       const tabla = document.getElementById('tablaLogs');
       const count = document.getElementById('logCount');
       actualizarContadores(logs);
+      actualizarAlertas(logs);
 
       if (!logs.length){
-        tabla.innerHTML = '<tr><td colspan="10" class="empty-state">No hay logs con esos filtros</td></tr>';
+        tabla.innerHTML = '<tr><td colspan="12" class="empty-state">No hay logs con esos filtros</td></tr>';
         count.textContent = '0 movimientos encontrados';
         return;
       }
@@ -362,6 +410,8 @@
             <td class="money-bea">${log.beaCalc ? log.beaCalc.toFixed(2) + ' €' : '-'}</td>
             <td class="money-laura">${log.lauraCalc ? log.lauraCalc.toFixed(2) + ' €' : '-'}</td>
             <td class="money-margin">${log.lauraCalc || log.beaCalc ? log.margenCalc.toFixed(2) + ' €' : '-'}</td>
+            <td>${log.ip || '-'}</td>
+            <td>${log.dispositivoResumen || '-'}</td>
             <td>${productoUrl ? `<button class="product-link-btn" onclick="verProducto('${productoUrl}')">🔍</button>` : '-'}</td>
             <td style="text-align:left;font-size:11px">${log.detalles || ''}</td>
           </tr>
@@ -411,7 +461,9 @@
           safeLower(log.productoNombre).includes(texto) ||
           safeLower(log.usuario).includes(texto) ||
           safeLower(log.detalles).includes(texto) ||
-          safeLower(log.tipo).includes(texto);
+          safeLower(log.tipo).includes(texto) ||
+          safeLower(log.ip).includes(texto) ||
+          safeLower(log.dispositivoResumen).includes(texto);
         const coincideTipo = tipo === 'todos' || log.tipo === tipo;
         return coincideFecha && coincideTexto && coincideTipo && coincideQuickFilter(log);
       });
@@ -444,7 +496,7 @@
     };
 
     window.exportarCSV = () => {
-      const filas = [["Fecha","Tipo","Producto","Cantidad","Usuario","Bea","Laura","Margen","Detalles"]];
+      const filas = [["Fecha","Tipo","Producto","Cantidad","Usuario","Bea","Laura","Margen","IP","Dispositivo","Detalles"]];
       logsFiltradosActuales.forEach(log => {
         filas.push([
           log.fecha || '',
@@ -455,11 +507,14 @@
           log.beaCalc ? log.beaCalc.toFixed(2) : '',
           log.lauraCalc ? log.lauraCalc.toFixed(2) : '',
           log.lauraCalc || log.beaCalc ? log.margenCalc.toFixed(2) : '',
+          log.ip || '',
+          log.dispositivoResumen || '',
           log.detalles || ''
         ]);
       });
 
-      const csv = filas.map(f => f.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const csv = filas.map(f => f.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('
+');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -492,7 +547,9 @@
     };
 
     window.limpiarTodosLogs = async () => {
-      if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?\n\nEsta acción NO se puede deshacer.')) return;
+      if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?
+
+Esta acción NO se puede deshacer.')) return;
       try {
         await remove(logsRef);
         todosLogs = [];
@@ -532,7 +589,10 @@
           tipo: raw.tipo || '',
           beaCalc: Number(importes.bea || 0),
           lauraCalc: Number(importes.laura || 0),
-          margenCalc: Number(importes.margen || 0)
+          margenCalc: Number(importes.margen || 0),
+          ip: raw.ip || 'IP desconocida',
+          dispositivo: raw.dispositivo || '',
+          dispositivoResumen: resumirDispositivo(raw.dispositivo || '')
         });
       });
 
