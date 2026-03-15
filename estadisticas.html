@@ -19,6 +19,89 @@ body{font-family:Arial,Helvetica,sans-serif;background:#f0f2f5;padding:20px;max-
 .kpi.purple{background:#ede9fe;border-color:#6f42c1}
 .kpi.gray{background:#e9ecef;border-color:#6c757d}
 .kpi.orange{background:#ffe5d0;border-color:#fd7e14}
+
+.destacado-wrap{
+  display:grid;
+  grid-template-columns:340px 1fr;
+  gap:18px;
+  align-items:stretch;
+}
+.destacado-foto-box{
+  background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);
+  border:2px solid #e5e7eb;
+  border-radius:16px;
+  min-height:320px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.destacado-foto{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.destacado-no-foto{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  min-height:320px;
+  background:#eef2f7;
+  color:#64748b;
+  font-size:22px;
+  font-weight:bold;
+}
+.destacado-info{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.destacado-titulo{
+  font-size:15px;
+  font-weight:bold;
+  color:#6b7280;
+}
+.destacado-nombre{
+  font-size:34px;
+  line-height:1.15;
+  font-weight:900;
+  color:#111827;
+}
+.destacado-kpis{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.destacado-kpi{
+  padding:14px;
+  border-radius:14px;
+  border:2px solid #e5e7eb;
+  background:#fff;
+}
+.destacado-kpi .label{
+  font-size:13px;
+  font-weight:bold;
+  color:#64748b;
+  margin-bottom:6px;
+}
+.destacado-kpi .value{
+  font-size:28px;
+  font-weight:900;
+}
+.destacado-kpi.green{background:#d4edda;border-color:#28a745}
+.destacado-kpi.blue{background:#dbeafe;border-color:#0d6efd}
+.destacado-kpi.yellow{background:#fff3cd;border-color:#ffc107}
+.destacado-kpi.cyan{background:#d1ecf1;border-color:#17a2b8}
+.destacado-acciones{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:6px;
+}
+
 h1,h2,h3{margin-top:0}
 #status{padding:12px 15px;border-radius:10px;margin-bottom:15px;font-weight:bold}
 .admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
@@ -37,6 +120,8 @@ button.purple{background:#6f42c1}
 button.purple:hover{background:#5a32a3}
 button.red{background:#dc3545}
 button.red:hover{background:#c82333}
+button.orange{background:#fd7e14}
+button.orange:hover{background:#dc6d11}
 .tabla-container{overflow:auto;border-radius:12px}
 table{width:100%;border-collapse:collapse;background:white}
 th,td{border:1px solid #e5e7eb;padding:10px 8px;text-align:center;font-size:13px}
@@ -57,8 +142,74 @@ tr:hover{background:#e3f2fd}
 .chart-wrap{background:white;border-radius:12px;padding:10px;overflow:auto}
 canvas{width:100% !important;max-height:380px !important}
 #resumenFechas{font-size:13px;color:#475569;font-weight:bold}
-@media (max-width:1100px){.grid-top{grid-template-columns:repeat(2,1fr)}.section-grid{grid-template-columns:1fr}}
-@media (max-width:650px){body{padding:10px}.grid-top{grid-template-columns:1fr}.toolbar{align-items:stretch}.toolbar .field{width:100%}button{width:100%}}
+
+.prod-thumb{
+  width:56px;
+  height:56px;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid #d1d5db;
+  background:#f8fafc;
+  display:block;
+  margin:0 auto;
+}
+.prod-thumb-sm{
+  width:42px;
+  height:42px;
+  object-fit:cover;
+  border-radius:8px;
+  border:1px solid #d1d5db;
+  background:#f8fafc;
+  display:block;
+  margin:0 auto;
+}
+.no-foto{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:56px;
+  height:56px;
+  border-radius:10px;
+  background:#e5e7eb;
+  color:#6b7280;
+  font-size:11px;
+  font-weight:bold;
+}
+.no-foto-sm{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  border-radius:8px;
+  background:#e5e7eb;
+  color:#6b7280;
+  font-size:10px;
+  font-weight:bold;
+}
+.edit-btn{
+  background:#fd7e14;
+  color:white;
+  font-weight:bold;
+}
+.edit-btn:hover{
+  background:#dc6d11;
+}
+
+@media (max-width:1100px){
+  .grid-top{grid-template-columns:repeat(2,1fr)}
+  .section-grid{grid-template-columns:1fr}
+  .destacado-wrap{grid-template-columns:1fr}
+}
+@media (max-width:650px){
+  body{padding:10px}
+  .grid-top{grid-template-columns:1fr}
+  .toolbar{align-items:stretch}
+  .toolbar .field{width:100%}
+  button{width:100%}
+  .destacado-kpis{grid-template-columns:1fr}
+  .destacado-nombre{font-size:28px}
+}
 @media print {
   body{background:white;padding:0;margin:0;max-width:none}
   button,#status,.toolbar{display:none !important}
@@ -141,6 +292,11 @@ canvas{width:100% !important;max-height:380px !important}
   <div id="resumenFechas" style="margin-top:14px"></div>
 </div>
 
+<div class="card">
+  <h2>🌟 Producto destacado</h2>
+  <div id="productoDestacadoWrap"></div>
+</div>
+
 <div class="grid-top">
   <div class="kpi green"><div class="label">💰 Total Bea</div><div class="value" id="kpiBea">€0.00</div></div>
   <div class="kpi blue"><div class="label">💰 Total Laura</div><div class="value" id="kpiLaura">€0.00</div></div>
@@ -161,6 +317,7 @@ canvas{width:100% !important;max-height:380px !important}
           <thead>
             <tr>
               <th>Pos</th>
+              <th>Foto</th>
               <th>Producto</th>
               <th>Stock</th>
               <th>Próximo</th>
@@ -170,6 +327,7 @@ canvas{width:100% !important;max-height:380px !important}
               <th>Laura €</th>
               <th>% ventas</th>
               <th>Estado</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody id="tablaEstadisticas"></tbody>
@@ -198,7 +356,7 @@ canvas{width:100% !important;max-height:380px !important}
       <div class="tabla-container">
         <table class="mini-table">
           <thead>
-            <tr><th>#</th><th>Producto</th><th>Vendidos</th></tr>
+            <tr><th>#</th><th>Foto</th><th>Producto</th><th>Vendidos</th><th>Acción</th></tr>
           </thead>
           <tbody id="tablaTopVendidos"></tbody>
         </table>
@@ -210,7 +368,7 @@ canvas{width:100% !important;max-height:380px !important}
       <div class="tabla-container">
         <table class="mini-table">
           <thead>
-            <tr><th>#</th><th>Producto</th><th>Reservados</th></tr>
+            <tr><th>#</th><th>Foto</th><th>Producto</th><th>Reservados</th><th>Acción</th></tr>
           </thead>
           <tbody id="tablaTopReservados"></tbody>
         </table>
@@ -274,6 +432,26 @@ function esFechaDentro(fechaYmd, desde, hasta){
 }
 function normalizarNombre(s){ return String(s || '').toLowerCase().trim(); }
 
+function renderMiniFoto(url, small = false){
+  if (!url) {
+    return small
+      ? '<span class="no-foto-sm">Sin foto</span>'
+      : '<span class="no-foto">Sin foto</span>';
+  }
+  const cls = small ? 'prod-thumb-sm' : 'prod-thumb';
+  return `<img src="${url}" alt="Foto producto" class="${cls}" loading="lazy" referrerpolicy="no-referrer">`;
+}
+
+function renderFotoGrande(url){
+  if (!url) return '<div class="destacado-no-foto">Sin foto</div>';
+  return `<img src="${url}" alt="Foto producto" class="destacado-foto" loading="lazy" referrerpolicy="no-referrer">`;
+}
+
+function irEditarProducto(id){
+  window.location.href = `index.html?editId=${encodeURIComponent(id)}`;
+}
+window.irEditarProducto = irEditarProducto;
+
 onAuthStateChanged(auth, (user) => {
   const status = document.getElementById('status');
   if (!user || user.email !== 'nilose2014@gmail.com') {
@@ -320,6 +498,7 @@ window.renderTodo = () => {
   filasFiltradas = filtrarYOrdenar(data);
   totalVendidosGlobalRef = filasFiltradas.reduce((acc, p) => acc + p.vendidos, 0);
   renderResumenFechas();
+  renderProductoDestacado(filasFiltradas);
   renderKPIs(filasFiltradas);
   renderTablaPrincipal(filasFiltradas);
   renderTopVendidos(filasFiltradas);
@@ -350,6 +529,7 @@ function construirFilas(){
     return {
       id,
       nombre: p.nombre || hist.nombre || '',
+      imagen: p.imagen || '',
       stock,
       proximo,
       reservados,
@@ -485,6 +665,66 @@ function renderResumenFechas(){
   document.getElementById('resumenFechas').textContent = `Rango de logs usado para gráficos y periodos: ${desde || 'sin inicio'} → ${hasta || 'sin fin'}`;
 }
 
+function renderProductoDestacado(rows){
+  const wrap = document.getElementById('productoDestacadoWrap');
+
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="empty">No hay productos para destacar</div>';
+    return;
+  }
+
+  const top = [...rows].sort((a,b) => {
+    if (b.vendidos !== a.vendidos) return b.vendidos - a.vendidos;
+    return b.lauraTotal - a.lauraTotal;
+  })[0];
+
+  let estadoTexto = 'OK';
+  if (top.stock === 0) estadoTexto = 'AGOTADO';
+  else if (top.stock <= 5) estadoTexto = 'STOCK BAJO';
+  else if (top.proximo > 0) estadoTexto = 'CON PRÓXIMO STOCK';
+
+  wrap.innerHTML = `
+    <div class="destacado-wrap">
+      <div class="destacado-foto-box">
+        ${renderFotoGrande(top.imagen)}
+      </div>
+
+      <div class="destacado-info">
+        <div class="destacado-titulo">🏆 Producto más vendido del filtro actual</div>
+        <div class="destacado-nombre">${top.nombre}</div>
+
+        <div class="destacado-kpis">
+          <div class="destacado-kpi green">
+            <div class="label">Unidades vendidas</div>
+            <div class="value">${top.vendidos}</div>
+          </div>
+          <div class="destacado-kpi blue">
+            <div class="label">Ingresos Laura</div>
+            <div class="value">${formatEuro(top.lauraTotal)}</div>
+          </div>
+          <div class="destacado-kpi yellow">
+            <div class="label">Stock actual</div>
+            <div class="value">${top.stock}</div>
+          </div>
+          <div class="destacado-kpi cyan">
+            <div class="label">Reservados / Próximo</div>
+            <div class="value">${top.reservados} / ${top.proximo}</div>
+          </div>
+        </div>
+
+        <div style="font-size:14px;font-weight:bold;color:#475569">
+          Estado: ${estadoTexto} · Bea: ${formatEuro(top.beaTotal)} · Cuota: ${top.porcentaje.toFixed(1)}%
+        </div>
+
+        <div class="destacado-acciones">
+          <button class="orange" onclick="irEditarProducto('${top.id}')">✏️ Modificar producto</button>
+          <button onclick="window.scrollTo({top: document.getElementById('tablaEstadisticas').offsetTop - 120, behavior:'smooth'})">📋 Ver en ranking</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderKPIs(rows){
   const totalBea = rows.reduce((acc,p) => acc + p.beaTotal, 0);
   const totalLaura = rows.reduce((acc,p) => acc + p.lauraTotal, 0);
@@ -508,7 +748,7 @@ function renderKPIs(rows){
 function renderTablaPrincipal(rows){
   const tabla = document.getElementById('tablaEstadisticas');
   if (!rows.length) {
-    tabla.innerHTML = '<tr><td colspan="10" class="empty">❌ No hay datos con esos filtros</td></tr>';
+    tabla.innerHTML = '<tr><td colspan="12" class="empty">❌ No hay datos con esos filtros</td></tr>';
     return;
   }
 
@@ -522,6 +762,7 @@ function renderTablaPrincipal(rows){
     return `
       <tr class="${clasePos}">
         <td style="font-weight:bold">${i + 1}</td>
+        <td>${renderMiniFoto(p.imagen, false)}</td>
         <td style="text-align:left;font-weight:bold">${p.nombre}</td>
         <td>${p.stock}</td>
         <td>${p.proximo}</td>
@@ -531,6 +772,7 @@ function renderTablaPrincipal(rows){
         <td style="color:#007bff;font-weight:bold">${formatEuro(p.lauraTotal)}</td>
         <td style="color:#ffc107;font-weight:bold">${p.porcentaje.toFixed(1)}%</td>
         <td>${estado}</td>
+        <td><button class="edit-btn" onclick="irEditarProducto('${p.id}')">✏️ Modificar</button></td>
       </tr>
     `;
   }).join('');
@@ -540,16 +782,16 @@ function renderTopVendidos(rows){
   const tbody = document.getElementById('tablaTopVendidos');
   const top = [...rows].filter(p => p.vendidos > 0).sort((a,b) => b.vendidos - a.vendidos).slice(0,10);
   tbody.innerHTML = top.length
-    ? top.map((p,i) => `<tr><td>${i+1}</td><td style="text-align:left">${p.nombre}</td><td>${p.vendidos}</td></tr>`).join('')
-    : '<tr><td colspan="3" class="empty">Sin ventas</td></tr>';
+    ? top.map((p,i) => `<tr><td>${i+1}</td><td>${renderMiniFoto(p.imagen, true)}</td><td style="text-align:left">${p.nombre}</td><td>${p.vendidos}</td><td><button class="edit-btn" onclick="irEditarProducto('${p.id}')">✏️</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Sin ventas</td></tr>';
 }
 
 function renderTopReservados(rows){
   const tbody = document.getElementById('tablaTopReservados');
   const top = [...rows].filter(p => p.reservados > 0).sort((a,b) => b.reservados - a.reservados).slice(0,10);
   tbody.innerHTML = top.length
-    ? top.map((p,i) => `<tr><td>${i+1}</td><td style="text-align:left">${p.nombre}</td><td>${p.reservados}</td></tr>`).join('')
-    : '<tr><td colspan="3" class="empty">Sin reservas</td></tr>';
+    ? top.map((p,i) => `<tr><td>${i+1}</td><td>${renderMiniFoto(p.imagen, true)}</td><td style="text-align:left">${p.nombre}</td><td>${p.reservados}</td><td><button class="edit-btn" onclick="irEditarProducto('${p.id}')">✏️</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Sin reservas</td></tr>';
 }
 
 function renderAlertas(rows){
@@ -669,7 +911,7 @@ window.volver = () => window.location.href = 'index.html';
 window.imprimir = () => window.print();
 
 window.descargarCSV = () => {
-  const filas = [["Pos","Producto","Stock","Proximo","Reservados","Vendidos","Bea","Laura","Porcentaje"]];
+  const filas = [["Pos","Producto","Stock","Proximo","Reservados","Vendidos","Bea","Laura","Porcentaje","Imagen"]];
   filasFiltradas.forEach((p, i) => {
     filas.push([
       i + 1,
@@ -680,7 +922,8 @@ window.descargarCSV = () => {
       p.vendidos,
       p.beaTotal.toFixed(2),
       p.lauraTotal.toFixed(2),
-      p.porcentaje.toFixed(1) + '%'
+      p.porcentaje.toFixed(1) + '%',
+      p.imagen || ''
     ]);
   });
 
