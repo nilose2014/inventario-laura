@@ -28,85 +28,88 @@
     .small{font-size:13px;color:#6b7280}
     input{padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;width:90px;text-align:center}
     .qty-wrap{display:flex;align-items:center;gap:10px;margin-top:14px}
-
     .public-card{
-      background:#ffffff;
-      border:2px solid #dbeafe;
-      border-radius:18px;
-      padding:26px;
+      border:2px solid #e5e7eb;
+      background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);
       text-align:center;
-      box-shadow:0 10px 25px rgba(0,0,0,.08)
+      overflow:hidden
+    }
+    .public-title{
+      font-size:18px;
+      font-weight:bold;
+      color:#475569;
+      margin-bottom:14px
     }
     .public-name{
-      font-size:30px;
-      font-weight:bold;
-      margin-bottom:16px;
+      font-size:34px;
+      font-weight:800;
+      line-height:1.15;
+      margin-bottom:18px;
       color:#111827
     }
-    .public-price-box{
-      background:#fff7ed;
-      border:2px solid #fdba74;
+    .public-price-wrap{
+      background:#111827;
+      color:#fff;
       border-radius:16px;
       padding:18px;
       margin-bottom:16px
     }
     .public-price-label{
-      font-size:16px;
-      font-weight:bold;
-      color:#9a3412
+      font-size:14px;
+      opacity:.9;
+      margin-bottom:8px
     }
     .public-price{
-      font-size:46px;
-      font-weight:bold;
-      color:#ea580c;
-      margin-top:8px
+      font-size:52px;
+      font-weight:900;
+      line-height:1
     }
-    .public-stock-box{
-      border-radius:16px;
-      padding:18px;
-      font-weight:bold
+    .public-stock{
+      display:inline-block;
+      padding:12px 18px;
+      border-radius:999px;
+      font-size:20px;
+      font-weight:800;
+      margin-top:6px
     }
     .stock-ok{
-      background:#dcfce7;
-      border:2px solid #86efac;
-      color:#166534
+      background:#d1fae5;
+      color:#065f46;
+      border:2px solid #10b981
     }
     .stock-low{
       background:#fef3c7;
-      border:2px solid #fcd34d;
-      color:#92400e
+      color:#92400e;
+      border:2px solid #f59e0b
     }
-    .stock-zero{
+    .stock-out{
       background:#fee2e2;
-      border:2px solid #fca5a5;
-      color:#991b1b
+      color:#991b1b;
+      border:2px solid #ef4444
     }
-    .public-stock-label{
-      font-size:16px
+    .public-note{
+      margin-top:16px;
+      font-size:13px;
+      color:#64748b;
+      font-weight:bold
     }
-    .public-stock{
-      font-size:38px;
-      margin-top:8px
-    }
-
     @media (max-width:700px){
       .grid{grid-template-columns:1fr}
       body{padding:10px}
-      .public-name{font-size:24px}
-      .public-price{font-size:38px}
-      .public-stock{font-size:32px}
+      .public-name{font-size:28px}
+      .public-price{font-size:42px}
     }
   </style>
 </head>
 <body>
-  <div class="card" id="topCard">
-    <h1>ℹ️ Información del producto</h1>
-    <div class="toolbar" id="toolbarPrivado">
+  <div class="card">
+    <h1>📦 Información del producto</h1>
+    <div class="toolbar">
       <button onclick="iniciarEscaner()">📷 Escanear producto</button>
       <button class="gray" onclick="detenerEscaner()">⏹️ Parar cámara</button>
       <button class="cyan" onclick="buscarManual()">⌨️ Buscar manual</button>
     </div>
-    <p class="small" id="textoSuperior">Si entras desde un QR con enlace, el producto se abrirá automáticamente.</p>
+    <p class="small">Si entras desde un QR con enlace, el producto se abrirá automáticamente.</p>
   </div>
 
   <div class="card hidden" id="scanCard">
@@ -115,43 +118,40 @@
     <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto.</div>
   </div>
 
-  <div class="card hidden producto" id="productoCard">
-    <h2 id="tituloFicha">🛒 Venta rápida</h2>
+  <div class="card hidden public-card" id="publicCard">
+    <div class="public-title">Información del producto</div>
+    <div class="public-name" id="publicNombre">-</div>
 
-    <div id="publicoWrap" class="hidden">
-      <div class="public-card">
-        <div class="public-name" id="publicNombre">-</div>
-
-        <div class="public-price-box">
-          <div class="public-price-label">Precio venta</div>
-          <div class="public-price" id="publicLaura">€0.00</div>
-        </div>
-
-        <div class="public-stock-box" id="publicStockBox">
-          <div class="public-stock-label">Stock disponible</div>
-          <div class="public-stock" id="publicStock">0</div>
-        </div>
-      </div>
+    <div class="public-price-wrap">
+      <div class="public-price-label">Precio venta</div>
+      <div class="public-price" id="publicPrecio">€0.00</div>
     </div>
 
-    <div id="privadoWrap">
-      <div class="grid" id="productoGrid">
-        <div class="stat">Producto<span class="value" id="prodNombre">-</span></div>
-        <div class="stat">Stock disponible<span class="value" id="prodStock">0</span></div>
-        <div class="stat" id="statBea">Precio Bea<span class="value" id="prodBea">€0.00</span></div>
-        <div class="stat">Precio venta<span class="value" id="prodLaura">€0.00</span></div>
-      </div>
+    <div id="publicStockBadge" class="public-stock stock-ok">Stock disponible: 0</div>
 
-      <div class="qty-wrap" id="qtyWrap">
-        <label for="cantidad">Cantidad</label>
-        <input id="cantidad" type="number" min="1" value="1">
-      </div>
+    <div class="public-note">
+      Modo consulta pública. Para vender o reservar necesitas iniciar sesión.
+    </div>
+  </div>
 
-      <div class="acciones" id="accionesWrap">
-        <button class="green" onclick="venderRapido()">🛒 Vender</button>
-        <button class="cyan" onclick="reservarRapido()">⏳ Reservar</button>
-        <button class="red" onclick="limpiarProducto()">❌ Cerrar ficha</button>
-      </div>
+  <div class="card hidden producto" id="productoCard">
+    <h2>🛒 Venta rápida</h2>
+    <div class="grid">
+      <div class="stat">Producto<span class="value" id="prodNombre">-</span></div>
+      <div class="stat">Stock<span class="value" id="prodStock">0</span></div>
+      <div class="stat">Precio Bea<span class="value" id="prodBea">€0.00</span></div>
+      <div class="stat">Precio Laura<span class="value" id="prodLaura">€0.00</span></div>
+    </div>
+
+    <div class="qty-wrap">
+      <label for="cantidad">Cantidad</label>
+      <input id="cantidad" type="number" min="1" value="1">
+    </div>
+
+    <div class="acciones">
+      <button class="green" onclick="venderRapido()">🛒 Vender</button>
+      <button class="cyan" onclick="reservarRapido()">⏳ Reservar</button>
+      <button class="red" onclick="limpiarProducto()">❌ Cerrar ficha</button>
     </div>
 
     <div id="accionStatus" style="margin-top:14px"></div>
@@ -194,6 +194,53 @@
       el.textContent = text;
     }
 
+    function tieneSesionValida(user){
+      return !!user;
+    }
+
+    function ocultarFichas(){
+      document.getElementById('productoCard').classList.add('hidden');
+      document.getElementById('publicCard').classList.add('hidden');
+    }
+
+    function renderPublico(p){
+      ocultarFichas();
+      document.getElementById('publicCard').classList.remove('hidden');
+      document.getElementById('publicNombre').textContent = p.nombre || '-';
+      document.getElementById('publicPrecio').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
+
+      const stock = Number(p.stock || 0);
+      const badge = document.getElementById('publicStockBadge');
+      badge.textContent = `Stock disponible: ${stock}`;
+
+      if (stock <= 0) {
+        badge.className = 'public-stock stock-out';
+      } else if (stock <= 5) {
+        badge.className = 'public-stock stock-low';
+      } else {
+        badge.className = 'public-stock stock-ok';
+      }
+    }
+
+    function pintarProducto(p) {
+      productoActual = p;
+      ocultarFichas();
+
+      if (!tieneSesionValida(currentUser)) {
+        renderPublico(p);
+        setStatus('scanStatus', `Producto detectado: ${p.nombre}`, 'success');
+        return;
+      }
+
+      document.getElementById('productoCard').classList.remove('hidden');
+      document.getElementById('prodNombre').textContent = p.nombre || '-';
+      document.getElementById('prodStock').textContent = Number(p.stock || 0);
+      document.getElementById('prodBea').textContent = `€${Number(p.bea || 0).toFixed(2)}`;
+      document.getElementById('prodLaura').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
+      document.getElementById('cantidad').value = 1;
+      setStatus('accionStatus', 'Producto listo para vender o reservar.', 'info');
+    }
+
     async function obtenerIP(){
       try{
         const cache = sessionStorage.getItem('inventario_ip');
@@ -233,7 +280,7 @@
       });
     }
 
-    async function buscarProductoPrivado(contenido) {
+    async function buscarProductoPrivadoPorContenidoQR(contenido) {
       const texto = String(contenido || '').trim();
       const snap = await get(productosRef);
       const productos = snap.val() || {};
@@ -261,7 +308,7 @@
       return null;
     }
 
-    async function buscarProductoPublico(contenido) {
+    async function buscarProductoPublicoPorContenidoQR(contenido) {
       const texto = String(contenido || '').trim();
       const snap = await get(productosPublicosRef);
       const productos = snap.val() || {};
@@ -290,70 +337,17 @@
     }
 
     async function buscarProductoPorContenidoQR(contenido) {
-      if (currentUser) return await buscarProductoPrivado(contenido);
-      return await buscarProductoPublico(contenido);
-    }
-
-    function pintarProducto(p) {
-      productoActual = p;
-      document.getElementById('productoCard').classList.remove('hidden');
-
-      document.getElementById('prodNombre').textContent = p.nombre || '-';
-      document.getElementById('prodStock').textContent = Number(p.stock || 0);
-      document.getElementById('prodBea').textContent = `€${Number(p.bea || 0).toFixed(2)}`;
-      document.getElementById('prodLaura').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
-      document.getElementById('cantidad').value = 1;
-
-      document.getElementById('publicNombre').textContent = p.nombre || '-';
-      document.getElementById('publicLaura').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
-      document.getElementById('publicStock').textContent = Number(p.stock || 0);
-
-      const stock = Number(p.stock || 0);
-      const box = document.getElementById('publicStockBox');
-      box.className = 'public-stock-box ' + (stock <= 0 ? 'stock-zero' : stock <= 5 ? 'stock-low' : 'stock-ok');
-
-      actualizarModoVista();
-    }
-
-    function actualizarModoVista() {
-      const acciones = document.getElementById('accionesWrap');
-      const accionStatus = document.getElementById('accionStatus');
-      const qtyWrap = document.getElementById('qtyWrap');
-      const toolbarPrivado = document.getElementById('toolbarPrivado');
-      const textoSuperior = document.getElementById('textoSuperior');
-      const tituloFicha = document.getElementById('tituloFicha');
-      const publicoWrap = document.getElementById('publicoWrap');
-      const privadoWrap = document.getElementById('privadoWrap');
-
-      if (!currentUser) {
-        acciones.classList.add('hidden');
-        qtyWrap.classList.add('hidden');
-        toolbarPrivado.classList.add('hidden');
-        document.getElementById('scanCard').classList.add('hidden');
-        textoSuperior.textContent = 'Consulta pública del producto.';
-        tituloFicha.textContent = 'ℹ️ Información del producto';
-        publicoWrap.classList.remove('hidden');
-        privadoWrap.classList.add('hidden');
-        accionStatus.className = 'info';
-        accionStatus.textContent = 'Consulta pública: nombre, precio de venta y stock disponible.';
-      } else {
-        acciones.classList.remove('hidden');
-        qtyWrap.classList.remove('hidden');
-        toolbarPrivado.classList.remove('hidden');
-        textoSuperior.textContent = 'Si entras desde un QR con enlace, el producto se abrirá automáticamente.';
-        tituloFicha.textContent = '🛒 Venta rápida';
-        publicoWrap.classList.add('hidden');
-        privadoWrap.classList.remove('hidden');
-        accionStatus.className = 'info';
-        accionStatus.textContent = 'Producto listo para vender o reservar.';
+      if (tieneSesionValida(currentUser)) {
+        return await buscarProductoPrivadoPorContenidoQR(contenido);
       }
+      return await buscarProductoPublicoPorContenidoQR(contenido);
     }
 
     async function procesarScan(texto) {
       await detenerEscaner();
       const producto = await buscarProductoPorContenidoQR(texto);
       if (!producto) {
-        document.getElementById('productoCard').classList.add('hidden');
+        ocultarFichas();
         setStatus('scanStatus', `No encontré producto para este QR: ${texto}`, 'error');
         return;
       }
@@ -363,47 +357,33 @@
 
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
-      actualizarModoVista();
+
+      const status = document.getElementById('scanStatus');
+      if (user) {
+        status.className = 'info';
+        status.textContent = 'Sesión detectada. Ya puedes escanear, vender o reservar.';
+      } else {
+        status.className = 'info';
+        status.textContent = 'Modo consulta: puedes ver nombre, precio de venta y stock.';
+      }
 
       const scanId = getQueryParam('scanId');
       if (scanId) {
-        try {
-          const producto = await buscarProductoPorContenidoQR(scanId);
-          if (!producto) {
-            document.getElementById('productoCard').classList.add('hidden');
-            if (user) {
-              document.getElementById('scanCard').classList.remove('hidden');
-              setStatus('scanStatus', `Producto no encontrado para scanId: ${scanId}`, 'error');
-            }
-            return;
-          }
+        document.getElementById('scanCard').classList.remove('hidden');
+        const producto = await buscarProductoPorContenidoQR(scanId);
 
-          pintarProducto(producto);
+        if (!producto) {
+          setStatus('scanStatus', `Producto no encontrado para scanId: ${scanId}`, 'error');
+          ocultarFichas();
+          return;
+        }
 
-          if (user) {
-            document.getElementById('scanCard').classList.remove('hidden');
-            setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
-          }
-        } catch (e) {
-          console.error(e);
-          if (user) {
-            document.getElementById('scanCard').classList.remove('hidden');
-            setStatus('scanStatus', 'Error cargando producto.', 'error');
-          }
-        }
-      } else {
-        if (user) {
-          document.getElementById('scanCard').classList.remove('hidden');
-          setStatus('scanStatus', 'Sesión detectada. Ya puedes escanear o vender.', 'info');
-        } else {
-          document.getElementById('scanCard').classList.add('hidden');
-        }
+        pintarProducto(producto);
+        setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
       }
     });
 
     window.iniciarEscaner = async () => {
-      if (!currentUser) return;
-
       document.getElementById('scanCard').classList.remove('hidden');
 
       if (!window.Html5Qrcode) {
@@ -440,32 +420,20 @@
     window.buscarManual = async () => {
       const texto = prompt('Escribe ID, URL QR o nombre exacto del producto');
       if (!texto) return;
-      try {
-        const producto = await buscarProductoPorContenidoQR(texto);
-        if (!producto) {
-          if (currentUser) {
-            document.getElementById('scanCard').classList.remove('hidden');
-            setStatus('scanStatus', 'Producto no encontrado.', 'error');
-          }
-          return;
-        }
-        pintarProducto(producto);
-        if (currentUser) {
-          document.getElementById('scanCard').classList.remove('hidden');
-          setStatus('scanStatus', `Producto encontrado manualmente: ${producto.nombre}`, 'success');
-        }
-      } catch (e) {
-        console.error(e);
-        if (currentUser) {
-          document.getElementById('scanCard').classList.remove('hidden');
-          setStatus('scanStatus', 'Error buscando producto.', 'error');
-        }
+      const producto = await buscarProductoPorContenidoQR(texto);
+      if (!producto) {
+        setStatus('scanStatus', 'Producto no encontrado.', 'error');
+        ocultarFichas();
+        return;
       }
+      pintarProducto(producto);
+      document.getElementById('scanCard').classList.remove('hidden');
+      setStatus('scanStatus', `Producto encontrado manualmente: ${producto.nombre}`, 'success');
     };
 
     window.limpiarProducto = () => {
       productoActual = null;
-      document.getElementById('productoCard').classList.add('hidden');
+      ocultarFichas();
       setStatus('accionStatus', '', 'info');
     };
 
@@ -480,9 +448,7 @@
     }
 
     window.venderRapido = async () => {
-      if (!productoActual) return;
-      if (!currentUser) return setStatus('accionStatus', 'Necesitas iniciar sesión para vender.', 'error');
-
+      if (!productoActual || !currentUser) return;
       const cantidad = Math.max(1, Number(document.getElementById('cantidad').value || 1));
       const p = await recargarProductoActual();
       if (!p) return setStatus('accionStatus', 'El producto ya no existe.', 'error');
@@ -497,6 +463,12 @@
         vBea: Number(p.vBea || 0) + Number(p.bea || 0) * cantidad,
         vLaura: Number(p.vLaura || 0) + Number(p.laura || 0) * cantidad,
         ...(nuevoStock === 0 ? { emailAgotadoEnviado: true } : {})
+      });
+
+      await update(ref(db, `productos_publicos/${p.id}`), {
+        nombre: p.nombre || '',
+        laura: Number(p.laura || 0),
+        stock: nuevoStock
       });
 
       await guardarLog(
@@ -519,9 +491,7 @@
     };
 
     window.reservarRapido = async () => {
-      if (!productoActual) return;
-      if (!currentUser) return setStatus('accionStatus', 'Necesitas iniciar sesión para reservar.', 'error');
-
+      if (!productoActual || !currentUser) return;
       const cantidad = Math.max(1, Number(document.getElementById('cantidad').value || 1));
       const p = await recargarProductoActual();
       if (!p) return setStatus('accionStatus', 'El producto ya no existe.', 'error');
@@ -534,6 +504,12 @@
       await update(ref(db, `productos/${p.id}`), {
         stock: nuevoStock,
         reservados: nuevosReservados
+      });
+
+      await update(ref(db, `productos_publicos/${p.id}`), {
+        nombre: p.nombre || '',
+        laura: Number(p.laura || 0),
+        stock: nuevoStock
       });
 
       await guardarLog('reserva', p.id, p.nombre, cantidad, currentUser.email, 'Reserva rápida QR');
