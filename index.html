@@ -193,6 +193,9 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
   <div id="stockVisible">📊 Stock: 0</div>
 </div>
 
+<button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+
 <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="background:#6f42c1;color:white;font-weight:bold;display:none">
   📊 Ver Estadísticas
 </button>
@@ -605,18 +608,58 @@ window.descargarTodosLosQR = async () => {
       if (!p) continue;
 
       const qrText = `${baseUrl}scanner.html?scanId=${id}`;
-      const canvas = document.createElement('canvas');
 
-      await QRCode.toCanvas(canvas, qrText, {
-        width: 500,
+      // canvas final con diseño tipo tarjeta
+      const finalCanvas = document.createElement('canvas');
+      const ctx = finalCanvas.getContext('2d');
+
+      const width = 900;
+      const height = 980;
+      finalCanvas.width = width;
+      finalCanvas.height = height;
+
+      // fondo blanco
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      // título
+      ctx.fillStyle = '#111111';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 52px Arial';
+      ctx.fillText('📱 QR del producto', width / 2, 90);
+
+      // nombre producto
+      const nombreProducto = String(p.nombre || 'Producto');
+      ctx.font = 'bold 46px Arial';
+
+      const maxTextWidth = width - 80;
+      let nombrePintar = nombreProducto;
+      while (ctx.measureText(nombrePintar).width > maxTextWidth && nombrePintar.length > 3) {
+        nombrePintar = nombrePintar.slice(0, -1);
+      }
+      if (nombrePintar !== nombreProducto) nombrePintar += '...';
+
+      ctx.fillText(nombrePintar, width / 2, 165);
+
+      // generar QR aparte
+      const qrCanvas = document.createElement('canvas');
+      await QRCode.toCanvas(qrCanvas, qrText, {
+        width: 620,
         margin: 2,
         errorCorrectionLevel: 'M'
       });
 
-      const dataUrl = canvas.toDataURL('image/png');
+      // dibujar QR centrado
+      const qrSize = 620;
+      const qrX = (width - qrSize) / 2;
+      const qrY = 230;
+      ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+
+      // exportar png
+      const dataUrl = finalCanvas.toDataURL('image/png');
       const base64 = dataUrl.split(',')[1];
 
-      const nombreSeguro = String(p.nombre || 'producto')
+      const nombreSeguro = nombreProducto
         .replace(/[\\/:*?"<>|]/g, '')
         .replace(/\s+/g, '_')
         .slice(0, 80);
