@@ -335,12 +335,8 @@ window.irEstadisticas = () => {
 };
 
 window.irLogs = () => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede ver LOGS');
-  const nuevaVentana = window.open('', '_blank');
-  if (!nuevaVentana) return alert('❌ El navegador ha bloqueado la ventana emergente');
-  nuevaVentana.document.open();
-  nuevaVentana.document.write(logsHTML);
-  nuevaVentana.document.close();
+  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede ver LOGS', 'error');
+  window.open('logs.html', '_blank');
 };
 
 window.guardarLog = async (tipo, productoId, productoNombre, cantidad, usuario, detalles = '') => {
