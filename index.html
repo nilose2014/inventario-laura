@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
@@ -53,28 +54,9 @@ input{padding:6px;border-radius:5px;border:1px solid #ccc;width:60px;font-size:1
 select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .stock-edit-btn{font-size:10px;padding:1px 4px;margin-left:3px}
 .stock-editable{background:#fff3cd !important}
-/* Próximo stock */
-.prox-input{
-  background:#e8f5e8 !important;
-  border:2px solid #28a745 !important;
-  font-weight:bold;
-  transition:all 0.3s ease !important;
-}
-.prox-input.tiene-valor{
-  background:linear-gradient(45deg,#007bff,#0056b3) !important;
-  border:3px solid #ffd700 !important;
-  color:white !important;
-  font-weight:bold !important;
-  font-size:16px !important;
-  text-shadow:0 1px 2px rgba(0,0,0,0.3) !important;
-  box-shadow:0 0 15px rgba(0,123,255,0.8),inset 0 0 10px rgba(255,255,255,0.2) !important;
-  transform:scale(1.1) !important;
-  animation:pulse-glow 2s infinite !important;
-}
-@keyframes pulse-glow{
- 0%,100%{box-shadow:0 0 15px rgba(0,123,255,0.8),inset 0 0 10px rgba(255,255,255,0.2)}
- 50%{box-shadow:0 0 25px rgba(0,123,255,1),inset 0 0 15px rgba(255,255,255,0.4)}
-}
+.prox-input{background:#e8f5e8 !important;border:2px solid #28a745 !important;font-weight:bold;transition:all 0.3s ease !important}
+.prox-input.tiene-valor{background:linear-gradient(45deg,#007bff,#0056b3) !important;border:3px solid #ffd700 !important;color:white !important;font-weight:bold !important;font-size:16px !important;text-shadow:0 1px 2px rgba(0,0,0,0.3) !important;box-shadow:0 0 15px rgba(0,123,255,0.8),inset 0 0 10px rgba(255,255,255,0.2) !important;transform:scale(1.1) !important;animation:pulse-glow 2s infinite !important}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 15px rgba(0,123,255,0.8),inset 0 0 10px rgba(255,255,255,0.2)}50%{box-shadow:0 0 25px rgba(0,123,255,1),inset 0 0 15px rgba(255,255,255,0.4)}}
 .prox-btn{background:#28a745 !important;color:white !important;font-size:10px !important;padding:2px 6px !important;margin-left:2px !important}
 .prox-btn:hover{background:#218838 !important}
 .undo-btn{background:#ffc107 !important;color:#000 !important;font-size:11px;padding:2px 5px !important;margin-left:2px}
@@ -98,7 +80,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .download-link:hover{background:#218838}
 .laura-negro{color:black !important}
 .laura-negro strong{color:black !important}
-/* LOGS */
 .log-btn{background:#dc3545 !important;color:white !important;font-weight:bold !important}
 .log-btn:hover{background:#c82333 !important}
 .log-table{font-size:12px !important}
@@ -109,19 +90,20 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .log-cancelacion{background:#fff3cd !important}
 .log-eliminacion{background:#f8d7da !important}
 .log-tipo{font-weight:bold;font-size:11px !important;padding:2px 6px !important;border-radius:3px !important;margin:1px !important}
-.tipo-venta{background:#28a5 !important;color:white !important}
+.tipo-venta{background:#28a745 !important;color:white !important}
 .tipo-reserva{background:#17a2b8 !important;color:white !important}
 .tipo-cancel-reserva{background:#ffc107 !important;color:black !important}
 .tipo-elim-venta{background:#dc3545 !important;color:white !important}
 .filtros-logs{display:flex;gap:10px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
 #logFechaDesde,#logFechaHasta{width:140px;padding:6px}
+@media (max-width:1100px){.totales-superiores,.totales-container{grid-template-columns:1fr 1fr 1fr}}
+@media (max-width:700px){.totales-superiores,.totales-container{grid-template-columns:1fr 1fr}.filtros{flex-direction:column;align-items:flex-start}body{padding:10px}}
 </style>
 </head>
 <body>
 
 <h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS</h2>
 
-<!-- LOGIN -->
 <div class="card login-card" id="loginDiv">
   <h3>🔐 Iniciar Sesión</h3>
   <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
@@ -137,7 +119,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="mainApp" style="display:none">
 
-<!-- TOTALES SUPERIORES (TODOS) -->
 <div class="totales-superiores" id="totalesSuperiores">
   <div class="total-box-superior bea">
     <strong>💰 Venta Bea</strong><br>
@@ -163,7 +144,6 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 
 <div id="status" class="error">Cargando...</div>
 
-<!-- NUEVO/EDITAR -->
 <div class="card" id="nuevoProductoDiv">
 <strong>📦 Nuevo/Editar Producto:</strong><br><br>
 Producto <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
@@ -175,11 +155,10 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
 </div>
 
-<!-- LISTADO -->
 <div class="card">
 <div class="filtros">
 🔍 <div style="position:relative;display:inline-block">
-  <input placeholder="Buscar producto..." id="buscar" onkeyup="toggleClearBtn();renderTablaSolo()">
+  <input placeholder="Buscar producto..." id="buscar" oninput="handleBuscarInput()">
   <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
 </div>
 <div class="contadores-filtrados">
@@ -194,8 +173,8 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
   📋 Ver LOGS
 </button>
 
-🆚 Ordenar: 
-<select id="ordenar" onchange="renderTablaSolo()">
+🆚 Ordenar:
+<select id="ordenar" onchange="programarRender()">
   <option value="nombre-asc">A → Z</option>
   <option value="nombre-desc">Z → A</option>
   <option value="stock-asc">Stock ↓</option>
@@ -222,7 +201,6 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </table>
 </div>
 
-<!-- TOTALES INFERIORES -->
 <div class="totales-container">
   <div class="total-box">
     <strong>💰 Venta Bea</strong><br>
@@ -254,13 +232,12 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
-<!-- BACKUP SOLO ADMIN -->
 <div class="card hidden" id="backupSection">
   <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
   <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
   <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
-  
+
   <div id="backupArea">
     <p>📋 Último backup disponible aquí 👇</p>
     <div id="backupText">Genera tu primer backup con el botón superior...</div>
@@ -276,7 +253,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue, update, remove, push, set, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, onValue, update, remove, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -294,23 +271,26 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
 const logsRef = ref(db, "logs");
+const backupRef = ref(db,'backup/ultimo');
 
 let productos = {};
 let totalesGlobales = { bea:0, laura:0, vendidos:0, reservados:0 };
 let editId = null;
 let currentUser = null;
 let userRole = null;
+let ultimoBackup = null;
+let productosVisiblesCount = 0;
+let stockVisibleTotal = 0;
+let renderPendiente = false;
+let buscarTimeout = null;
+let dataListenerIniciado = false;
+let emailInicializado = false;
 
 const EMAILJS_CONFIG = {
   service:'service_65ryfan',
   template:'template_06j67bo',
   publicKey:'q6b-zVGH0aBXeREzv'
 };
-
-let ultimoBackup = null;
-let backupRef = ref(db,'backup/ultimo');
-let productosVisiblesCount = 0;
-let stockVisibleTotal = 0;
 
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
@@ -323,7 +303,11 @@ window.irEstadisticas = () => {
 
 window.irLogs = () => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede ver LOGS');
-  window.open('logs.html', '_blank');
+  const nuevaVentana = window.open('', '_blank');
+  if (!nuevaVentana) return alert('❌ El navegador ha bloqueado la ventana emergente');
+  nuevaVentana.document.open();
+  nuevaVentana.document.write(logsHTML);
+  nuevaVentana.document.close();
 };
 
 window.guardarLog = async (tipo, productoId, productoNombre, cantidad, usuario, detalles = '') => {
@@ -331,9 +315,9 @@ window.guardarLog = async (tipo, productoId, productoNombre, cantidad, usuario, 
     timestamp: Date.now(),
     tipo,
     productoId,
-    productoNombre,
-    cantidad: Number(cantidad),
-    usuario,
+    productoNombre: productoNombre || '',
+    cantidad: Number(cantidad || 0),
+    usuario: usuario || '',
     detalles,
     fecha: new Date().toLocaleString('es-ES')
   };
@@ -343,14 +327,22 @@ window.guardarLog = async (tipo, productoId, productoNombre, cantidad, usuario, 
 window.toggleClearBtn = () => {
   const buscar = document.getElementById('buscar');
   const clearBtn = document.getElementById('buscar-clear');
-  clearBtn.style.display = buscar.value.length > 0 ? 'block':'none';
+  clearBtn.style.display = buscar.value.length > 0 ? 'block' : 'none';
+};
+
+window.handleBuscarInput = () => {
+  toggleClearBtn();
+  clearTimeout(buscarTimeout);
+  buscarTimeout = setTimeout(() => {
+    programarRender();
+  }, 180);
 };
 
 window.clearSearch = () => {
   const buscar = document.getElementById('buscar');
   buscar.value = '';
   document.getElementById('buscar-clear').style.display = 'none';
-  renderTablaSolo();
+  programarRender();
 };
 
 window.actualizarContadoresFiltrados = (count, stockTotal) => {
@@ -358,16 +350,27 @@ window.actualizarContadoresFiltrados = (count, stockTotal) => {
   document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
 };
 
+window.programarRender = () => {
+  if (renderPendiente) return;
+  renderPendiente = true;
+  requestAnimationFrame(() => {
+    renderPendiente = false;
+    renderTablaSolo();
+  });
+};
+
 window.anadirProximoStock = async (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede añadir stock próximo');
   const p = productos[id];
   const inputProx = document.querySelector(`input[data-producto="${id}"]`);
-  const cantidad = Number(inputProx.value) || 0;
+  const cantidad = Number(inputProx?.value) || 0;
   if (cantidad <= 0) return alert('❌ Cantidad inválida');
-  const nuevoStock = (p.stock || 0) + cantidad;
-  await update(ref(db,'productos/'+id),{stock:nuevoStock,proximo:0});
-  inputProx.value = '0';
-  inputProx.classList.remove('tiene-valor');
+  const nuevoStock = Number(p.stock || 0) + cantidad;
+  await update(ref(db,'productos/'+id), { stock:nuevoStock, proximo:0 });
+  if (inputProx) {
+    inputProx.value = '0';
+    inputProx.classList.remove('tiene-valor');
+  }
   await guardarLog('stock-anadido', id, p.nombre, cantidad, currentUser.email, `Stock real: ${nuevoStock}`);
   await enviarEmail({
     producto:p.nombre,
@@ -398,97 +401,102 @@ window.updateProxInputVisual = (input) => {
 };
 
 window.renderTablaSolo = () => {
-  const filtro = document.getElementById('buscar').value.toLowerCase();
+  const filtro = document.getElementById('buscar').value.toLowerCase().trim();
   const productosOrdenados = ordenarProductos(productos);
   const tabla = document.getElementById('tabla');
-  tabla.innerHTML = '';
+
+  let html = '';
   productosVisiblesCount = 0;
   stockVisibleTotal = 0;
 
-  productosOrdenados.forEach(([id,p])=>{
-    if(!p?.nombre?.toLowerCase().includes(filtro)) return;
+  for (const [id, p] of productosOrdenados) {
+    const nombreLc = (p?.nombre || '').toLowerCase();
+    if (!nombreLc.includes(filtro)) continue;
+
     productosVisiblesCount++;
     stockVisibleTotal += Number(p.stock || 0);
-    const stockDisponible = p.stock || 0;
-    const proximoDisponible = p.proximo || 0;
-    const stockClass = stockDisponible<=0 ? 'sin-stock' : stockDisponible<=5 ? 'stock-bajo':'';  
-    const stockCellClass = userRole==='admin' ? 'stock-editable':'';  
-    const filaClass = (p.reservados||0)>0 ? 'reservado':stockClass;
-    const tieneProximo = proximoDisponible>0;
 
-    tabla.innerHTML += `
+    const stockDisponible = Number(p.stock || 0);
+    const proximoDisponible = Number(p.proximo || 0);
+    const stockClass = stockDisponible <= 0 ? 'sin-stock' : stockDisponible <= 5 ? 'stock-bajo' : '';
+    const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
+    const filaClass = (p.reservados || 0) > 0 ? 'reservado' : stockClass;
+    const tieneProximo = proximoDisponible > 0;
+
+    html += `
     <tr class="${filaClass}">
-      <td style="font-weight:bold;text-align:left">${p.nombre}</td>
+      <td style="font-weight:bold;text-align:left">${p.nombre || ''}</td>
       <td class="${stockCellClass}">
         ${stockDisponible}
-        ${userRole==='admin'?`<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>`:''}
+        ${userRole==='admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
       <td>
-        <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo?'tiene-valor':''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
-        ${userRole==='admin'?`
+        <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" style="width:45px" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
+        ${userRole==='admin' ? `
           <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
           <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
-        `:''}
+        ` : ''}
       </td>
       <td class="reservados">
-        ${p.reservados||0}
-        ${(p.reservados||0)>0?`<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>`:''}
+        ${p.reservados || 0}
+        ${(p.reservados || 0) > 0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
       </td>
       <td class="vendidos">
-        ${p.vendidos||0}
-        ${(p.vendidos||0)>0?`<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>`:''}
+        ${p.vendidos || 0}
+        ${(p.vendidos || 0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
       </td>
-      <td>${Number(p.bea||0).toFixed(2)}</td>
+      <td>${Number(p.bea || 0).toFixed(2)}</td>
       <td class="editable laura-negro">
-        <strong>${Number(p.laura||0).toFixed(2)}</strong>
+        <strong>${Number(p.laura || 0).toFixed(2)}</strong>
         <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
       </td>
       <td>
-        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+        <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" style="width:50px">
         <button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
       </td>
       <td>
-        <input type="number" min="1" max="${stockDisponible}" value="1" style="width:50px">
+        <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" style="width:50px">
         <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
       </td>
       <td>
-        <button onclick="editar('${id}')" ${userRole!=='admin'?'class="disabled" disabled':''}>✏️</button>
-        <button class="red" onclick="borrar('${id}')" ${userRole!=='admin'?'class="disabled" disabled':''}>🗑️</button>
+        <button onclick="editar('${id}')" ${userRole!=='admin' ? 'class="disabled" disabled' : ''}>✏️</button>
+        <button class="red" onclick="borrar('${id}')" ${userRole!=='admin' ? 'class="disabled" disabled' : ''}>🗑️</button>
       </td>
     </tr>`;
-  });
+  }
 
+  tabla.innerHTML = html;
   actualizarContadoresFiltrados(productosVisiblesCount, stockVisibleTotal);
 };
 
-window.updateProxInput = (id,value)=>{
-  const proximo = Math.max(0,Number(value));
-  update(ref(db,'productos/'+id),{proximo});
-  updateProxInputVisual(document.querySelector(`input[data-producto="${id}"]`));
+window.updateProxInput = (id, value) => {
+  const proximo = Math.max(0, Number(value));
+  update(ref(db,'productos/'+id), { proximo });
+  const input = document.querySelector(`input[data-producto="${id}"]`);
+  if (input) updateProxInputVisual(input);
 };
 
-// ✅ FUNCIÓN ELIMINAR VENTA - CON LOG
 window.eliminarUnaVenta = async (id) => {
   const p = productos[id];
-  const vendidos = p.vendidos || 0;
+  const vendidos = Number(p.vendidos || 0);
   if (vendidos === 0) return alert('❌ No hay ventas para eliminar');
-  
-  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${p.bea?.toFixed(2)} Bea / €${p.laura?.toFixed(2)} Laura`)) return;
-  
-  const nuevoStock = (p.stock || 0) + 1;
+
+  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${Number(p.bea || 0).toFixed(2)} Bea / €${Number(p.laura || 0).toFixed(2)} Laura`)) return;
+
+  const nuevoStock = Number(p.stock || 0) + 1;
   const nuevosVendidos = vendidos - 1;
-  const nuevoVBea = Math.max(0, (p.vBea || 0) - (p.bea || 0));
-  const nuevoVLaura = Math.max(0, (p.vLaura || 0) - (p.laura || 0));
-  
+  const nuevoVBea = Math.max(0, Number(p.vBea || 0) - Number(p.bea || 0));
+  const nuevoVLaura = Math.max(0, Number(p.vLaura || 0) - Number(p.laura || 0));
+
   await update(ref(db, 'productos/' + id), {
     stock: nuevoStock,
     vendidos: nuevosVendidos,
     vBea: nuevoVBea,
     vLaura: nuevoVLaura
   });
-  
+
   await guardarLog('eliminacion-venta', id, p.nombre, 1, currentUser.email, `Stock devuelto: ${nuevoStock}`);
-  
+
   await enviarEmail({
     producto: p.nombre,
     stock: nuevoStock,
@@ -496,168 +504,186 @@ window.eliminarUnaVenta = async (id) => {
     subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
     fecha: new Date().toLocaleString('es-ES')
   });
-  
+
   alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`);
 };
 
-window.hacerBackup = async ()=>{
-  if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede hacer backup');
-  try{
+window.hacerBackup = async () => {
+  if (currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
+  try {
     const backupData = {
       productos,
       totalesGlobales,
-      logs: true, // Solo marca que existen logs
-      fecha:new Date().toISOString(),
-      usuario:currentUser.email,
-      timestamp:Date.now()
+      logs: true,
+      fecha: new Date().toISOString(),
+      usuario: currentUser.email,
+      timestamp: Date.now()
     };
-    await set(backupRef,backupData);
-    document.getElementById('backupText').textContent = JSON.stringify(backupData,null,2);
+
+    await set(backupRef, backupData);
+    document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
     document.getElementById('backupDate').innerHTML = `<strong>📅 Backup creado: ${new Date().toLocaleString('es-ES')}</strong>`;
-    const blob = new Blob([JSON.stringify(backupData,null,2)],{type:'application/json'});
+
+    const oldLinks = document.querySelectorAll('.download-link');
+    oldLinks.forEach(link => link.remove());
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href=url;
-    a.download=`backup-inventario-${new Date().toISOString().slice(0,10)}.json`;
-    a.textContent='💾 DESCARGAR BACKUP';
-    a.className='download-link';
+    a.href = url;
+    a.download = `backup-inventario-${new Date().toISOString().slice(0,10)}.json`;
+    a.textContent = '💾 DESCARGAR BACKUP';
+    a.className = 'download-link';
     document.getElementById('backupArea').appendChild(a);
-    const oldLink = document.querySelector('.download-link');
-    if(oldLink && oldLink!==a) oldLink.remove();
+
     ultimoBackup = backupData;
     await guardarLog('backup-creado', null, 'BACKUP', 1, currentUser.email);
     alert('✅ Backup completado y descargado');
-  }catch(error){
-    alert('❌ Error en backup: '+error.message);
+  } catch(error) {
+    alert('❌ Error en backup: ' + error.message);
   }
 };
 
-window.restaurarBackup = async (event)=>{
-  if(currentUser.email!=='nilose2014@gmail.com') return alert('❌ Solo [nilose2014@gmail.com](mailto:nilose2014@gmail.com) puede restaurar');
+window.restaurarBackup = async (event) => {
+  if (currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede restaurar');
   const file = event.target.files[0];
-  if(!file) return;
-  if(!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se mantienen LOGS')) return;
-  try{
+  if (!file) return;
+  if (!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se mantienen LOGS')) return;
+  try {
     const text = await file.text();
     const backupData = JSON.parse(text);
-    await set(ref(db,'productos'),backupData.productos);
+    await set(ref(db,'productos'), backupData.productos || {});
     await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
     alert('✅ Restauración completada. Recarga la página.');
     location.reload();
-  }catch(error){
-    alert('❌ Error restaurando: '+error.message);
+  } catch(error) {
+    alert('❌ Error restaurando: ' + error.message);
   }
 };
 
-window.cargarBackupFirebase = ()=>{
-  if(currentUser.email!=='nilose2014@gmail.com') return;
-  onValue(backupRef,(snap)=>{
-    if(snap.exists()){
+window.cargarBackupFirebase = () => {
+  if (currentUser.email !== 'nilose2014@gmail.com') return;
+  onValue(backupRef, (snap) => {
+    if (snap.exists()) {
       ultimoBackup = snap.val();
-      document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup,null,2);
+      document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup, null, 2);
       const fecha = new Date(ultimoBackup.timestamp).toLocaleString('es-ES');
       document.getElementById('backupDate').innerHTML = `<strong>📅 Último backup Firebase: ${fecha}</strong>`;
     }
   });
 };
 
-async function enviarEmail(datos){
-  if(!window.emailjs) return console.log('EmailJS cargando...');
-  emailjs.init(EMAILJS_CONFIG.publicKey);
-  try{
-    await emailjs.send(EMAILJS_CONFIG.service,EMAILJS_CONFIG.template,datos);
-    console.log('✅ Email enviado:',datos.subject);
-  }catch(err){
-    console.log('❌ Error email:',err);
+async function enviarEmail(datos) {
+  if (!window.emailjs) return console.log('EmailJS cargando...');
+
+  if (!emailInicializado) {
+    emailjs.init(EMAILJS_CONFIG.publicKey);
+    emailInicializado = true;
+  }
+
+  try {
+    await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, datos);
+    console.log('✅ Email enviado:', datos.subject);
+  } catch(err) {
+    console.log('❌ Error email:', err);
   }
 }
 
-window.onscroll = ()=>{
+window.onscroll = () => {
   const btn = document.getElementById('scrollTopBtn');
-  if(window.scrollY>300) btn.classList.add('show');
+  if (window.scrollY > 300) btn.classList.add('show');
   else btn.classList.remove('show');
 };
 
-document.getElementById('scrollTopBtn').onclick = ()=>window.scrollTo({top:0,behavior:'smooth'});
+document.getElementById('scrollTopBtn').onclick = () => window.scrollTo({ top:0, behavior:'smooth' });
 
-onAuthStateChanged(auth,(user)=>{
-  if(user){
-    currentUser=user;
-    document.getElementById('loginDiv').style.display='none';
-    document.getElementById('mainApp').style.display='block';
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('loginDiv').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
     checkUserRole();
-  }else{
-    document.getElementById('mainApp').style.display='none';
-    document.getElementById('loginDiv').style.display='block';
+  } else {
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginDiv').style.display = 'block';
+    dataListenerIniciado = false;
   }
 });
 
-window.login = ()=>{
+window.login = () => {
   const email = document.getElementById('userEmail').value.trim();
   const pass = document.getElementById('userPass').value;
-  if(!email || !pass) return alert('❌ Email y contraseña requeridos');
-  signInWithEmailAndPassword(auth,email,pass).catch(e=>alert('❌ Error: '+e.message));
+  if (!email || !pass) return alert('❌ Email y contraseña requeridos');
+  signInWithEmailAndPassword(auth, email, pass).catch(e => alert('❌ Error: ' + e.message));
 };
 
-window.logout = ()=>signOut(auth).catch(e=>alert('❌ Error: '+e.message));
+window.logout = () => signOut(auth).catch(e => alert('❌ Error: ' + e.message));
 
-window.resetLogin = ()=>{
-  document.getElementById('userEmail').value='';
-  document.getElementById('userPass').value='';
+window.resetLogin = () => {
+  document.getElementById('userEmail').value = '';
+  document.getElementById('userPass').value = '';
 };
 
-function checkUserRole(){
-  if(currentUser.email==='nilose2014@gmail.com'){
-    userRole='admin';
+function checkUserRole() {
+  if (currentUser.email === 'nilose2014@gmail.com') {
+    userRole = 'admin';
     document.getElementById('backupSection').classList.remove('hidden');
-    document.getElementById('btnEstadisticasTop').style.display='inline-block';
-    document.getElementById('btnLogsTop').style.display='inline-block';
-    document.getElementById('btnEstadisticas').style.display='inline-block';
-    document.getElementById('btnLogs').style.display='inline-block';
-  }else if(['djsubixj@gmail.com','xiomaralamasmala@gmail.com'].includes(currentUser.email)){
-    userRole='user';
+    document.getElementById('btnEstadisticasTop').style.display = 'inline-block';
+    document.getElementById('btnLogsTop').style.display = 'inline-block';
+    document.getElementById('btnEstadisticas').style.display = 'inline-block';
+    document.getElementById('btnLogs').style.display = 'inline-block';
+  } else if (['djsubixj@gmail.com','xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
+    userRole = 'user';
     document.getElementById('backupSection').classList.add('hidden');
-    document.getElementById('btnEstadisticasTop').style.display='none';
-    document.getElementById('btnLogsTop').style.display='none';
-    document.getElementById('btnEstadisticas').style.display='none';
-    document.getElementById('btnLogs').style.display='none';
-  }else{
-    userRole='user';
+    document.getElementById('btnEstadisticasTop').style.display = 'none';
+    document.getElementById('btnLogsTop').style.display = 'none';
+    document.getElementById('btnEstadisticas').style.display = 'none';
+    document.getElementById('btnLogs').style.display = 'none';
+  } else {
+    userRole = 'user';
     document.getElementById('backupSection').classList.add('hidden');
+    document.getElementById('btnEstadisticasTop').style.display = 'none';
+    document.getElementById('btnLogsTop').style.display = 'none';
+    document.getElementById('btnEstadisticas').style.display = 'none';
+    document.getElementById('btnLogs').style.display = 'none';
   }
+
   updateUI();
   toggleNuevoProducto();
   loadData();
-  if(currentUser.email==='nilose2014@gmail.com') cargarBackupFirebase();
+  if (currentUser.email === 'nilose2014@gmail.com') cargarBackupFirebase();
 }
 
-function toggleNuevoProducto(){
-  document.getElementById('nuevoProductoDiv').style.display = userRole==='admin'?'block':'none';
+function toggleNuevoProducto() {
+  document.getElementById('nuevoProductoDiv').style.display = userRole === 'admin' ? 'block' : 'none';
 }
 
-function updateUI(){
+function updateUI() {
   const status = document.getElementById('status');
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
 
-  if(userRole==='admin'){
+  if (userRole === 'admin') {
     status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK + 📊 ESTADÍSTICAS + 📋 LOGS ✅`;
-    status.className='admin';
-    guardarBtn.disabled=false; guardarBtn.className='';
-    resetBtn.disabled=false; resetBtn.className='';
-    precioGlobalBtn.disabled=false;
-  }else{
+    status.className = 'admin';
+    guardarBtn.disabled = false; guardarBtn.className = '';
+    resetBtn.disabled = false; resetBtn.className = 'red';
+    precioGlobalBtn.disabled = false;
+  } else {
     status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + CORREGIR VENTAS ✅`;
-    status.className='user';
-    guardarBtn.disabled=true; guardarBtn.className='disabled';
-    resetBtn.disabled=true; resetBtn.className='disabled';
-    precioGlobalBtn.disabled=false; precioGlobalBtn.className='';
+    status.className = 'user';
+    guardarBtn.disabled = true; guardarBtn.className = 'disabled';
+    resetBtn.disabled = true; resetBtn.className = 'disabled';
+    precioGlobalBtn.disabled = false; precioGlobalBtn.className = '';
   }
 }
 
-function loadData(){
-  onValue(productosRef,(snap)=>{
+function loadData() {
+  if (dataListenerIniciado) return;
+  dataListenerIniciado = true;
+
+  onValue(productosRef, (snap) => {
     productos = snap.val() || {};
 
     const editFromUrl = getQueryParam('editId');
@@ -668,10 +694,14 @@ function loadData(){
       window.history.replaceState({}, '', url.toString());
     }
 
-    totalesGlobales.bea=0; totalesGlobales.laura=0; totalesGlobales.vendidos=0; totalesGlobales.reservados=0;
-    Object.values(productos).forEach(p=>{
-      const vBeaReal = Number(p.vBea || p.vendidos*(p.bea||0) || 0);
-      const vLauraReal = Number(p.vLaura || p.vendidos*(p.laura||0) || 0);
+    totalesGlobales.bea = 0;
+    totalesGlobales.laura = 0;
+    totalesGlobales.vendidos = 0;
+    totalesGlobales.reservados = 0;
+
+    Object.values(productos).forEach(p => {
+      const vBeaReal = Number(p.vBea || 0);
+      const vLauraReal = Number(p.vLaura || 0);
       const vendidosReal = Number(p.vendidos || 0);
       const reservadosReal = Number(p.reservados || 0);
       totalesGlobales.bea += vBeaReal;
@@ -679,38 +709,54 @@ function loadData(){
       totalesGlobales.vendidos += vendidosReal;
       totalesGlobales.reservados += reservadosReal;
     });
-    actualizarTotales(totalesGlobales.bea,totalesGlobales.laura,totalesGlobales.vendidos,totalesGlobales.reservados);
-    renderTablaSolo();
-  },(error)=>{
-    document.getElementById('status').textContent='❌ Error de conexión';
-    document.getElementById('status').className='error';
+
+    actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
+    programarRender();
+  }, (error) => {
+    document.getElementById('status').textContent = '❌ Error de conexión';
+    document.getElementById('status').className = 'error';
+    console.error(error);
   });
 }
 
-function ordenarProductos(productosObj){
+function ordenarProductos(productosObj) {
   const orden = document.getElementById('ordenar').value;
   const entradas = Object.entries(productosObj);
-  return entradas.sort((a,b)=>{
-    const pA=a[1],pB=b[1];
-    const [campo,dir] = orden.split('-');
-    let valorA,valorB;
-    switch(campo){
+  return entradas.sort((a,b) => {
+    const pA = a[1], pB = b[1];
+    const [campo, dir] = orden.split('-');
+    let valorA, valorB;
+
+    switch (campo) {
       case 'nombre':
-        valorA=(pA.nombre||'').toLowerCase();
-        valorB=(pB.nombre||'').toLowerCase();
-        return dir==='asc'?valorA.localeCompare(valorB):valorB.localeCompare(valorA);
-      case 'stock': case 'vendidos': case 'reservados': case 'proximo':
-        valorA=pA[campo]||0; valorB=pB[campo]||0; break;
+        valorA = (pA.nombre || '').toLowerCase();
+        valorB = (pB.nombre || '').toLowerCase();
+        return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
+      case 'stock':
+      case 'vendidos':
+      case 'reservados':
+      case 'proximo':
+        valorA = Number(pA[campo] || 0);
+        valorB = Number(pB[campo] || 0);
+        break;
       case 'bea':
-        valorA=pA.bea||0; valorB=pB.bea||0; break;
+        valorA = Number(pA.bea || 0);
+        valorB = Number(pB.bea || 0);
+        break;
       case 'laura':
-        valorA=pA.laura||0; valorB=pB.laura||0; break;
+        valorA = Number(pA.laura || 0);
+        valorB = Number(pB.laura || 0);
+        break;
+      default:
+        valorA = 0;
+        valorB = 0;
     }
-    return dir==='asc'?valorA-valorB:valorB-valorA;
+
+    return dir === 'asc' ? valorA - valorB : valorB - valorA;
   });
 }
 
-function actualizarTotales(totalBea,totalLaura,totalVendidos,totalReservados){
+function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados) {
   document.getElementById('tBeaSup').textContent = `€${totalBea.toFixed(2)}`;
   document.getElementById('tLauraSup').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservadosSup').textContent = totalReservados;
@@ -719,232 +765,247 @@ function actualizarTotales(totalBea,totalLaura,totalVendidos,totalReservados){
   document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservados').textContent = totalReservados;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
-  const diferencia = totalLaura-totalBea;
+
+  const diferencia = totalLaura - totalBea;
   const diferenciaSup = document.getElementById('tDiferenciaSup');
   const diferenciaBoxSup = document.getElementById('diferenciaBoxSup');
   const diferenciaInf = document.getElementById('tDiferencia');
   const diferenciaBoxInf = document.getElementById('diferenciaBox');
+
   diferenciaSup.textContent = `€${diferencia.toFixed(2)}`;
   diferenciaInf.textContent = `€${diferencia.toFixed(2)}`;
-  if(diferencia>0){
-    diferenciaSup.className='diferencia-positiva';
-    diferenciaBoxSup.className='total-box-superior diferencia bea';
-    diferenciaInf.className='diferencia-positiva';
-    diferenciaBoxInf.className='total-box diferencia-positiva';
-  }else if(diferencia<0){
-    diferenciaSup.className='diferencia-negativa';
-    diferenciaBoxSup.className='total-box-superior diferencia';
-    diferenciaInf.className='diferencia-negativa';
-    diferenciaBoxInf.className='total-box diferencia-negativa';
-  }else{
-    diferenciaSup.className='';
-    diferenciaBoxSup.className='total-box-superior diferencia';
-    diferenciaInf.className='';
-    diferenciaBoxInf.className='total-box';
+
+  if (diferencia > 0) {
+    diferenciaSup.className = 'diferencia-positiva';
+    diferenciaBoxSup.className = 'total-box-superior diferencia bea';
+    diferenciaInf.className = 'diferencia-positiva';
+    diferenciaBoxInf.className = 'total-box diferencia-positiva';
+  } else if (diferencia < 0) {
+    diferenciaSup.className = 'diferencia-negativa';
+    diferenciaBoxSup.className = 'total-box-superior diferencia';
+    diferenciaInf.className = 'diferencia-negativa';
+    diferenciaBoxInf.className = 'total-box diferencia-negativa';
+  } else {
+    diferenciaSup.className = '';
+    diferenciaBoxSup.className = 'total-box-superior diferencia';
+    diferenciaInf.className = '';
+    diferenciaBoxInf.className = 'total-box';
   }
 }
 
-window.reservar = async (id,cant)=>{
+window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
-  const nuevoStock = (p.stock||0)-cant;
-  const nuevosReservados = (p.reservados||0)+cant;
-  await update(ref(db,'productos/'+id),{stock:nuevoStock,reservados:nuevosReservados});
+  if (cant <= 0 || Number(p.stock || 0) < cant) return alert('❌ Stock insuficiente');
+  const nuevoStock = Number(p.stock || 0) - cant;
+  const nuevosReservados = Number(p.reservados || 0) + cant;
+  await update(ref(db,'productos/'+id), { stock:nuevoStock, reservados:nuevosReservados });
   await guardarLog('reserva', id, p.nombre, cant, currentUser.email);
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
     detalles:`${cant} uds. RESERVADAS | Stock disponible: ${nuevoStock}`,
-    subject:'⏳ RESERVA - '+p.nombre,
+    subject:'⏳ RESERVA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
   alert(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`);
 };
 
-window.vender = async (id,cant)=>{
+window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if(cant<=0 || (p.stock||0)<cant) return alert('❌ Stock insuficiente');
-  const nuevoStock = (p.stock||0)-cant;
-  const eraStockCero = (p.stock||0)===0;
-  await update(ref(db,'productos/'+id),{
+  if (cant <= 0 || Number(p.stock || 0) < cant) return alert('❌ Stock insuficiente');
+  const nuevoStock = Number(p.stock || 0) - cant;
+  const eraStockCero = Number(p.stock || 0) === 0;
+
+  await update(ref(db,'productos/'+id), {
     stock:nuevoStock,
-    vendidos:(p.vendidos||0)+cant,
-    vBea:(p.vBea||0)+(p.bea||0)*cant,
-    vLaura:(p.vLaura||0)+(p.laura||0)*cant
+    vendidos:Number(p.vendidos || 0) + cant,
+    vBea:Number(p.vBea || 0) + Number(p.bea || 0) * cant,
+    vLaura:Number(p.vLaura || 0) + Number(p.laura || 0) * cant
   });
-  await guardarLog('venta', id, p.nombre, cant, currentUser.email, `Bea:€${p.bea?.toFixed(2)} Laura:€${p.laura?.toFixed(2)}`);
-  if(nuevoStock===0 && !eraStockCero && !p.emailAgotadoEnviado){
-    await update(ref(db,'productos/'+id),{emailAgotadoEnviado:true});
+
+  await guardarLog('venta', id, p.nombre, cant, currentUser.email, `Bea:€${Number(p.bea || 0).toFixed(2)} Laura:€${Number(p.laura || 0).toFixed(2)}`);
+
+  if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
+    await update(ref(db,'productos/'+id), { emailAgotadoEnviado:true });
     await enviarEmail({
       producto:p.nombre,
       stock:0,
-      detalles:`⛔ PRODUCTO AGOTADO | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
-      subject:'⛔ AGOTADO - '+p.nombre,
+      detalles:`⛔ PRODUCTO AGOTADO | Bea: €${Number(p.bea || 0).toFixed(2)} | Laura: €${Number(p.laura || 0).toFixed(2)}`,
+      subject:'⛔ AGOTADO - ' + p.nombre,
       fecha:new Date().toLocaleString('es-ES')
     });
   }
+
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
-    detalles:`${cant} uds. | Bea: €${(p.bea||0).toFixed(2)} | Laura: €${(p.laura||0).toFixed(2)}`,
-    subject:'🛒 VENTA - '+p.nombre,
+    detalles:`${cant} uds. | Bea: €${Number(p.bea || 0).toFixed(2)} | Laura: €${Number(p.laura || 0).toFixed(2)}`,
+    subject:'🛒 VENTA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
-  alert(`✅ Vendido ${cant} unidades${nuevoStock===0?' (AGOTADO)':''}`);
+
+  alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
 };
 
-window.cancelarReserva = async (id,cant)=>{
+window.cancelarReserva = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  const reservados = p.reservados || 0;
-  if(cant<=0 || cant>reservados) return alert('❌ Cantidad inválida');
-  const nuevoStock = (p.stock||0)+cant;
-  const nuevosReservados = reservados-cant;
-  await update(ref(db,'productos/'+id),{stock:nuevoStock,reservados:nuevosReservados});
+  const reservados = Number(p.reservados || 0);
+  if (cant <= 0 || cant > reservados) return alert('❌ Cantidad inválida');
+  const nuevoStock = Number(p.stock || 0) + cant;
+  const nuevosReservados = reservados - cant;
+  await update(ref(db,'productos/'+id), { stock:nuevoStock, reservados:nuevosReservados });
   await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
     detalles:`${cant} uds. RESERVA CANCELADA | Stock devuelto: ${nuevoStock}`,
-    subject:'❌ RESERVA CANCELADA - '+p.nombre,
+    subject:'❌ RESERVA CANCELADA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
   alert(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`);
 };
 
-window.modificarStock = (id)=>{
-  if(userRole!=='admin') return alert('❌ Solo ADMIN puede modificar stock');
+window.modificarStock = (id) => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede modificar stock');
   const nuevoStock = prompt('📦 Nuevo stock:', productos[id]?.stock || '0');
-  if(nuevoStock===null) return;
-  const stock = Math.max(0,Number(nuevoStock));
-  if(isNaN(stock)) return alert('❌ Stock inválido');
-  update(ref(db,'productos/'+id),{stock}).then(()=>{
-    guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
+  if (nuevoStock === null) return;
+  const stock = Math.max(0, Number(nuevoStock));
+  if (isNaN(stock)) return alert('❌ Stock inválido');
+  update(ref(db,'productos/'+id), { stock }).then(async () => {
+    await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
     alert(`✅ Stock actualizado: ${stock}`);
-    if(stock>0 && productos[id]?.emailAgotadoEnviado){
-      update(ref(db,'productos/'+id),{emailAgotadoEnviado:false});
+    if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
+      update(ref(db,'productos/'+id), { emailAgotadoEnviado:false });
     }
   });
 };
 
-window.guardar = ()=>{
-  if(userRole!=='admin') return alert('❌ Solo ADMIN puede crear/editar');
+window.guardar = () => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede crear/editar');
   const nombre = document.getElementById('nombre').value.trim();
-  if(!nombre) return alert('❌ Nombre requerido');
+  if (!nombre) return alert('❌ Nombre requerido');
+
   const data = {
     nombre,
-    stock:Math.max(0,Number(document.getElementById('stock').value)||0),
-    proximo:Math.max(0,Number(document.getElementById('proximo').value)||0),
-    bea:Math.max(0,Number(document.getElementById('bea').value)||0),
-    laura:Math.max(0,Number(document.getElementById('laura').value)||0),
-    vendidos:editId ? (productos[editId]?.vendidos||0):0,
-    reservados:editId ? (productos[editId]?.reservados||0):0,
-    vBea:editId ? (productos[editId]?.vBea||0):0,
-    vLaura:editId ? (productos[editId]?.vLaura||0):0
+    stock: Math.max(0, Number(document.getElementById('stock').value) || 0),
+    proximo: Math.max(0, Number(document.getElementById('proximo').value) || 0),
+    bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
+    laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
+    vendidos: editId ? Number(productos[editId]?.vendidos || 0) : 0,
+    reservados: editId ? Number(productos[editId]?.reservados || 0) : 0,
+    vBea: editId ? Number(productos[editId]?.vBea || 0) : 0,
+    vLaura: editId ? Number(productos[editId]?.vLaura || 0) : 0,
+    emailAgotadoEnviado: editId ? !!productos[editId]?.emailAgotadoEnviado : false
   };
-  if(editId){
-    update(ref(db,'productos/'+editId),data).then(()=>{
-      guardarLog('producto-editado', editId, nombre, 0, currentUser.email);
+
+  if (editId) {
+    update(ref(db,'productos/'+editId), data).then(async () => {
+      await guardarLog('producto-editado', editId, nombre, 0, currentUser.email);
       limpiarFormulario();
       alert('✅ Actualizado');
     });
-  }else{
-    push(productosRef,data).then((newRef)=>{
-      guardarLog('producto-creado', newRef.key, nombre, 0, currentUser.email);
+  } else {
+    push(productosRef, data).then(async (newRef) => {
+      await guardarLog('producto-creado', newRef.key, nombre, 0, currentUser.email);
       limpiarFormulario();
       alert('✅ Guardado');
     });
   }
 };
 
-window.modificarPrecioLaura = (id)=>{
+window.modificarPrecioLaura = (id) => {
   const nuevoPrecio = prompt('💰 Nuevo precio Laura:', productos[id]?.laura || '0');
-  if(nuevoPrecio===null) return;
-  const precio = Math.max(0,Number(nuevoPrecio));
-  if(isNaN(precio)) return alert('❌ Precio inválido');
-  update(ref(db,'productos/'+id),{laura:precio}).then(()=>{
-    guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+  if (nuevoPrecio === null) return;
+  const precio = Math.max(0, Number(nuevoPrecio));
+  if (isNaN(precio)) return alert('❌ Precio inválido');
+  update(ref(db,'productos/'+id), { laura:precio }).then(async () => {
+    await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
     alert(`✅ Laura: €${precio.toFixed(2)}`);
   });
 };
 
-window.modificarPrecioLauraGlobal = ()=>{
-  const nuevoPrecio = prompt('💰 Nuevo precio Laura para TODOS:','0');
-  if(nuevoPrecio===null) return;
-  const precio = Math.max(0,Number(nuevoPrecio));
-  if(isNaN(precio)) return alert('❌ Precio inválido');
+window.modificarPrecioLauraGlobal = () => {
+  const nuevoPrecio = prompt('💰 Nuevo precio Laura para TODOS:', '0');
+  if (nuevoPrecio === null) return;
+  const precio = Math.max(0, Number(nuevoPrecio));
+  if (isNaN(precio)) return alert('❌ Precio inválido');
   const updates = {};
-  Object.entries(productos).forEach(([id])=>{
-    updates[`productos/${id}/laura`]=precio;
-    guardarLog('precio-laura-global', id, productos[id].nombre, precio, currentUser.email);
+  Object.entries(productos).forEach(([id]) => {
+    updates[`productos/${id}/laura`] = precio;
   });
-  update(ref(db),updates).then(()=>alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`));
+  update(ref(db), updates).then(async () => {
+    for (const [id, p] of Object.entries(productos)) {
+      await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email);
+    }
+    alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`);
+  });
 };
 
-window.editar = id=>{
-  if(userRole!=='admin') return alert('❌ Solo ADMIN puede editar');
+window.editar = (id) => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede editar');
   const p = productos[id];
-  document.getElementById('nombre').value = p.nombre||'';
-  document.getElementById('stock').value = p.stock||0;
-  document.getElementById('proximo').value = p.proximo||0;
-  document.getElementById('bea').value = p.bea||0;
-  document.getElementById('laura').value = p.laura||0;
+  document.getElementById('nombre').value = p.nombre || '';
+  document.getElementById('stock').value = p.stock || 0;
+  document.getElementById('proximo').value = p.proximo || 0;
+  document.getElementById('bea').value = p.bea || 0;
+  document.getElementById('laura').value = p.laura || 0;
   editId = id;
-  document.getElementById('cancelBtn').style.display='inline-block';
+  document.getElementById('cancelBtn').style.display = 'inline-block';
 };
 
-window.borrar = id=>{
-  if(userRole!=='admin') return alert('❌ Solo ADMIN puede borrar');
-  if(confirm(`🗑️ Borrar "${productos[id]?.nombre||'Producto'}"?`)){
+window.borrar = (id) => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede borrar');
+  if (confirm(`🗑️ Borrar "${productos[id]?.nombre || 'Producto'}"?`)) {
     guardarLog('producto-borrado', id, productos[id].nombre, 0, currentUser.email);
-    remove(ref(db,'productos/'+id)).then(()=>alert('✅ Borrado'));
+    remove(ref(db,'productos/'+id)).then(() => alert('✅ Borrado'));
   }
 };
 
-window.resetear = ()=>{
-  if(userRole!=='admin') return alert('❌ Solo ADMIN puede resetear');
-  if(confirm('⚠️ ¿Resetear COMPLETAMENTE?\n✅ Stock se mantiene\n✅ Próximo se mantiene\n❌ Se pierden: ventas, vendidos, reservados')){
+window.resetear = () => {
+  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede resetear');
+  if (confirm('⚠️ ¿Resetear COMPLETAMENTE?\n✅ Stock se mantiene\n✅ Próximo se mantiene\n❌ Se pierden: ventas, vendidos, reservados')) {
     const updates = {};
-    Object.entries(productos).forEach(([id])=>{
-      updates[`productos/${id}/vBea`]=0;
-      updates[`productos/${id}/vLaura`]=0;
-      updates[`productos/${id}/vendidos`]=0;
-      updates[`productos/${id}/reservados`]=0;
-      updates[`productos/${id}/emailAgotadoEnviado`]=false;
+    Object.entries(productos).forEach(([id]) => {
+      updates[`productos/${id}/vBea`] = 0;
+      updates[`productos/${id}/vLaura`] = 0;
+      updates[`productos/${id}/vendidos`] = 0;
+      updates[`productos/${id}/reservados`] = 0;
+      updates[`productos/${id}/emailAgotadoEnviado`] = false;
     });
     guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
-    update(ref(db),updates).then(()=>alert('✅ 🔄 RESET COMPLETO'));
+    update(ref(db), updates).then(() => alert('✅ 🔄 RESET COMPLETO'));
   }
 };
 
-window.cancelarEdit = ()=>limpiarFormulario();
+window.cancelarEdit = () => limpiarFormulario();
 
-function limpiarFormulario(){
-  document.getElementById('nombre').value='';
-  document.getElementById('stock').value='';
-  document.getElementById('proximo').value='';
-  document.getElementById('bea').value='';
-  document.getElementById('laura').value='';
-  editId=null;
-  document.getElementById('cancelBtn').style.display='none';
+function limpiarFormulario() {
+  document.getElementById('nombre').value = '';
+  document.getElementById('stock').value = '';
+  document.getElementById('proximo').value = '';
+  document.getElementById('bea').value = '';
+  document.getElementById('laura').value = '';
+  editId = null;
+  document.getElementById('cancelBtn').style.display = 'none';
 }
 </script>
 
-<!-- PÁGINA DE LOGS EMBEBIDA (se abre en ventana nueva) -->
 <script>
 const logsHTML = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📋 LOGS - Inventario Laura</title>
 <style>
 body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
 .log-table{width:100%;border-collapse:collapse;font-size:12px}
-.log-table th, .log-table td{border:1px solid #ddd;padding:6px;text-align:center}
+.log-table th,.log-table td{border:1px solid #ddd;padding:6px;text-align:center}
 .log-table th{background:#dc3545;color:white;font-size:12px}
 .log-table tr:nth-child(even){background:#f8f9fa}
 .log-venta{background:#d4edda !important}
@@ -952,13 +1013,13 @@ body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1400px;margin:0
 .log-cancelacion{background:#fff3cd !important}
 .log-eliminacion{background:#f8d7da !important}
 .log-tipo{font-weight:bold;font-size:11px;padding:2px 6px;border-radius:3px;margin:1px}
-.tipo-venta{background:#28a5 !important;color:white !important}
+.tipo-venta{background:#28a745 !important;color:white !important}
 .tipo-reserva{background:#17a2b8 !important;color:white !important}
 .tipo-cancel-reserva{background:#ffc107 !important;color:black !important}
 .tipo-elim-venta{background:#dc3545 !important;color:white !important}
 .filtros-logs{display:flex;gap:10px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
 #logFechaDesde,#logFechaHasta{width:140px;padding:6px;border:1px solid #ddd;border-radius:5px}
-#logBuscar{width:200px;padding:8px}
+#logBuscar{width:220px;padding:8px}
 button{padding:8px 15px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-weight:bold;margin:2px}
 button:hover{background:#0056b3}
 .red{background:#dc3545;color:white}
@@ -969,7 +1030,7 @@ button:hover{background:#0056b3}
 <div class="card">
 <h2>📋 HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
 <div class="filtros-logs">
-🔍 <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+🔍 <input id="logBuscar" placeholder="Buscar producto/usuario/tipo..." oninput="filtrarLogs()">
 Desde: <input type="date" id="logFechaDesde" onchange="cargarLogs()">
 Hasta: <input type="date" id="logFechaHasta" onchange="cargarLogs()">
 <button onclick="cargarLogs()">🔄 Recargar</button>
@@ -988,7 +1049,7 @@ Hasta: <input type="date" id="logFechaHasta" onchange="cargarLogs()">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, onValue, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
@@ -1005,32 +1066,46 @@ const db = getDatabase(app);
 const logsRef = ref(db, "logs");
 
 let todosLogs = [];
+let logsListenerActivo = false;
 
-window.cargarLogs = () => {
+function aplicarFiltrosFecha(log) {
   const desde = document.getElementById('logFechaDesde').value;
   const hasta = document.getElementById('logFechaHasta').value;
-  
+  const fecha = new Date(log.timestamp || 0);
+  const fechaStr = fecha.toISOString().split('T')[0];
+  return (desde === '' || fechaStr >= desde) && (hasta === '' || fechaStr <= hasta);
+}
+
+window.cargarLogs = () => {
+  if (logsListenerActivo) {
+    off(logsRef);
+    logsListenerActivo = false;
+  }
+
   onValue(logsRef, (snap) => {
-    todosLogs = [];
+    const nuevosLogs = [];
+
     snap.forEach(child => {
-      const log = child.val();
-      const fecha = new Date(log.timestamp);
-      const fechaStr = fecha.toISOString().split('T')[0];
-      
-      if ((desde === '' || fechaStr >= desde) && (hasta === '' || fechaStr <= hasta)) {
-        todosLogs.push({...log, key: child.key});
+      const log = child.val() || {};
+      if (aplicarFiltrosFecha(log)) {
+        nuevosLogs.push({ ...log, key: child.key });
       }
     });
-    todosLogs.sort((a,b) => b.timestamp - a.timestamp);
+
+    nuevosLogs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+    todosLogs = nuevosLogs;
     renderLogs();
   });
+
+  logsListenerActivo = true;
 };
 
 window.filtrarLogs = () => {
-  const filtro = document.getElementById('logBuscar').value.toLowerCase();
-  const filtrados = todosLogs.filter(log => 
-    log.productoNombre.toLowerCase().includes(filtro) ||
-    log.usuario.toLowerCase().includes(filtro)
+  const filtro = document.getElementById('logBuscar').value.toLowerCase().trim();
+  const filtrados = todosLogs.filter(log =>
+    (log.productoNombre || '').toLowerCase().includes(filtro) ||
+    (log.usuario || '').toLowerCase().includes(filtro) ||
+    (log.tipo || '').toLowerCase().includes(filtro)
   );
   renderLogsFiltrados(filtrados);
 };
@@ -1041,34 +1116,34 @@ window.renderLogs = () => {
 
 window.renderLogsFiltrados = (logs) => {
   const tabla = document.getElementById('tablaLogs');
-  tabla.innerHTML = '';
-  
-  logs.forEach(log => {
+  let html = '';
+
+  for (const log of logs) {
     const claseTipo = log.tipo === 'venta' ? 'tipo-venta' :
-                     log.tipo === 'reserva' ? 'tipo-reserva' :
-                     log.tipo === 'cancelacion-reserva' ? 'tipo-cancel-reserva' :
-                     log.tipo === 'eliminacion-venta' ? 'tipo-elim-venta' : '';
-    
+                      log.tipo === 'reserva' ? 'tipo-reserva' :
+                      log.tipo === 'cancelacion-reserva' ? 'tipo-cancel-reserva' :
+                      log.tipo === 'eliminacion-venta' ? 'tipo-elim-venta' : '';
+
     const claseFila = log.tipo === 'venta' ? 'log-venta' :
-                     log.tipo === 'reserva' ? 'log-reserva' :
-                     log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
-                     log.tipo === 'eliminacion-venta' ? 'log-eliminacion' : '';
-    
-    tabla.innerHTML += \`
+                      log.tipo === 'reserva' ? 'log-reserva' :
+                      log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
+                      log.tipo === 'eliminacion-venta' ? 'log-eliminacion' : '';
+
+    html += \`
       <tr class="\${claseFila}">
-        <td>\${log.fecha}</td>
-        <td><span class="log-tipo \${claseTipo}">\${log.tipo.replace(/-/g, ' ').toUpperCase()}</span></td>
-        <td style="text-align:left">\${log.productoNombre}</td>
-        <td>\${log.cantidad}</td>
-        <td>\${log.usuario}</td>
+        <td>\${log.fecha || ''}</td>
+        <td><span class="log-tipo \${claseTipo}">\${(log.tipo || '').replace(/-/g, ' ').toUpperCase()}</span></td>
+        <td style="text-align:left">\${log.productoNombre || ''}</td>
+        <td>\${log.cantidad ?? ''}</td>
+        <td>\${log.usuario || ''}</td>
         <td style="text-align:left;font-size:11px">\${log.detalles || ''}</td>
       </tr>\`;
-  });
-  
+  }
+
+  tabla.innerHTML = html;
   document.getElementById('logCount').textContent = \`\${logs.length} movimientos encontrados\`;
 };
 
-// Cargar logs al abrir ventana
 window.onload = () => {
   const hoy = new Date().toISOString().split('T')[0];
   const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
@@ -1076,7 +1151,10 @@ window.onload = () => {
   document.getElementById('logFechaHasta').value = hoy;
   cargarLogs();
 };
-
+<\/script>
+</body>
+</html>`;
+</script>
 
 </body>
 </html>
