@@ -102,6 +102,19 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .tipo-elim-venta{background:#dc3545 !important;color:white !important}
 .filtros-logs{display:flex;gap:10px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
 #logFechaDesde,#logFechaHasta{width:140px;padding:6px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:4000;padding:16px}
+.modal-overlay.show{display:flex}
+.modal-box{background:white;width:min(520px,100%);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.3);padding:20px}
+.modal-title{font-size:22px;font-weight:bold;margin-bottom:10px}
+.modal-message{color:#374151;line-height:1.45;margin-bottom:14px}
+.modal-fields{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.modal-field label{display:block;font-weight:bold;margin-bottom:6px}
+.modal-field input{width:100%;box-sizing:border-box;padding:10px;font-size:15px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.modal-cancel{background:#6c757d}
+.modal-cancel:hover{background:#5c636a}
+.modal-danger{background:#dc3545}
+.modal-danger:hover{background:#bb2d3b}
 @media (max-width:1100px){.totales-superiores,.totales-container{grid-template-columns:1fr 1fr 1fr}}
 @media (max-width:700px){.totales-superiores,.totales-container{grid-template-columns:1fr 1fr}.filtros{flex-direction:column;align-items:flex-start}body{padding:10px}}
 </style>
@@ -254,6 +267,17 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 </div>
 
 <div id="toastContainer"></div>
+<div id="appModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Modal</div>
+    <div class="modal-message" id="modalMessage"></div>
+    <div class="modal-fields" id="modalFields"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancelBtn">Cancelar</button>
+      <button id="modalConfirmBtn">Aceptar</button>
+    </div>
+  </div>
+</div>
 <button id="scrollTopBtn" title="Subir arriba">⬆️</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -373,6 +397,64 @@ window.showToast = (message, type = 'info', duration = 2400) => {
   }, duration);
 };
 
+window.closeModal = () => {
+  const modal = document.getElementById('appModal');
+  modal.classList.remove('show');
+  document.getElementById('modalFields').innerHTML = '';
+  document.getElementById('modalMessage').textContent = '';
+  document.getElementById('modalConfirmBtn').onclick = null;
+  document.getElementById('modalCancelBtn').onclick = null;
+};
+
+window.openModal = ({ title, message = '', fields = [], confirmText = 'Guardar', danger = false, onConfirm }) => {
+  const modal = document.getElementById('appModal');
+  const titleEl = document.getElementById('modalTitle');
+  const messageEl = document.getElementById('modalMessage');
+  const fieldsEl = document.getElementById('modalFields');
+  const confirmBtn = document.getElementById('modalConfirmBtn');
+  const cancelBtn = document.getElementById('modalCancelBtn');
+
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+  fieldsEl.innerHTML = '';
+  confirmBtn.textContent = confirmText;
+  confirmBtn.className = danger ? 'modal-danger' : '';
+
+  for (const field of fields) {
+    const wrap = document.createElement('div');
+    wrap.className = 'modal-field';
+    wrap.innerHTML = `
+      <label for="modal-field-${field.name}">${field.label}</label>
+      <input id="modal-field-${field.name}" type="${field.type || 'text'}" value="${field.value ?? ''}" ${field.min !== undefined ? `min="${field.min}"` : ''} ${field.step !== undefined ? `step="${field.step}"` : ''}>
+    `;
+    fieldsEl.appendChild(wrap);
+  }
+
+  cancelBtn.onclick = closeModal;
+  confirmBtn.onclick = async () => {
+    const values = {};
+    for (const field of fields) {
+      values[field.name] = document.getElementById(`modal-field-${field.name}`).value;
+    }
+    await onConfirm(values);
+    closeModal();
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) closeModal();
+  };
+
+  modal.classList.add('show');
+  setTimeout(() => {
+    const firstInput = fieldsEl.querySelector('input');
+    if (firstInput) firstInput.focus();
+  }, 20);
+};
+
+window.openConfirm = ({ title, message, confirmText = 'Aceptar', danger = false, onConfirm }) => {
+  openModal({ title, message, fields: [], confirmText, danger, onConfirm: async () => { await onConfirm(); } });
+};
+
 window.programarRender = () => {
   if (renderPendiente) return;
   renderPendiente = true;
@@ -406,14 +488,20 @@ window.anadirProximoStock = async (id) => {
 };
 
 window.modificarProximoStock = (id) => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede modificar stock próximo');
-  const nuevoProximo = prompt('📦 Nuevo stock próximo:', productos[id]?.proximo || '0');
-  if (nuevoProximo === null) return;
-  const proximo = Math.max(0, Number(nuevoProximo));
-  if (isNaN(proximo)) return alert('❌ Stock próximo inválido');
-  update(ref(db,'productos/'+id),{proximo}).then(()=>{
-    guardarLog('proximo-modificado', id, productos[id].nombre, proximo, currentUser.email);
-    showToast(`✅ Próximo actualizado: ${proximo}`, 'success');
+  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede modificar stock próximo', 'error');
+  const p = productos[id];
+  openModal({
+    title: '📦 Editar stock próximo',
+    fields: [
+      { name: 'proximo', label: `Próximo para ${p.nombre}`, type: 'number', value: p?.proximo || 0, min: 0 }
+    ],
+    onConfirm: async (values) => {
+      const proximo = Math.max(0, Number(values.proximo));
+      if (isNaN(proximo)) return showToast('❌ Stock próximo inválido', 'error');
+      await update(ref(db,'productos/'+id), { proximo });
+      await guardarLog('proximo-modificado', id, productos[id].nombre, proximo, currentUser.email);
+      showToast(`✅ Próximo actualizado: ${proximo}`, 'success');
+    }
   });
 };
 
@@ -505,33 +593,38 @@ window.updateProxInput = (id, value) => {
 window.eliminarUnaVenta = async (id) => {
   const p = productos[id];
   const vendidos = Number(p.vendidos || 0);
-  if (vendidos === 0) return alert('❌ No hay ventas para eliminar');
+  if (vendidos === 0) return showToast('❌ No hay ventas para eliminar', 'error');
 
-  if (!confirm(`↩️ ¿Eliminar 1 venta de "${p.nombre}"?\n\n✅ +1 stock\n✅ -1 vendidos\n✅ Resta €${Number(p.bea || 0).toFixed(2)} Bea / €${Number(p.laura || 0).toFixed(2)} Laura`)) return;
+  openConfirm({
+    title: '↩️ Corregir venta',
+    message: `Se eliminará 1 venta de "${p.nombre}", volverá 1 unidad al stock y se descontarán los importes de Bea y Laura.`,
+    confirmText: 'Corregir',
+    onConfirm: async () => {
+      const nuevoStock = Number(p.stock || 0) + 1;
+      const nuevosVendidos = vendidos - 1;
+      const nuevoVBea = Math.max(0, Number(p.vBea || 0) - Number(p.bea || 0));
+      const nuevoVLaura = Math.max(0, Number(p.vLaura || 0) - Number(p.laura || 0));
 
-  const nuevoStock = Number(p.stock || 0) + 1;
-  const nuevosVendidos = vendidos - 1;
-  const nuevoVBea = Math.max(0, Number(p.vBea || 0) - Number(p.bea || 0));
-  const nuevoVLaura = Math.max(0, Number(p.vLaura || 0) - Number(p.laura || 0));
+      await update(ref(db, 'productos/' + id), {
+        stock: nuevoStock,
+        vendidos: nuevosVendidos,
+        vBea: nuevoVBea,
+        vLaura: nuevoVLaura
+      });
 
-  await update(ref(db, 'productos/' + id), {
-    stock: nuevoStock,
-    vendidos: nuevosVendidos,
-    vBea: nuevoVBea,
-    vLaura: nuevoVLaura
+      await guardarLog('eliminacion-venta', id, p.nombre, 1, currentUser.email, `Stock devuelto: ${nuevoStock}`);
+
+      await enviarEmail({
+        producto: p.nombre,
+        stock: nuevoStock,
+        detalles: `↩️ 1 VENTA CORREGIDA | +1 stock | Vendidos: ${nuevosVendidos}`,
+        subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
+        fecha: new Date().toLocaleString('es-ES')
+      });
+
+      showToast(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`, 'success');
+    }
   });
-
-  await guardarLog('eliminacion-venta', id, p.nombre, 1, currentUser.email, `Stock devuelto: ${nuevoStock}`);
-
-  await enviarEmail({
-    producto: p.nombre,
-    stock: nuevoStock,
-    detalles: `↩️ 1 VENTA CORREGIDA | +1 stock | Vendidos: ${nuevosVendidos}`,
-    subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
-    fecha: new Date().toLocaleString('es-ES')
-  });
-
-  showToast(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`, 'success');
 };
 
 window.hacerBackup = async () => {
@@ -571,20 +664,28 @@ window.hacerBackup = async () => {
 };
 
 window.restaurarBackup = async (event) => {
-  if (currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede restaurar');
+  if (currentUser.email !== 'nilose2014@gmail.com') return showToast('❌ Solo nilose2014@gmail.com puede restaurar', 'error');
   const file = event.target.files[0];
   if (!file) return;
-  if (!confirm('⚠️ ¿Restaurar TODO desde este backup?\n\n✅ Se reemplazan TODOS los productos\n✅ Se mantienen LOGS')) return;
-  try {
-    const text = await file.text();
-    const backupData = JSON.parse(text);
-    await set(ref(db,'productos'), backupData.productos || {});
-    await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
-    showToast('✅ Restauración completada. Recargando...', 'success');
-    location.reload();
-  } catch(error) {
-    alert('❌ Error restaurando: ' + error.message);
-  }
+
+  openConfirm({
+    title: '📤 Restaurar backup',
+    message: 'Se reemplazarán TODOS los productos y se mantendrán los logs.',
+    confirmText: 'Restaurar',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        const text = await file.text();
+        const backupData = JSON.parse(text);
+        await set(ref(db,'productos'), backupData.productos || {});
+        await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
+        showToast('✅ Restauración completada. Recargando...', 'success');
+        setTimeout(() => location.reload(), 700);
+      } catch(error) {
+        showToast('❌ Error restaurando: ' + error.message, 'error', 3500);
+      }
+    }
+  });
 };
 
 window.cargarBackupFirebase = () => {
@@ -639,8 +740,8 @@ onAuthStateChanged(auth, (user) => {
 window.login = () => {
   const email = document.getElementById('userEmail').value.trim();
   const pass = document.getElementById('userPass').value;
-  if (!email || !pass) return alert('❌ Email y contraseña requeridos');
-  signInWithEmailAndPassword(auth, email, pass).catch(e => alert('❌ Error: ' + e.message));
+  if (!email || !pass) return showToast('❌ Email y contraseña requeridos', 'error');
+  signInWithEmailAndPassword(auth, email, pass).catch(e => showToast('❌ Error: ' + e.message, 'error', 3500));
 };
 
 window.logout = () => signOut(auth).catch(e => alert('❌ Error: ' + e.message));
@@ -895,16 +996,22 @@ window.cancelarReserva = async (id, cant) => {
 };
 
 window.modificarStock = (id) => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede modificar stock');
-  const nuevoStock = prompt('📦 Nuevo stock:', productos[id]?.stock || '0');
-  if (nuevoStock === null) return;
-  const stock = Math.max(0, Number(nuevoStock));
-  if (isNaN(stock)) return alert('❌ Stock inválido');
-  update(ref(db,'productos/'+id), { stock }).then(async () => {
-    await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
-    showToast(`✅ Stock actualizado: ${stock}`, 'success');
-    if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
-      update(ref(db,'productos/'+id), { emailAgotadoEnviado:false });
+  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede modificar stock', 'error');
+  const p = productos[id];
+  openModal({
+    title: '📦 Editar stock',
+    fields: [
+      { name: 'stock', label: `Stock para ${p.nombre}`, type: 'number', value: p?.stock || 0, min: 0 }
+    ],
+    onConfirm: async (values) => {
+      const stock = Math.max(0, Number(values.stock));
+      if (isNaN(stock)) return showToast('❌ Stock inválido', 'error');
+      await update(ref(db,'productos/'+id), { stock });
+      await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
+      if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
+        await update(ref(db,'productos/'+id), { emailAgotadoEnviado:false });
+      }
+      showToast(`✅ Stock actualizado: ${stock}`, 'success');
     }
   });
 };
@@ -943,30 +1050,41 @@ window.guardar = () => {
 };
 
 window.modificarPrecioLaura = (id) => {
-  const nuevoPrecio = prompt('💰 Nuevo precio Laura:', productos[id]?.laura || '0');
-  if (nuevoPrecio === null) return;
-  const precio = Math.max(0, Number(nuevoPrecio));
-  if (isNaN(precio)) return alert('❌ Precio inválido');
-  update(ref(db,'productos/'+id), { laura:precio }).then(async () => {
-    await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
-    showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
+  const p = productos[id];
+  openModal({
+    title: '💰 Editar precio Laura',
+    fields: [
+      { name: 'precio', label: `Precio Laura para ${p.nombre}`, type: 'number', value: p?.laura || 0, min: 0, step: '0.01' }
+    ],
+    onConfirm: async (values) => {
+      const precio = Math.max(0, Number(values.precio));
+      if (isNaN(precio)) return showToast('❌ Precio inválido', 'error');
+      await update(ref(db,'productos/'+id), { laura:precio });
+      await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+      showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
+    }
   });
 };
 
 window.modificarPrecioLauraGlobal = () => {
-  const nuevoPrecio = prompt('💰 Nuevo precio Laura para TODOS:', '0');
-  if (nuevoPrecio === null) return;
-  const precio = Math.max(0, Number(nuevoPrecio));
-  if (isNaN(precio)) return alert('❌ Precio inválido');
-  const updates = {};
-  Object.entries(productos).forEach(([id]) => {
-    updates[`productos/${id}/laura`] = precio;
-  });
-  update(ref(db), updates).then(async () => {
-    for (const [id, p] of Object.entries(productos)) {
-      await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email);
+  openModal({
+    title: '💲 Precio Laura Global',
+    fields: [
+      { name: 'precio', label: 'Nuevo precio Laura para TODOS', type: 'number', value: 0, min: 0, step: '0.01' }
+    ],
+    onConfirm: async (values) => {
+      const precio = Math.max(0, Number(values.precio));
+      if (isNaN(precio)) return showToast('❌ Precio inválido', 'error');
+      const updates = {};
+      Object.entries(productos).forEach(([id]) => {
+        updates[`productos/${id}/laura`] = precio;
+      });
+      await update(ref(db), updates);
+      for (const [id, p] of Object.entries(productos)) {
+        await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email);
+      }
+      showToast(`✅ Laura GLOBAL: €${precio.toFixed(2)}`, 'success');
     }
-    showToast(`✅ Laura GLOBAL: €${precio.toFixed(2)}`, 'success');
   });
 };
 
@@ -983,27 +1101,42 @@ window.editar = (id) => {
 };
 
 window.borrar = (id) => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede borrar');
-  if (confirm(`🗑️ Borrar "${productos[id]?.nombre || 'Producto'}"?`)) {
-    guardarLog('producto-borrado', id, productos[id].nombre, 0, currentUser.email);
-    remove(ref(db,'productos/'+id)).then(() => showToast('✅ Borrado', 'success'));
-  }
+  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede borrar', 'error');
+  const nombre = productos[id]?.nombre || 'Producto';
+  openConfirm({
+    title: '🗑️ Borrar producto',
+    message: `¿Seguro que quieres borrar "${nombre}"?`,
+    confirmText: 'Borrar',
+    danger: true,
+    onConfirm: async () => {
+      await guardarLog('producto-borrado', id, productos[id].nombre, 0, currentUser.email);
+      await remove(ref(db,'productos/'+id));
+      showToast('✅ Borrado', 'success');
+    }
+  });
 };
 
 window.resetear = () => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede resetear');
-  if (confirm('⚠️ ¿Resetear COMPLETAMENTE?\n✅ Stock se mantiene\n✅ Próximo se mantiene\n❌ Se pierden: ventas, vendidos, reservados')) {
-    const updates = {};
-    Object.entries(productos).forEach(([id]) => {
-      updates[`productos/${id}/vBea`] = 0;
-      updates[`productos/${id}/vLaura`] = 0;
-      updates[`productos/${id}/vendidos`] = 0;
-      updates[`productos/${id}/reservados`] = 0;
-      updates[`productos/${id}/emailAgotadoEnviado`] = false;
-    });
-    guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
-    update(ref(db), updates).then(() => showToast('✅ 🔄 RESET COMPLETO', 'success'));
-  }
+  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede resetear', 'error');
+  openConfirm({
+    title: '⚠️ Reset completo',
+    message: 'Se mantendrá el stock y el próximo stock, pero se borrarán ventas, vendidos y reservados.',
+    confirmText: 'Resetear',
+    danger: true,
+    onConfirm: async () => {
+      const updates = {};
+      Object.entries(productos).forEach(([id]) => {
+        updates[`productos/${id}/vBea`] = 0;
+        updates[`productos/${id}/vLaura`] = 0;
+        updates[`productos/${id}/vendidos`] = 0;
+        updates[`productos/${id}/reservados`] = 0;
+        updates[`productos/${id}/emailAgotadoEnviado`] = false;
+      });
+      await guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
+      await update(ref(db), updates);
+      showToast('✅ 🔄 RESET COMPLETO', 'success');
+    }
+  });
 };
 
 window.cancelarEdit = () => limpiarFormulario();
