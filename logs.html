@@ -513,7 +513,7 @@
         ]);
       });
 
-      const csv = filas.map(f => f.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('
+const csv = filas.map(f => f.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
 ');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -547,9 +547,7 @@
     };
 
     window.limpiarTodosLogs = async () => {
-      if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?
-
-Esta acción NO se puede deshacer.')) return;
+if (!confirm('⚠️ ¿BORRAR TODOS los logs permanentemente?\n\nEsta acción NO se puede deshacer.')) return;
       try {
         await remove(logsRef);
         todosLogs = [];
