@@ -331,6 +331,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
+const productosPublicosRef = ref(db, "productos_publicos");
 const logsRef = ref(db, "logs");
 const backupRef = ref(db,'backup/ultimo');
 
@@ -362,6 +363,29 @@ function getQueryParam(name) {
   return params.get(name);
 }
 
+function construirProductoPublico(producto){
+  return {
+    nombre: producto?.nombre || '',
+    laura: Number(producto?.laura || 0),
+    stock: Number(producto?.stock || 0)
+  };
+}
+
+async function syncProductoPublico(id, producto){
+  if (!id) return;
+  await set(ref(db, 'productos_publicos/' + id), construirProductoPublico(producto));
+}
+
+async function syncTodosProductosPublicosDesdeProductos(productosObj){
+  const updates = {};
+  Object.entries(productosObj || {}).forEach(([id, producto]) => {
+    updates['productos_publicos/' + id + '/nombre'] = producto?.nombre || '';
+    updates['productos_publicos/' + id + '/laura'] = Number(producto?.laura || 0);
+    updates['productos_publicos/' + id + '/stock'] = Number(producto?.stock || 0);
+  });
+  await update(ref(db), updates);
+}
+
 window.irEstadisticas = () => {
   window.open('estadisticas.html', '_blank');
 };
@@ -379,10 +403,8 @@ async function obtenerIP(){
   try{
     const cache = sessionStorage.getItem("inventario_ip");
     if(cache) return cache;
-
     const r = await fetch("https://api.ipify.org?format=json");
     const data = await r.json();
-
     const ip = data.ip || "IP desconocida";
     sessionStorage.setItem("inventario_ip", ip);
     return ip;
@@ -609,7 +631,6 @@ window.descargarTodosLosQR = async () => {
 
       const qrText = `${baseUrl}scanner.html?scanId=${id}`;
 
-      // canvas final con diseño tipo tarjeta
       const finalCanvas = document.createElement('canvas');
       const ctx = finalCanvas.getContext('2d');
 
@@ -618,17 +639,14 @@ window.descargarTodosLosQR = async () => {
       finalCanvas.width = width;
       finalCanvas.height = height;
 
-      // fondo blanco
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
-      // título
       ctx.fillStyle = '#111111';
       ctx.textAlign = 'center';
       ctx.font = 'bold 52px Arial';
       ctx.fillText('📱 QR del producto', width / 2, 90);
 
-      // nombre producto
       const nombreProducto = String(p.nombre || 'Producto');
       ctx.font = 'bold 46px Arial';
 
@@ -641,7 +659,6 @@ window.descargarTodosLosQR = async () => {
 
       ctx.fillText(nombrePintar, width / 2, 165);
 
-      // generar QR aparte
       const qrCanvas = document.createElement('canvas');
       await QRCode.toCanvas(qrCanvas, qrText, {
         width: 620,
@@ -649,13 +666,11 @@ window.descargarTodosLosQR = async () => {
         errorCorrectionLevel: 'M'
       });
 
-      // dibujar QR centrado
       const qrSize = 620;
       const qrX = (width - qrSize) / 2;
       const qrY = 230;
       ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
 
-      // exportar png
       const dataUrl = finalCanvas.toDataURL('image/png');
       const base64 = dataUrl.split(',')[1];
 
@@ -703,6 +718,11 @@ window.anadirProximoStock = async (id) => {
 
   const nuevoStock = Number(p.stock || 0) + cantidad;
   await update(ref(db,'productos/'+id), { stock:nuevoStock, proximo:0, emailAgotadoEnviado:false });
+  await update(ref(db, 'productos_publicos/' + id), {
+    nombre: p.nombre || '',
+    laura: Number(p.laura || 0),
+    stock: nuevoStock
+  });
 
   if (inputProx) {
     inputProx.value = '0';
@@ -842,6 +862,12 @@ window.eliminarUnaVenta = async (id) => {
         emailAgotadoEnviado:false
       });
 
+      await update(ref(db, 'productos_publicos/' + id), {
+        nombre: p.nombre || '',
+        laura: Number(p.laura || 0),
+        stock: nuevoStock
+      });
+
       await guardarLog(
         'eliminacion-venta',
         id,
@@ -912,7 +938,15 @@ window.restaurarBackup = async (event) => {
       try {
         const text = await file.text();
         const backupData = JSON.parse(text);
-        await set(ref(db,'productos'), backupData.productos || {});
+        const productosRestaurados = backupData.productos || {};
+        await set(ref(db,'productos'), productosRestaurados);
+
+        const publicos = {};
+        Object.entries(productosRestaurados).forEach(([id, producto]) => {
+          publicos[id] = construirProductoPublico(producto);
+        });
+        await set(ref(db,'productos_publicos'), publicos);
+
         await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
         showToast('✅ Restauración completada. Recargando...', 'success');
         setTimeout(() => location.reload(), 700);
@@ -1056,7 +1090,7 @@ function loadData() {
   if (dataListenerIniciado) return;
   dataListenerIniciado = true;
 
-  onValue(productosRef, (snap) => {
+  onValue(productosRef, async (snap) => {
     productos = snap.val() || {};
 
     const editFromUrl = getQueryParam('editId');
@@ -1082,6 +1116,14 @@ function loadData() {
       totalesGlobales.vendidos += vendidosReal;
       totalesGlobales.reservados += reservadosReal;
     });
+
+    if (currentUser && ['admin','user'].includes(userRole)) {
+      try {
+        await syncTodosProductosPublicosDesdeProductos(productos);
+      } catch (e) {
+        console.error('Error sincronizando productos_publicos:', e);
+      }
+    }
 
     actualizarTotales(totalesGlobales.bea, totalesGlobales.laura, totalesGlobales.vendidos, totalesGlobales.reservados);
     programarRender();
@@ -1173,6 +1215,11 @@ window.reservar = async (id, cant) => {
   const nuevoStock = Number(p.stock || 0) - cant;
   const nuevosReservados = Number(p.reservados || 0) + cant;
   await update(ref(db,'productos/'+id), { stock:nuevoStock, reservados:nuevosReservados });
+  await update(ref(db, 'productos_publicos/' + id), {
+    nombre: p.nombre || '',
+    laura: Number(p.laura || 0),
+    stock: nuevoStock
+  });
   await guardarLog('reserva', id, p.nombre, cant, currentUser.email);
   await enviarEmail({
     producto:p.nombre,
@@ -1200,6 +1247,12 @@ window.vender = async (id, cant) => {
     vBea: Number(p.vBea || 0) + Number(p.bea || 0) * cant,
     vLaura: Number(p.vLaura || 0) + Number(p.laura || 0) * cant,
     ...(debeMarcarAgotado ? { emailAgotadoEnviado:true } : {})
+  });
+
+  await update(ref(db, 'productos_publicos/' + id), {
+    nombre: p.nombre || '',
+    laura: Number(p.laura || 0),
+    stock: nuevoStock
   });
 
   await guardarLog(
@@ -1253,6 +1306,12 @@ window.cancelarReserva = async (id, cant) => {
     emailAgotadoEnviado:false
   });
 
+  await update(ref(db, 'productos_publicos/' + id), {
+    nombre: p.nombre || '',
+    laura: Number(p.laura || 0),
+    stock: nuevoStock
+  });
+
   await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
   showToast(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`, 'success');
 };
@@ -1273,6 +1332,11 @@ window.modificarStock = (id) => {
         updates.emailAgotadoEnviado = false;
       }
       await update(ref(db,'productos/'+id), updates);
+      await update(ref(db, 'productos_publicos/' + id), {
+        nombre: productos[id].nombre || '',
+        laura: Number(productos[id].laura || 0),
+        stock
+      });
       await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
       showToast(`✅ Stock actualizado: ${stock}`, 'success');
     }
@@ -1299,12 +1363,22 @@ window.guardar = () => {
 
   if (editId) {
     update(ref(db,'productos/'+editId), data).then(async () => {
+      await update(ref(db, 'productos_publicos/' + editId), {
+        nombre: data.nombre,
+        laura: data.laura,
+        stock: data.stock
+      });
       await guardarLog('producto-editado', editId, nombre, 0, currentUser.email);
       limpiarFormulario();
       showToast('✅ Actualizado', 'success');
     });
   } else {
     push(productosRef, data).then(async (newRef) => {
+      await set(ref(db, 'productos_publicos/' + newRef.key), {
+        nombre: data.nombre,
+        laura: data.laura,
+        stock: data.stock
+      });
       await guardarLog('producto-creado', newRef.key, nombre, 0, currentUser.email);
       limpiarFormulario();
       showToast('✅ Guardado', 'success');
@@ -1323,6 +1397,11 @@ window.modificarPrecioLaura = (id) => {
       const precio = Math.max(0, Number(values.precio));
       if (isNaN(precio)) return showToast('❌ Precio inválido', 'error');
       await update(ref(db,'productos/'+id), { laura:precio });
+      await update(ref(db, 'productos_publicos/' + id), {
+        nombre: productos[id].nombre || '',
+        laura: precio,
+        stock: Number(productos[id].stock || 0)
+      });
       await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
       showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
     }
@@ -1341,6 +1420,7 @@ window.modificarPrecioLauraGlobal = () => {
       const updates = {};
       Object.entries(productos).forEach(([id]) => {
         updates[`productos/${id}/laura`] = precio;
+        updates[`productos_publicos/${id}/laura`] = precio;
       });
       await update(ref(db), updates);
       for (const [id, p] of Object.entries(productos)) {
@@ -1374,6 +1454,7 @@ window.borrar = (id) => {
     onConfirm: async () => {
       await guardarLog('producto-borrado', id, productos[id].nombre, 0, currentUser.email);
       await remove(ref(db,'productos/'+id));
+      await remove(ref(db,'productos_publicos/'+id));
       showToast('✅ Borrado', 'success');
     }
   });
