@@ -2,14 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOGS - Inventario Laura</title>
     <style>
-        body { font-family: Arial; background: #f0f2f5; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; padding: 20px; max-width: 1400px; margin: 0 auto; }
         .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .login-card { background: #fff3cd; border: 2px solid #ffeaa7; }
         .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .log-table th, .log-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
-        .log-table th { background: #dc3545; color: white; font-size: 12px; }
+        .log-table th { background: #dc3545; color: white; font-size: 12px; position: sticky; top: 0; z-index: 2; }
         .log-table tr:nth-child(even) { background: #f8f9fa; }
         .log-venta { background: #d4edda !important; }
         .log-reserva { background: #e8f4fd !important; }
@@ -27,8 +28,8 @@
         .tipo-reset { background: #343a40 !important; color: white !important; }
         .filtros-logs { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
         #logFechaDesde, #logFechaHasta { width: 140px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; }
-        #logBuscar { width: 200px; padding: 8px; }
-        #logTipo { padding: 6px; border-radius: 5px; border: 1px solid #ddd; }
+        #logBuscar { width: 220px; padding: 8px; }
+        #logTipo { padding: 8px; border-radius: 5px; border: 1px solid #ddd; }
         button { padding: 8px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold; margin: 2px; }
         button:hover { background: #0056b3; }
         .red { background: #dc3545; color: white; }
@@ -39,14 +40,21 @@
         .totales-logs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; font-size: 18px; font-weight: bold; padding: 15px; margin-bottom: 15px; background: #f8f9fa; border-radius: 10px; }
         .total-bea-total { background: #d4edda; color: #155724; border: 2px solid #28a745; padding: 10px; border-radius: 8px; }
         .total-cant { background: #cce7ff; color: #004085; border: 2px solid #007bff; padding: 10px; border-radius: 8px; }
-        #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
+        #logCount { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 12px; }
         #status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
         .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
-        .hiden { display: none; }
+        .error { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .hidden { display: none; }
+        .tabla-wrap { overflow: auto; }
+        .empty-state { padding: 25px; text-align: center; color: #6b7280; font-weight: bold; }
+
+        @media (max-width: 800px) {
+            .totales-logs { grid-template-columns: 1fr; }
+            body { padding: 10px; }
+        }
     </style>
 </head>
 <body>
-    <!-- LOGIN -->
     <div class="card login-card" id="loginDiv">
         <h3>Iniciar Sesión</h3>
         <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
@@ -58,15 +66,16 @@
         <button class="red" onclick="resetLogin()">Limpiar</button>
     </div>
 
-    <!-- APP -->
-    <div id="mainApp" class="hiden">
+    <div id="mainApp" class="hidden">
         <div id="status">Cargando...</div>
         <div class="card">
             <h2>HISTORIAL COMPLETO DE MOVIMIENTOS</h2>
+
             <div class="filtros-logs">
-                <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="aplicarFiltros()">
+                <input id="logBuscar" placeholder="Buscar producto/usuario/detalles..." oninput="aplicarFiltros()">
                 <input type="date" id="logFechaDesde" onchange="cargarLogs()">
                 <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+
                 <select id="logTipo" onchange="aplicarFiltros()" title="Filtrar por tipo de movimiento">
                     <option value="todos">Todos los tipos</option>
                     <option value="venta">Solo VENTAS</option>
@@ -85,34 +94,42 @@
                     <option value="producto-borrado">Producto borrado</option>
                     <option value="reset-completo">Reset COMPLETO</option>
                 </select>
+
                 <button onclick="cargarLogs()">Recargar</button>
                 <button class="debug-btn" onclick="irDebug()" title="Abrir página de depuración">🔧 DEBUG</button>
                 <button class="clean-logs" onclick="limpiarTodosLogs()" title="⚠️ BORRA TODOS los logs permanentemente">LIMPIAR TODOS LOGS</button>
-                <div style="flex: 1;"></div>
+                <div style="flex:1"></div>
                 <button class="red" onclick="logout()">Cerrar Sesión</button>
             </div>
 
-            <!-- ⭐ TOTAL BEA del INDEX (TODOS los productos) -->
             <div class="totales-logs">
                 <div class="total-bea-total">
                     <strong>💰 TOTAL BEA INDEX</strong><br>
-                    <span id="totalBeaIndex" style="font-size: 24px; color: #28a745;">0.00 €</span>
+                    <span id="totalBeaIndex" style="font-size:24px;color:#28a745;">0.00 €</span>
                 </div>
                 <div class="total-cant">
                     <strong>📦 TOTAL CANTIDAD (filtrados)</strong><br>
-                    <span id="totalCantidadLogs" style="font-size: 24px; color: #007bff;">0</span>
+                    <span id="totalCantidadLogs" style="font-size:24px;color:#007bff;">0</span>
                 </div>
             </div>
 
-            <div id="logCount"></div>
-            <table class="log-table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaLogs"></tbody>
-            </table>
+            <div id="logCount">0 movimientos encontrados</div>
+
+            <div class="tabla-wrap">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Producto</th>
+                            <th>Cant.</th>
+                            <th>Usuario</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaLogs"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -124,21 +141,24 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
             authDomain: "inventario-laura.firebaseapp.com",
-            databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app/",
+            databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "inventario-laura",
             storageBucket: "inventario-laura.firebasestorage.app",
             messagingSenderId: "778807935660",
-            appId: "1778807935660web947e223465f9347b17d509"
+            appId: "1:778807935660:web:947e223465f9347b17d509"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
+
         const logsRef = ref(db, 'logs');
-        const productosRef = ref(db, 'productos'); // ⭐ PARA TOTAL BEA INDEX
+        const productosRef = ref(db, 'productos');
+
         let todosLogs = [];
         let todosProductos = {};
         let currentUser = null;
+        let unsubscribeLogs = null;
 
         window.login = () => {
             const email = document.getElementById('userEmail').value.trim();
@@ -172,27 +192,22 @@
             }
         };
 
-        // ⭐ CALCULAR TOTAL BEA del INDEX (suma bea de TODOS los productos)
         window.calcularTotalBeaIndex = () => {
             let totalBea = 0;
             Object.values(todosProductos).forEach(producto => {
-                totalBea += Number(producto.bea || 0);
+                totalBea += Number(producto?.bea || 0);
             });
             document.getElementById('totalBeaIndex').textContent = totalBea.toFixed(2) + ' €';
         };
 
-        // Calcular totales de logs filtrados (solo cantidad)
         window.calcularTotalesLogs = (logs) => {
             let totalCantidad = 0;
             logs.forEach(log => {
-                if (log.cantidad) {
-                    totalCantidad += Number(log.cantidad);
-                }
+                totalCantidad += Number(log?.cantidad || 0);
             });
-            document.getElementById('totalCantidadLogs').textContent = totalCantidad.toLocaleString();
+            document.getElementById('totalCantidadLogs').textContent = totalCantidad.toLocaleString('es-ES');
         };
 
-        // Cargar PRODUCTOS para total Bea Index
         onValue(productosRef, (snap) => {
             todosProductos = snap.val() || {};
             calcularTotalBeaIndex();
@@ -201,36 +216,56 @@
         window.cargarLogs = () => {
             const desde = document.getElementById('logFechaDesde').value;
             const hasta = document.getElementById('logFechaHasta').value;
-            
-            onValue(logsRef, (snap) => {
-                todosLogs = [];
+
+            if (unsubscribeLogs) unsubscribeLogs();
+
+            unsubscribeLogs = onValue(logsRef, (snap) => {
+                const nuevosLogs = [];
+
                 snap.forEach((child) => {
-                    const log = child.val();
-                    const fecha = new Date(log.timestamp);
+                    const log = child.val() || {};
+                    const timestamp = Number(log.timestamp || 0);
+                    if (!timestamp) return;
+
+                    const fecha = new Date(timestamp);
                     const fechaStr = fecha.toISOString().split('T')[0];
+
                     if ((desde === '' || fechaStr >= desde) && (hasta === '' || fechaStr <= hasta)) {
-                        todosLogs.push({...log, key: child.key});
+                        nuevosLogs.push({
+                            ...log,
+                            key: child.key,
+                            fecha: log.fecha || fecha.toLocaleString('es-ES'),
+                            productoNombre: log.productoNombre || '',
+                            usuario: log.usuario || '',
+                            detalles: log.detalles || '',
+                            cantidad: Number(log.cantidad || 0),
+                            tipo: log.tipo || ''
+                        });
                     }
                 });
-                todosLogs.sort((a,b) => b.timestamp - a.timestamp);
+
+                nuevosLogs.sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+                todosLogs = nuevosLogs;
                 aplicarFiltros();
+            }, (error) => {
+                const status = document.getElementById('status');
+                status.className = 'error';
+                status.textContent = '❌ Error cargando logs: ' + error.message;
             });
         };
 
         window.aplicarFiltros = () => {
-            const filtroTexto = document.getElementById('logBuscar').value.toLowerCase();
+            const filtroTexto = (document.getElementById('logBuscar').value || '').toLowerCase().trim();
             const tipoSeleccionado = document.getElementById('logTipo').value;
 
             const filtrados = todosLogs.filter(log => {
                 const coincideTexto =
-                    log.productoNombre.toLowerCase().includes(filtroTexto) ||
-                    log.usuario.toLowerCase().includes(filtroTexto) ||
-                    (log.detalles || '').toLowerCase().includes(filtroTexto);
+                    (log.productoNombre || '').toLowerCase().includes(filtroTexto) ||
+                    (log.usuario || '').toLowerCase().includes(filtroTexto) ||
+                    (log.detalles || '').toLowerCase().includes(filtroTexto) ||
+                    (log.tipo || '').toLowerCase().includes(filtroTexto);
 
-                const coincideTipo =
-                    tipoSeleccionado === 'todos' ||
-                    log.tipo === tipoSeleccionado;
-
+                const coincideTipo = tipoSeleccionado === 'todos' || log.tipo === tipoSeleccionado;
                 return coincideTexto && coincideTipo;
             });
 
@@ -239,10 +274,15 @@
 
         window.renderLogsFiltrados = (logs) => {
             const tabla = document.getElementById('tablaLogs');
-            tabla.innerHTML = '';
-            
-            // Calcular totales de logs filtrados
             calcularTotalesLogs(logs);
+
+            if (!logs.length) {
+                tabla.innerHTML = '<tr><td colspan="6" class="empty-state">No hay logs con esos filtros</td></tr>';
+                document.getElementById('logCount').textContent = '0 movimientos encontrados';
+                return;
+            }
+
+            let html = '';
 
             logs.forEach(log => {
                 let claseTipo = '';
@@ -266,7 +306,6 @@
                         claseTipo = 'tipo-stock'; claseFila = 'log-tipico'; break;
                     case 'precio-laura':
                     case 'precio-laura-global':
-                        claseTipo = 'tipo-precio'; claseFila = 'log-tipico'; break;
                     case 'producto-creado':
                     case 'producto-editado':
                     case 'producto-borrado':
@@ -274,41 +313,49 @@
                     case 'reset-completo':
                         claseTipo = 'tipo-reset'; claseFila = 'log-tipico'; break;
                     default:
-                        claseTipo = ''; claseFila = ''; break;
+                        claseTipo = '';
+                        claseFila = '';
+                        break;
                 }
 
-                tabla.innerHTML += `
+                html += `
                     <tr class="${claseFila}">
                         <td>${log.fecha}</td>
-                        <td><span class="log-tipo ${claseTipo}">${log.tipo.replace(/-/g, ' ').toUpperCase()}</span></td>
+                        <td><span class="log-tipo ${claseTipo}">${(log.tipo || '').replace(/-/g, ' ').toUpperCase()}</span></td>
                         <td style="text-align:left">${log.productoNombre || ''}</td>
-                        <td>${log.cantidad}</td>
-                        <td>${log.usuario}</td>
+                        <td>${Number(log.cantidad || 0)}</td>
+                        <td>${log.usuario || ''}</td>
                         <td style="text-align:left;font-size:11px">${log.detalles || ''}</td>
                     </tr>
                 `;
             });
+
+            tabla.innerHTML = html;
             document.getElementById('logCount').textContent = `${logs.length} movimientos encontrados`;
         };
 
         onAuthStateChanged(auth, (user) => {
+            const loginDiv = document.getElementById('loginDiv');
+            const mainApp = document.getElementById('mainApp');
+            const status = document.getElementById('status');
+
             if (user && user.email === 'nilose2014@gmail.com') {
                 currentUser = user;
-                document.getElementById('loginDiv').classList.add('hiden');
-                document.getElementById('mainApp').classList.remove('hiden');
-                document.getElementById('status').innerHTML = `<strong>ADMIN</strong> ${user.email}<br>Logs cargando...`;
-                document.getElementById('status').className = 'admin';
+                loginDiv.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                status.innerHTML = `<strong>ADMIN</strong> ${user.email}<br>Logs cargando...`;
+                status.className = 'admin';
                 cargarLogs();
             } else {
-                document.getElementById('mainApp').classList.add('hiden');
-                document.getElementById('loginDiv').classList.remove('hiden');
-                document.getElementById('status').innerHTML = 'Sesión requerida';
+                currentUser = null;
+                mainApp.classList.add('hidden');
+                loginDiv.classList.remove('hidden');
             }
         });
 
         window.onload = () => {
             const hoy = new Date().toISOString().split('T')[0];
-            const hace7dias = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+            const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             document.getElementById('logFechaDesde').value = hace7dias;
             document.getElementById('logFechaHasta').value = hoy;
         };
