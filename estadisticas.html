@@ -2,73 +2,237 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>📊 Estadísticas Inventario Laura - Todos Vendidos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 Estadísticas Inventario Laura - Panel Completo</title>
 <style>
-body{font-family:Arial;background:#f0f2f5;padding:20px;max-width:1200px;margin:0 auto}
-.card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:13px}
-th{background:linear-gradient(45deg,#28a745,#20c997);color:white}
+body{font-family:Arial,Helvetica,sans-serif;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto;color:#1f2937}
+.card{background:white;padding:20px;border-radius:14px;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.grid-top{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{padding:18px;border-radius:14px;color:#111827;font-weight:bold;border:2px solid #e5e7eb;background:#fff}
+.kpi .label{font-size:14px;opacity:.9;margin-bottom:8px}
+.kpi .value{font-size:28px;line-height:1.1}
+.kpi.green{background:#d4edda;border-color:#28a745}
+.kpi.blue{background:#dbeafe;border-color:#0d6efd}
+.kpi.yellow{background:#fff3cd;border-color:#ffc107}
+.kpi.red{background:#f8d7da;border-color:#dc3545}
+.kpi.cyan{background:#d1ecf1;border-color:#17a2b8}
+.kpi.purple{background:#ede9fe;border-color:#6f42c1}
+.kpi.gray{background:#e9ecef;border-color:#6c757d}
+.kpi.orange{background:#ffe5d0;border-color:#fd7e14}
+h1,h2,h3{margin-top:0}
+#status{padding:12px 15px;border-radius:10px;margin-bottom:15px;font-weight:bold}
+.admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb}
+.error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb}
+.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.toolbar .field{display:flex;flex-direction:column;gap:6px}
+.toolbar label{font-size:13px;font-weight:bold}
+input,select{padding:10px;border-radius:8px;border:1px solid #cbd5e1;background:white;font-size:14px}
+button{padding:10px 14px;border:none;border-radius:8px;background:#007bff;color:white;cursor:pointer;font-size:13px;font-weight:bold}
+button:hover{background:#0056b3}
+button.secondary{background:#6c757d}
+button.secondary:hover{background:#5a6268}
+button.green{background:#28a745}
+button.green:hover{background:#218838}
+button.purple{background:#6f42c1}
+button.purple:hover{background:#5a32a3}
+button.red{background:#dc3545}
+button.red:hover{background:#c82333}
+.tabla-container{overflow:auto;border-radius:12px}
+table{width:100%;border-collapse:collapse;background:white}
+th,td{border:1px solid #e5e7eb;padding:10px 8px;text-align:center;font-size:13px}
+th{background:linear-gradient(45deg,#28a745,#20c997);color:white;position:sticky;top:0;z-index:2}
 tr:nth-child(even){background:#f8f9fa}
 tr:hover{background:#e3f2fd}
 .pos1{background:#d4edda !important;font-weight:bold}
 .pos2{background:#fff3cd !important;font-weight:bold}
 .pos3{background:#cce7ff !important;font-weight:bold}
-h2{margin-top:0}
-button{padding:6px 10px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;font-size:12px;font-weight:bold;margin-left:5px}
-button:hover{background:#0056b3}
-.admin{background:#d4edda;color:#155724;border:2px solid #c3e6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
-.error{background:#f8d7da;color:#721c24;border:2px solid #f5c6cb;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-weight:bold}
-.tabla-container{overflow:auto}
-
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:bold;font-size:11px}
+.badge.red{background:#f8d7da;color:#721c24}
+.badge.yellow{background:#fff3cd;color:#856404}
+.badge.blue{background:#dbeafe;color:#1d4ed8}
+.badge.green{background:#d4edda;color:#155724}
+.section-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:20px}
+.mini-table th{background:linear-gradient(45deg,#007bff,#17a2b8)}
+.empty{padding:24px;text-align:center;color:#6b7280;font-weight:bold}
+.chart-wrap{background:white;border-radius:12px;padding:10px;overflow:auto}
+canvas{width:100% !important;max-height:380px !important}
+#resumenFechas{font-size:13px;color:#475569;font-weight:bold}
+@media (max-width:1100px){.grid-top{grid-template-columns:repeat(2,1fr)}.section-grid{grid-template-columns:1fr}}
+@media (max-width:650px){body{padding:10px}.grid-top{grid-template-columns:1fr}.toolbar{align-items:stretch}.toolbar .field{width:100%}button{width:100%}}
 @media print {
-  body{background:white;padding:0;margin:0}
-  button, #status, h2 {display:none !important}
-  .card{box-shadow:none;padding:0}
+  body{background:white;padding:0;margin:0;max-width:none}
+  button,#status,.toolbar{display:none !important}
+  .card{box-shadow:none;border:1px solid #ddd}
   .tabla-container{overflow:visible}
+  .section-grid{grid-template-columns:1fr}
+  canvas{max-height:260px !important}
 }
 </style>
 </head>
 <body>
 
-<h2>📊 Estadísticas de Productos Vendidos (Histórico Completo)</h2>
-
+<h1>📊 Estadísticas 7 completas - Inventario Laura</h1>
 <div id="status" class="admin">Cargando...</div>
 
-<div class="card" id="cardEstadisticas">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <div>
-      <strong>Total productos con ventas:</strong>
-      <span id="totalProductosVendidos" style="color:#28a745;font-weight:bold">0</span><br>
-      <strong>Total unidades vendidas:</strong>
-      <span id="totalUnidadesVendidas" style="color:#007bff;font-weight:bold">0</span><br>
-      <strong>Total unidades a la venta:</strong>
-      <span id="totalUnidadesVenta" style="color:#dc3545;font-weight:bold">0</span><br>
-      <strong>Total Bea €:</strong>
-      <span id="totalBea" style="color:#28a745;font-weight:bold">€0.00</span><br>
-      <strong>Total Laura €:</strong>
-      <span id="totalLaura" style="color:#007bff;font-weight:bold">€0.00</span>
+<div class="card">
+  <div class="toolbar">
+    <div class="field">
+      <label for="buscarProducto">Buscar producto</label>
+      <input id="buscarProducto" placeholder="Nombre del producto..." oninput="aplicarFiltros()">
     </div>
-    <div>
+    <div class="field">
+      <label for="filtroEstado">Estado</label>
+      <select id="filtroEstado" onchange="aplicarFiltros()">
+        <option value="todos">Todos</option>
+        <option value="agotados">Solo agotados</option>
+        <option value="stock-bajo">Solo stock bajo</option>
+        <option value="reservados">Solo con reservas</option>
+        <option value="proximo">Solo con próximo stock</option>
+        <option value="sin-ventas">Solo sin ventas</option>
+        <option value="con-ventas">Solo con ventas</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="ordenarPor">Ordenar por</label>
+      <select id="ordenarPor" onchange="aplicarFiltros()">
+        <option value="vendidos-desc">Vendidos ↓</option>
+        <option value="vendidos-asc">Vendidos ↑</option>
+        <option value="laura-desc">Laura € ↓</option>
+        <option value="laura-asc">Laura € ↑</option>
+        <option value="bea-desc">Bea € ↓</option>
+        <option value="bea-asc">Bea € ↑</option>
+        <option value="stock-asc">Stock ↑</option>
+        <option value="stock-desc">Stock ↓</option>
+        <option value="reservados-desc">Reservados ↓</option>
+        <option value="reservados-asc">Reservados ↑</option>
+        <option value="nombre-asc">Nombre A → Z</option>
+        <option value="nombre-desc">Nombre Z → A</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="logFechaDesde">Logs desde</label>
+      <input type="date" id="logFechaDesde" onchange="renderTodo()">
+    </div>
+    <div class="field">
+      <label for="logFechaHasta">Logs hasta</label>
+      <input type="date" id="logFechaHasta" onchange="renderTodo()">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="secondary" onclick="limpiarFiltros()">🧹 Limpiar filtros</button>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
       <button onclick="imprimir()">🖨️ Imprimir</button>
-      <button onclick="descargarPDF()">⬇️ Descargar PDF</button>
-      <button onclick="volver()">⬅️ Volver al Inventario</button>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="green" onclick="descargarCSV()">⬇️ CSV</button>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="purple" onclick="descargarPDF()">⬇️ PDF</button>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="red" onclick="volver()">⬅️ Volver</button>
     </div>
   </div>
-  <div class="tabla-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Pos</th>
-          <th>Producto</th>
-          <th>Vendidos</th>
-          <th>Bea €</th>
-          <th>Laura €</th>
-          <th>% Vendidos</th>
-        </tr>
-      </thead>
-      <tbody id="tablaEstadisticas"></tbody>
-    </table>
+  <div id="resumenFechas" style="margin-top:14px"></div>
+</div>
+
+<div class="grid-top">
+  <div class="kpi green"><div class="label">💰 Total Bea</div><div class="value" id="kpiBea">€0.00</div></div>
+  <div class="kpi blue"><div class="label">💰 Total Laura</div><div class="value" id="kpiLaura">€0.00</div></div>
+  <div class="kpi yellow"><div class="label">📊 Diferencia Laura - Bea</div><div class="value" id="kpiDiferencia">€0.00</div></div>
+  <div class="kpi cyan"><div class="label">📦 Unidades vendidas</div><div class="value" id="kpiVendidos">0</div></div>
+  <div class="kpi purple"><div class="label">📦 Reservados</div><div class="value" id="kpiReservados">0</div></div>
+  <div class="kpi red"><div class="label">⛔ Productos agotados</div><div class="value" id="kpiAgotados">0</div></div>
+  <div class="kpi orange"><div class="label">⚠️ Stock bajo</div><div class="value" id="kpiStockBajo">0</div></div>
+  <div class="kpi gray"><div class="label">📦 Stock actual total</div><div class="value" id="kpiStockActual">0</div></div>
+</div>
+
+<div class="section-grid">
+  <div>
+    <div class="card">
+      <h2>🏆 Ranking completo de productos</h2>
+      <div class="tabla-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Producto</th>
+              <th>Stock</th>
+              <th>Próximo</th>
+              <th>Reservados</th>
+              <th>Vendidos</th>
+              <th>Bea €</th>
+              <th>Laura €</th>
+              <th>% ventas</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tablaEstadisticas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📈 Ventas por día (según logs filtrados)</h2>
+      <div class="chart-wrap">
+        <canvas id="chartVentasPorDia"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💸 Ingresos por día (según logs filtrados)</h2>
+      <div class="chart-wrap">
+        <canvas id="chartIngresosPorDia"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>🥇 Top 10 más vendidos</h2>
+      <div class="tabla-container">
+        <table class="mini-table">
+          <thead>
+            <tr><th>#</th><th>Producto</th><th>Vendidos</th></tr>
+          </thead>
+          <tbody id="tablaTopVendidos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⏳ Top 10 más reservados</h2>
+      <div class="tabla-container">
+        <table class="mini-table">
+          <thead>
+            <tr><th>#</th><th>Producto</th><th>Reservados</th></tr>
+          </thead>
+          <tbody id="tablaTopReservados"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚠️ Alertas útiles</h2>
+      <div id="alertasWrap"></div>
+    </div>
+
+    <div class="card">
+      <h2>📅 Resumen por periodo (logs filtrados)</h2>
+      <div class="tabla-container">
+        <table class="mini-table">
+          <thead>
+            <tr><th>Periodo</th><th>Ventas</th><th>Ingresos Laura</th></tr>
+          </thead>
+          <tbody id="tablaPeriodos"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -91,8 +255,23 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
+const logsRef = ref(db, "logs");
 
 let productos = {};
+let logs = {};
+let filasFiltradas = [];
+let totalVendidosGlobalRef = 0;
+let ventasChart = null;
+let ingresosChart = null;
+
+function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
+function ymd(date){ return new Date(date).toISOString().split('T')[0]; }
+function esFechaDentro(fechaYmd, desde, hasta){
+  if (desde && fechaYmd < desde) return false;
+  if (hasta && fechaYmd > hasta) return false;
+  return true;
+}
+function normalizarNombre(s){ return String(s || '').toLowerCase().trim(); }
 
 onAuthStateChanged(auth, (user) => {
   const status = document.getElementById('status');
@@ -104,109 +283,386 @@ onAuthStateChanged(auth, (user) => {
   }
   status.className = 'admin';
   status.textContent = `👑 ADMIN: ${user.email} - Estadísticas completas cargadas ✅`;
-  cargarEstadisticas();
+  prepararFechas();
+  cargarDatos();
 });
 
-function cargarEstadisticas() {
+function prepararFechas(){
+  const hoy = new Date();
+  const hace30 = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+  document.getElementById('logFechaDesde').value = ymd(hace30);
+  document.getElementById('logFechaHasta').value = ymd(hoy);
+}
+
+function cargarDatos(){
   onValue(productosRef, snap => {
     productos = snap.val() || {};
-    mostrarEstadisticas();
+    renderTodo();
   }, error => {
     const status = document.getElementById('status');
     status.className = 'error';
-    status.textContent = '❌ Error cargando datos: ' + error.message;
+    status.textContent = '❌ Error cargando productos: ' + error.message;
+  });
+
+  onValue(logsRef, snap => {
+    logs = snap.val() || {};
+    renderTodo();
+  }, error => {
+    const status = document.getElementById('status');
+    status.className = 'error';
+    status.textContent = '❌ Error cargando logs: ' + error.message;
   });
 }
 
-function mostrarEstadisticas() {
+window.renderTodo = () => {
+  const data = construirFilas();
+  filasFiltradas = filtrarYOrdenar(data);
+  totalVendidosGlobalRef = filasFiltradas.reduce((acc, p) => acc + p.vendidos, 0);
+  renderResumenFechas();
+  renderKPIs(filasFiltradas);
+  renderTablaPrincipal(filasFiltradas);
+  renderTopVendidos(filasFiltradas);
+  renderTopReservados(filasFiltradas);
+  renderAlertas(filasFiltradas);
+  renderChartsYPeriodos();
+};
+
+window.aplicarFiltros = () => renderTodo();
+
+window.limpiarFiltros = () => {
+  document.getElementById('buscarProducto').value = '';
+  document.getElementById('filtroEstado').value = 'todos';
+  document.getElementById('ordenarPor').value = 'vendidos-desc';
+  prepararFechas();
+  renderTodo();
+};
+
+function construirFilas(){
+  return Object.entries(productos).map(([id, p]) => {
+    const vendidos = Number(p.vendidos || 0);
+    const stock = Number(p.stock || 0);
+    const proximo = Number(p.proximo || 0);
+    const reservados = Number(p.reservados || 0);
+    const beaTotal = Number(p.vBea || 0);
+    const lauraTotal = Number(p.vLaura || 0);
+
+    return {
+      id,
+      nombre: p.nombre || '',
+      stock,
+      proximo,
+      reservados,
+      vendidos,
+      beaTotal,
+      lauraTotal,
+      porcentaje: 0
+    };
+  });
+}
+
+function filtrarYOrdenar(data){
+  const buscar = normalizarNombre(document.getElementById('buscarProducto').value);
+  const estado = document.getElementById('filtroEstado').value;
+  const orden = document.getElementById('ordenarPor').value;
+
+  let rows = data.filter(p => {
+    const coincideTexto = !buscar || normalizarNombre(p.nombre).includes(buscar);
+    if (!coincideTexto) return false;
+
+    switch (estado) {
+      case 'agotados': return p.stock === 0;
+      case 'stock-bajo': return p.stock > 0 && p.stock <= 5;
+      case 'reservados': return p.reservados > 0;
+      case 'proximo': return p.proximo > 0;
+      case 'sin-ventas': return p.vendidos === 0;
+      case 'con-ventas': return p.vendidos > 0;
+      default: return true;
+    }
+  });
+
+  const [campo, dir] = orden.split('-');
+  rows.sort((a,b) => {
+    let va, vb;
+    switch (campo) {
+      case 'nombre': va = a.nombre.toLowerCase(); vb = b.nombre.toLowerCase(); return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      case 'vendidos': va = a.vendidos; vb = b.vendidos; break;
+      case 'laura': va = a.lauraTotal; vb = b.lauraTotal; break;
+      case 'bea': va = a.beaTotal; vb = b.beaTotal; break;
+      case 'stock': va = a.stock; vb = b.stock; break;
+      case 'reservados': va = a.reservados; vb = b.reservados; break;
+      default: va = a.vendidos; vb = b.vendidos;
+    }
+    return dir === 'asc' ? va - vb : vb - va;
+  });
+
+  const totalVendidos = rows.reduce((acc,p) => acc + p.vendidos, 0);
+  rows = rows.map(p => ({
+    ...p,
+    porcentaje: totalVendidos > 0 ? ((p.vendidos / totalVendidos) * 100) : 0
+  }));
+
+  return rows;
+}
+
+function renderResumenFechas(){
+  const desde = document.getElementById('logFechaDesde').value;
+  const hasta = document.getElementById('logFechaHasta').value;
+  document.getElementById('resumenFechas').textContent = `Rango de logs usado para gráficos y periodos: ${desde || 'sin inicio'} → ${hasta || 'sin fin'}`;
+}
+
+function renderKPIs(rows){
+  const totalBea = rows.reduce((acc,p) => acc + p.beaTotal, 0);
+  const totalLaura = rows.reduce((acc,p) => acc + p.lauraTotal, 0);
+  const totalVendidos = rows.reduce((acc,p) => acc + p.vendidos, 0);
+  const totalReservados = rows.reduce((acc,p) => acc + p.reservados, 0);
+  const agotados = rows.filter(p => p.stock === 0).length;
+  const stockBajo = rows.filter(p => p.stock > 0 && p.stock <= 5).length;
+  const stockActual = rows.reduce((acc,p) => acc + p.stock, 0);
+  const diferencia = totalLaura - totalBea;
+
+  document.getElementById('kpiBea').textContent = formatEuro(totalBea);
+  document.getElementById('kpiLaura').textContent = formatEuro(totalLaura);
+  document.getElementById('kpiDiferencia').textContent = formatEuro(diferencia);
+  document.getElementById('kpiVendidos').textContent = totalVendidos;
+  document.getElementById('kpiReservados').textContent = totalReservados;
+  document.getElementById('kpiAgotados').textContent = agotados;
+  document.getElementById('kpiStockBajo').textContent = stockBajo;
+  document.getElementById('kpiStockActual').textContent = stockActual;
+}
+
+function renderTablaPrincipal(rows){
   const tabla = document.getElementById('tablaEstadisticas');
-  const totalProductosVendidosEl = document.getElementById('totalProductosVendidos');
-  const totalUnidadesVendidasEl = document.getElementById('totalUnidadesVendidas');
-  const totalUnidadesVentaEl = document.getElementById('totalUnidadesVenta');
-  const totalBeaEl = document.getElementById('totalBea');
-  const totalLauraEl = document.getElementById('totalLaura');
-
-  const todosProductos = Object.entries(productos);
-
-  const totalUnidadesVenta = todosProductos.reduce((acc, [,p]) => acc + Number(p.stock || 0), 0);
-  totalUnidadesVentaEl.textContent = totalUnidadesVenta;
-
-  const productosConVentas = todosProductos
-    .filter(([,p]) => Number(p.vendidosTotal || 0) > 0)
-    .sort(([,a],[,b]) => Number(b.vendidosTotal || 0) - Number(a.vendidosTotal || 0));
-
-  const totalVendidosGlobal = productosConVentas.reduce((acc, [,p]) => acc + Number(p.vendidosTotal || 0), 0);
-
-  let totalBea = 0;
-  let totalLaura = 0;
-
-  if(productosConVentas.length === 0){
-    tabla.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px">❌ No hay ventas</td></tr>';
-    totalProductosVendidosEl.textContent = '0';
-    totalUnidadesVendidasEl.textContent = '0';
-    totalBeaEl.textContent = '€0.00';
-    totalLauraEl.textContent = '€0.00';
+  if (!rows.length) {
+    tabla.innerHTML = '<tr><td colspan="10" class="empty">❌ No hay datos con esos filtros</td></tr>';
     return;
   }
 
-  totalProductosVendidosEl.textContent = productosConVentas.length;
-  totalUnidadesVendidasEl.textContent = totalVendidosGlobal;
-
-  tabla.innerHTML = productosConVentas.map(([id,p], i) => {
-    const vendidos = Number(p.vendidosTotal || 0);
-
-    // Convertimos precio a número por si viene como string con €
-    const beaUnit = Number(String(p.bea || 0).replace(/[^0-9.-]+/g,''));
-    const lauraUnit = Number(String(p.laura || 0).replace(/[^0-9.-]+/g,''));
-
-    // Calculamos los totales de cada producto
-    const beaTotal = (p.vBea != null ? Number(p.vBea) : vendidos * beaUnit);
-    const lauraTotal = (p.vLaura != null ? Number(p.vLaura) : vendidos * lauraUnit);
-
-    totalBea += beaTotal;
-    totalLaura += lauraTotal;
-
-    const porcentaje = totalVendidosGlobal > 0 ? ((vendidos / totalVendidosGlobal)*100).toFixed(1) : 0;
-    const clasePos = i===0?'pos1':i===1?'pos2':i===2?'pos3':'';
+  tabla.innerHTML = rows.map((p, i) => {
+    const clasePos = i === 0 ? 'pos1' : i === 1 ? 'pos2' : i === 2 ? 'pos3' : '';
+    let estado = '<span class="badge green">OK</span>';
+    if (p.stock === 0) estado = '<span class="badge red">AGOTADO</span>';
+    else if (p.stock <= 5) estado = '<span class="badge yellow">STOCK BAJO</span>';
+    else if (p.proximo > 0) estado = '<span class="badge blue">PRÓXIMO</span>';
 
     return `
       <tr class="${clasePos}">
-        <td style="font-weight:bold;font-size:16px">${i+1}</td>
+        <td style="font-weight:bold">${i + 1}</td>
         <td style="text-align:left;font-weight:bold">${p.nombre}</td>
-        <td style="font-size:18px;color:#28a745;font-weight:bold">${vendidos}</td>
-        <td style="color:#28a745;font-weight:bold">€${beaTotal.toFixed(2)}</td>
-        <td style="color:#007bff;font-weight:bold">€${lauraTotal.toFixed(2)}</td>
-        <td style="color:#ffc107;font-weight:bold">${porcentaje}%</td>
+        <td>${p.stock}</td>
+        <td>${p.proximo}</td>
+        <td>${p.reservados}</td>
+        <td style="font-size:17px;color:#28a745;font-weight:bold">${p.vendidos}</td>
+        <td style="color:#28a745;font-weight:bold">${formatEuro(p.beaTotal)}</td>
+        <td style="color:#007bff;font-weight:bold">${formatEuro(p.lauraTotal)}</td>
+        <td style="color:#ffc107;font-weight:bold">${p.porcentaje.toFixed(1)}%</td>
+        <td>${estado}</td>
       </tr>
     `;
   }).join('');
-
-  totalBeaEl.textContent = '€' + totalBea.toFixed(2);
-  totalLauraEl.textContent = '€' + totalLaura.toFixed(2);
 }
 
-// --------- BOTONES ---------
+function renderTopVendidos(rows){
+  const tbody = document.getElementById('tablaTopVendidos');
+  const top = [...rows].filter(p => p.vendidos > 0).sort((a,b) => b.vendidos - a.vendidos).slice(0,10);
+  tbody.innerHTML = top.length
+    ? top.map((p,i) => `<tr><td>${i+1}</td><td style="text-align:left">${p.nombre}</td><td>${p.vendidos}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">Sin ventas</td></tr>';
+}
+
+function renderTopReservados(rows){
+  const tbody = document.getElementById('tablaTopReservados');
+  const top = [...rows].filter(p => p.reservados > 0).sort((a,b) => b.reservados - a.reservados).slice(0,10);
+  tbody.innerHTML = top.length
+    ? top.map((p,i) => `<tr><td>${i+1}</td><td style="text-align:left">${p.nombre}</td><td>${p.reservados}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">Sin reservas</td></tr>';
+}
+
+function renderAlertas(rows){
+  const wrap = document.getElementById('alertasWrap');
+  const agotados = rows.filter(p => p.stock === 0).map(p => `⛔ ${p.nombre}`);
+  const stockBajo = rows.filter(p => p.stock > 0 && p.stock <= 5).map(p => `⚠️ ${p.nombre} (${p.stock})`);
+  const conReservas = rows.filter(p => p.reservados > 0).map(p => `⏳ ${p.nombre} (${p.reservados})`);
+  const conProximo = rows.filter(p => p.proximo > 0).map(p => `📦 ${p.nombre} (+${p.proximo})`);
+
+  const bloques = [
+    { titulo: 'Agotados', lista: agotados },
+    { titulo: 'Stock bajo', lista: stockBajo },
+    { titulo: 'Con reservas', lista: conReservas },
+    { titulo: 'Con próximo stock', lista: conProximo }
+  ];
+
+  wrap.innerHTML = bloques.map(b => `
+    <div style="margin-bottom:14px">
+      <div style="font-weight:bold;margin-bottom:6px">${b.titulo}</div>
+      <div style="font-size:13px;color:#475569">${b.lista.length ? b.lista.slice(0,8).join('<br>') : 'Ninguno'}</div>
+    </div>
+  `).join('');
+}
+
+function obtenerLogsFiltrados(){
+  const desde = document.getElementById('logFechaDesde').value;
+  const hasta = document.getElementById('logFechaHasta').value;
+  return Object.values(logs || {}).filter(log => {
+    if (!log || !log.timestamp) return false;
+    const fecha = ymd(log.timestamp);
+    return esFechaDentro(fecha, desde, hasta);
+  });
+}
+
+function renderChartsYPeriodos(){
+  const logsFiltrados = obtenerLogsFiltrados();
+  const ventasPorDia = {};
+  const ingresosPorDia = {};
+
+  logsFiltrados.forEach(log => {
+    const fecha = ymd(log.timestamp);
+    if (!ventasPorDia[fecha]) ventasPorDia[fecha] = 0;
+    if (!ingresosPorDia[fecha]) ingresosPorDia[fecha] = 0;
+
+    if (log.tipo === 'venta') {
+      const cantidad = Number(log.cantidad || 0);
+      ventasPorDia[fecha] += cantidad;
+
+      const matchLaura = String(log.detalles || '').match(/Laura:€([0-9]+(?:\.[0-9]+)?)/);
+      const lauraUnit = matchLaura ? Number(matchLaura[1]) : 0;
+      ingresosPorDia[fecha] += lauraUnit * cantidad;
+    }
+  });
+
+  const etiquetas = Object.keys(ventasPorDia).sort();
+  const datosVentas = etiquetas.map(k => ventasPorDia[k]);
+  const datosIngresos = etiquetas.map(k => Number((ingresosPorDia[k] || 0).toFixed(2)));
+
+  dibujarChart('chartVentasPorDia', 'bar', etiquetas, datosVentas, 'Unidades vendidas', 'ventas');
+  dibujarChart('chartIngresosPorDia', 'line', etiquetas, datosIngresos, 'Ingresos Laura €', 'ingresos');
+
+  renderPeriodos(logsFiltrados);
+}
+
+function dibujarChart(canvasId, type, labels, data, label, kind){
+  const ctx = document.getElementById(canvasId);
+  if (kind === 'ventas' && ventasChart) ventasChart.destroy();
+  if (kind === 'ingresos' && ingresosChart) ingresosChart.destroy();
+
+  const chart = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{ label, data, borderWidth: 2, fill: false, tension: 0.25 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  if (kind === 'ventas') ventasChart = chart;
+  if (kind === 'ingresos') ingresosChart = chart;
+}
+
+function renderPeriodos(logsFiltrados){
+  const tbody = document.getElementById('tablaPeriodos');
+  const hoy = new Date();
+  const inicioSemana = new Date(hoy);
+  const day = (inicioSemana.getDay() + 6) % 7;
+  inicioSemana.setDate(inicioSemana.getDate() - day);
+  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+  const periodos = [
+    { nombre: 'Hoy', desde: ymd(hoy), hasta: ymd(hoy) },
+    { nombre: 'Esta semana', desde: ymd(inicioSemana), hasta: ymd(hoy) },
+    { nombre: 'Este mes', desde: ymd(inicioMes), hasta: ymd(hoy) }
+  ];
+
+  const rows = periodos.map(periodo => {
+    let ventas = 0;
+    let ingresosLaura = 0;
+
+    logsFiltrados.forEach(log => {
+      if (log.tipo !== 'venta') return;
+      const fecha = ymd(log.timestamp);
+      if (!esFechaDentro(fecha, periodo.desde, periodo.hasta)) return;
+      const cantidad = Number(log.cantidad || 0);
+      ventas += cantidad;
+      const matchLaura = String(log.detalles || '').match(/Laura:€([0-9]+(?:\.[0-9]+)?)/);
+      const lauraUnit = matchLaura ? Number(matchLaura[1]) : 0;
+      ingresosLaura += lauraUnit * cantidad;
+    });
+
+    return `<tr><td>${periodo.nombre}</td><td>${ventas}</td><td>${formatEuro(ingresosLaura)}</td></tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows || '<tr><td colspan="3" class="empty">Sin movimientos</td></tr>';
+}
+
 window.volver = () => window.location.href = 'index.html';
 window.imprimir = () => window.print();
 
+window.descargarCSV = () => {
+  const filas = [["Pos","Producto","Stock","Proximo","Reservados","Vendidos","Bea","Laura","Porcentaje"]];
+  filasFiltradas.forEach((p, i) => {
+    filas.push([
+      i + 1,
+      p.nombre,
+      p.stock,
+      p.proximo,
+      p.reservados,
+      p.vendidos,
+      p.beaTotal.toFixed(2),
+      p.lauraTotal.toFixed(2),
+      p.porcentaje.toFixed(1) + '%'
+    ]);
+  });
+
+  const csv = filas.map(f => f.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'estadisticas-inventario-laura.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 window.descargarPDF = async () => {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p','mm','a4');
-  const element = document.getElementById('cardEstadisticas');
-  const canvas = await html2canvas(element, {scale:2,useCORS:true,logging:false,windowHeight:element.scrollHeight});
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const element = document.body;
+  const canvas = await html2canvas(element, { scale: 1.5, useCORS: true, logging: false, windowWidth: document.body.scrollWidth, windowHeight: document.body.scrollHeight });
+  const imgData = canvas.toDataURL('image/png');
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 8;
+  const imgWidth = pageWidth - margin * 2;
+  const imgHeight = canvas.height * imgWidth / canvas.width;
 
-  const pageWidth = 210, pageHeight = 297, margin = 10;
-  const imgWidth = pageWidth - 2*margin;
-  const imgHeight = (canvas.height*imgWidth)/canvas.width;
+  let heightLeft = imgHeight;
+  let position = margin;
+  doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+  heightLeft -= (pageHeight - margin * 2);
 
-  doc.addImage(canvas.toDataURL('image/png'),'PNG',margin,margin,imgWidth,imgHeight);
-  doc.save('estadisticas-inventario-laura.pdf');
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight + margin;
+    doc.addPage();
+    doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
+  }
+
+  doc.save('estadisticas-7-inventario-laura.pdf');
 };
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 </body>
 </html>
-
