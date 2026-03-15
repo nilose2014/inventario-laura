@@ -522,7 +522,9 @@ window.verQRProducto = async (id) => {
   const p = productos[id];
   if (!p) return showToast('❌ Producto no encontrado', 'error');
 
-  const qrText = `PROD:${id}`;
+  const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const qrText = `${baseUrl}scanner.html?scanId=${id}`;
+
   ultimoQRTexto = qrText;
   ultimoQRNombre = p.nombre || 'Producto';
 
