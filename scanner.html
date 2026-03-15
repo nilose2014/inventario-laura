@@ -28,6 +28,7 @@
     .small{font-size:13px;color:#6b7280}
     input{padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;width:90px;text-align:center}
     .qty-wrap{display:flex;align-items:center;gap:10px;margin-top:14px}
+
     .public-card{
       border:2px solid #e5e7eb;
       background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);
@@ -93,11 +94,44 @@
       color:#64748b;
       font-weight:bold
     }
+
+    .foto-producto-wrap{
+      display:flex;
+      justify-content:center;
+      margin-bottom:16px
+    }
+    .foto-producto{
+      width:220px;
+      height:220px;
+      object-fit:cover;
+      border-radius:18px;
+      border:2px solid #e5e7eb;
+      background:#fff;
+      box-shadow:0 6px 16px rgba(0,0,0,.08)
+    }
+
+    .foto-privada-wrap{
+      display:flex;
+      justify-content:center;
+      margin-bottom:16px
+    }
+    .foto-privada{
+      width:180px;
+      height:180px;
+      object-fit:cover;
+      border-radius:16px;
+      border:2px solid #dbeafe;
+      background:#fff;
+      box-shadow:0 6px 16px rgba(0,0,0,.08)
+    }
+
     @media (max-width:700px){
       .grid{grid-template-columns:1fr}
       body{padding:10px}
       .public-name{font-size:28px}
       .public-price{font-size:42px}
+      .foto-producto{width:180px;height:180px}
+      .foto-privada{width:150px;height:150px}
     }
   </style>
 </head>
@@ -120,6 +154,9 @@
 
   <div class="card hidden public-card" id="publicCard">
     <div class="public-title">Información del producto</div>
+
+    <div id="publicImagenWrap" class="foto-producto-wrap"></div>
+
     <div class="public-name" id="publicNombre">-</div>
 
     <div class="public-price-wrap">
@@ -136,6 +173,9 @@
 
   <div class="card hidden producto" id="productoCard">
     <h2>🛒 Venta rápida</h2>
+
+    <div id="privadaImagenWrap" class="foto-privada-wrap"></div>
+
     <div class="grid">
       <div class="stat">Producto<span class="value" id="prodNombre">-</span></div>
       <div class="stat">Stock<span class="value" id="prodStock">0</span></div>
@@ -201,11 +241,28 @@
     function ocultarFichas(){
       document.getElementById('productoCard').classList.add('hidden');
       document.getElementById('publicCard').classList.add('hidden');
+      document.getElementById('publicImagenWrap').innerHTML = '';
+      document.getElementById('privadaImagenWrap').innerHTML = '';
+    }
+
+    function renderImagenPublica(url){
+      const wrap = document.getElementById('publicImagenWrap');
+      wrap.innerHTML = '';
+      if (!url) return;
+      wrap.innerHTML = `<img src="${url}" alt="Foto producto" class="foto-producto">`;
+    }
+
+    function renderImagenPrivada(url){
+      const wrap = document.getElementById('privadaImagenWrap');
+      wrap.innerHTML = '';
+      if (!url) return;
+      wrap.innerHTML = `<img src="${url}" alt="Foto producto" class="foto-privada">`;
     }
 
     function renderPublico(p){
       ocultarFichas();
       document.getElementById('publicCard').classList.remove('hidden');
+      renderImagenPublica(p.imagen || '');
       document.getElementById('publicNombre').textContent = p.nombre || '-';
       document.getElementById('publicPrecio').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
 
@@ -233,6 +290,7 @@
       }
 
       document.getElementById('productoCard').classList.remove('hidden');
+      renderImagenPrivada(p.imagen || '');
       document.getElementById('prodNombre').textContent = p.nombre || '-';
       document.getElementById('prodStock').textContent = Number(p.stock || 0);
       document.getElementById('prodBea').textContent = `€${Number(p.bea || 0).toFixed(2)}`;
@@ -468,7 +526,8 @@
       await update(ref(db, `productos_publicos/${p.id}`), {
         nombre: p.nombre || '',
         laura: Number(p.laura || 0),
-        stock: nuevoStock
+        stock: nuevoStock,
+        imagen: p.imagen || ''
       });
 
       await guardarLog(
@@ -509,7 +568,8 @@
       await update(ref(db, `productos_publicos/${p.id}`), {
         nombre: p.nombre || '',
         laura: Number(p.laura || 0),
-        stock: nuevoStock
+        stock: nuevoStock,
+        imagen: p.imagen || ''
       });
 
       await guardarLog('reserva', p.id, p.nombre, cantidad, currentUser.email, 'Reserva rápida QR');
