@@ -263,6 +263,7 @@ let filasFiltradas = [];
 let totalVendidosGlobalRef = 0;
 let ventasChart = null;
 let ingresosChart = null;
+let historialGlobal = null;
 
 function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
 function ymd(date){ return new Date(date).toISOString().split('T')[0]; }
@@ -338,26 +339,100 @@ window.limpiarFiltros = () => {
 };
 
 function construirFilas(){
+  historialGlobal = calcularHistorialDesdeLogs();
+
   return Object.entries(productos).map(([id, p]) => {
-    const vendidos = Number(p.vendidos || 0);
     const stock = Number(p.stock || 0);
     const proximo = Number(p.proximo || 0);
     const reservados = Number(p.reservados || 0);
-    const beaTotal = Number(p.vBea || 0);
-    const lauraTotal = Number(p.vLaura || 0);
+    const hist = historialGlobal.porProducto[id] || { vendidos: 0, beaTotal: 0, lauraTotal: 0 };
 
     return {
       id,
-      nombre: p.nombre || '',
+      nombre: p.nombre || hist.nombre || '',
       stock,
       proximo,
       reservados,
-      vendidos,
-      beaTotal,
-      lauraTotal,
+      vendidos: Math.max(0, Number(hist.vendidos || 0)),
+      beaTotal: Math.max(0, Number(hist.beaTotal || 0)),
+      lauraTotal: Math.max(0, Number(hist.lauraTotal || 0)),
       porcentaje: 0
     };
   });
+}
+
+function calcularHistorialDesdeLogs(desde = '', hasta = ''){
+  const entries = Object.entries(logs || {}).map(([key, log]) => ({ key, ...(log || {}) }));
+  entries.sort((a,b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+
+  const porProducto = {};
+  const ventasPorDia = {};
+  const ingresosPorDia = {};
+  const lastKnownPrices = {};
+
+  for (const log of entries) {
+    if (!log || !log.tipo || !log.timestamp) continue;
+
+    const productoId = log.productoId || '';
+    const productoNombre = log.productoNombre || '';
+    const fecha = ymd(log.timestamp);
+    const cantidad = Number(log.cantidad || 0);
+    const detalles = String(log.detalles || '');
+
+    if (!porProducto[productoId]) {
+      porProducto[productoId] = {
+        nombre: productoNombre,
+        vendidos: 0,
+        beaTotal: 0,
+        lauraTotal: 0
+      };
+    }
+
+    const beaMatch = detalles.match(/Bea:€([0-9]+(?:\.[0-9]+)?)/);
+    const lauraMatch = detalles.match(/Laura:€([0-9]+(?:\.[0-9]+)?)/);
+
+    if (beaMatch || lauraMatch) {
+      lastKnownPrices[productoId] = {
+        bea: beaMatch ? Number(beaMatch[1]) : Number(lastKnownPrices[productoId]?.bea || 0),
+        laura: lauraMatch ? Number(lauraMatch[1]) : Number(lastKnownPrices[productoId]?.laura || 0)
+      };
+    }
+
+    const dentroRango = esFechaDentro(fecha, desde, hasta);
+    if (!dentroRango) continue;
+
+    if (log.tipo === 'venta') {
+      const beaUnit = Number(lastKnownPrices[productoId]?.bea || 0);
+      const lauraUnit = Number(lastKnownPrices[productoId]?.laura || 0);
+
+      porProducto[productoId].vendidos += cantidad;
+      porProducto[productoId].beaTotal += beaUnit * cantidad;
+      porProducto[productoId].lauraTotal += lauraUnit * cantidad;
+
+      ventasPorDia[fecha] = Number(ventasPorDia[fecha] || 0) + cantidad;
+      ingresosPorDia[fecha] = Number(ingresosPorDia[fecha] || 0) + lauraUnit * cantidad;
+    }
+
+    if (log.tipo === 'eliminacion-venta') {
+      const beaUnit = Number(lastKnownPrices[productoId]?.bea || 0);
+      const lauraUnit = Number(lastKnownPrices[productoId]?.laura || 0);
+
+      porProducto[productoId].vendidos -= cantidad;
+      porProducto[productoId].beaTotal -= beaUnit * cantidad;
+      porProducto[productoId].lauraTotal -= lauraUnit * cantidad;
+
+      ventasPorDia[fecha] = Number(ventasPorDia[fecha] || 0) - cantidad;
+      ingresosPorDia[fecha] = Number(ingresosPorDia[fecha] || 0) - lauraUnit * cantidad;
+    }
+  }
+
+  Object.values(porProducto).forEach(p => {
+    p.vendidos = Math.max(0, Number(p.vendidos || 0));
+    p.beaTotal = Math.max(0, Number(p.beaTotal || 0));
+    p.lauraTotal = Math.max(0, Number(p.lauraTotal || 0));
+  });
+
+  return { porProducto, ventasPorDia, ingresosPorDia };
 }
 
 function filtrarYOrdenar(data){
@@ -510,33 +585,31 @@ function obtenerLogsFiltrados(){
 }
 
 function renderChartsYPeriodos(){
-  const logsFiltrados = obtenerLogsFiltrados();
-  const ventasPorDia = {};
-  const ingresosPorDia = {};
+  const desde = document.getElementById('logFechaDesde').value;
+  const hasta = document.getElementById('logFechaHasta').value;
+  const historialRango = calcularHistorialDesdeLogs(desde, hasta);
 
-  logsFiltrados.forEach(log => {
-    const fecha = ymd(log.timestamp);
-    if (!ventasPorDia[fecha]) ventasPorDia[fecha] = 0;
-    if (!ingresosPorDia[fecha]) ingresosPorDia[fecha] = 0;
+  const ventasPorDia = historialRango.ventasPorDia;
+  const ingresosPorDia = historialRango.ingresosPorDia;
 
-    if (log.tipo === 'venta') {
-      const cantidad = Number(log.cantidad || 0);
-      ventasPorDia[fecha] += cantidad;
-
-      const matchLaura = String(log.detalles || '').match(/Laura:€([0-9]+(?:\.[0-9]+)?)/);
-      const lauraUnit = matchLaura ? Number(matchLaura[1]) : 0;
-      ingresosPorDia[fecha] += lauraUnit * cantidad;
-    }
-  });
-
-  const etiquetas = Object.keys(ventasPorDia).sort();
-  const datosVentas = etiquetas.map(k => ventasPorDia[k]);
+  const etiquetas = Array.from(new Set([...Object.keys(ventasPorDia), ...Object.keys(ingresosPorDia)])).sort();
+  const datosVentas = etiquetas.map(k => Number(ventasPorDia[k] || 0));
   const datosIngresos = etiquetas.map(k => Number((ingresosPorDia[k] || 0).toFixed(2)));
 
-  dibujarChart('chartVentasPorDia', 'bar', etiquetas, datosVentas, 'Unidades vendidas', 'ventas');
-  dibujarChart('chartIngresosPorDia', 'line', etiquetas, datosIngresos, 'Ingresos Laura €', 'ingresos');
+  dibujarChart('chartVentasPorDia', 'bar', etiquetas, datosVentas, 'Unidades vendidas netas', 'ventas');
+  dibujarChart('chartIngresosPorDia', 'line', etiquetas, datosIngresos, 'Ingresos Laura € netos', 'ingresos');
 
-  renderPeriodos(logsFiltrados);
+  renderPeriodos(desde, hasta);
+}
+
+function getNetosEnPeriodo(desde, hasta){
+  const hist = calcularHistorialDesdeLogs(desde, hasta);
+  const ventas = Object.values(hist.ventasPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
+  const ingresosLaura = Object.values(hist.ingresosPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
+  return {
+    ventas: Math.max(0, ventas),
+    ingresosLaura: Math.max(0, ingresosLaura)
+  };
 }
 
 function dibujarChart(canvasId, type, labels, data, label, kind){
@@ -566,7 +639,7 @@ function dibujarChart(canvasId, type, labels, data, label, kind){
   if (kind === 'ingresos') ingresosChart = chart;
 }
 
-function renderPeriodos(logsFiltrados){
+function renderPeriodos(desdeFiltro, hastaFiltro){
   const tbody = document.getElementById('tablaPeriodos');
   const hoy = new Date();
   const inicioSemana = new Date(hoy);
@@ -578,24 +651,15 @@ function renderPeriodos(logsFiltrados){
     { nombre: 'Hoy', desde: ymd(hoy), hasta: ymd(hoy) },
     { nombre: 'Esta semana', desde: ymd(inicioSemana), hasta: ymd(hoy) },
     { nombre: 'Este mes', desde: ymd(inicioMes), hasta: ymd(hoy) }
-  ];
+  ].map(p => ({
+    ...p,
+    desde: desdeFiltro && desdeFiltro > p.desde ? desdeFiltro : p.desde,
+    hasta: hastaFiltro && hastaFiltro < p.hasta ? hastaFiltro : p.hasta
+  }));
 
   const rows = periodos.map(periodo => {
-    let ventas = 0;
-    let ingresosLaura = 0;
-
-    logsFiltrados.forEach(log => {
-      if (log.tipo !== 'venta') return;
-      const fecha = ymd(log.timestamp);
-      if (!esFechaDentro(fecha, periodo.desde, periodo.hasta)) return;
-      const cantidad = Number(log.cantidad || 0);
-      ventas += cantidad;
-      const matchLaura = String(log.detalles || '').match(/Laura:€([0-9]+(?:\.[0-9]+)?)/);
-      const lauraUnit = matchLaura ? Number(matchLaura[1]) : 0;
-      ingresosLaura += lauraUnit * cantidad;
-    });
-
-    return `<tr><td>${periodo.nombre}</td><td>${ventas}</td><td>${formatEuro(ingresosLaura)}</td></tr>`;
+    const neto = getNetosEnPeriodo(periodo.desde, periodo.hasta);
+    return `<tr><td>${periodo.nombre}</td><td>${neto.ventas}</td><td>${formatEuro(neto.ingresosLaura)}</td></tr>`;
   }).join('');
 
   tbody.innerHTML = rows || '<tr><td colspan="3" class="empty">Sin movimientos</td></tr>';
