@@ -119,6 +119,8 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 .qr-btn:hover{background:#5a32a3 !important}
 .scanner-btn{background:#17a2b8 !important}
 .scanner-btn:hover{background:#138496 !important}
+.zip-btn{background:#6f42c1 !important}
+.zip-btn:hover{background:#5a32a3 !important}
 .qr-preview-wrap{display:flex;justify-content:center;margin:12px 0}
 .qr-code-text{font-size:12px;color:#6b7280;word-break:break-all;margin-bottom:12px}
 @media (max-width:1100px){.totales-superiores,.totales-container{grid-template-columns:1fr 1fr 1fr}}
@@ -255,6 +257,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 <button id="btnEstadisticas" onclick="irEstadisticas()" style="background:#6f42c1;display:none">📊 Ver Estadísticas</button>
 <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none;font-size:14px !important;padding:10px 15px !important">📋 Ver LOGS</button>
 <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
@@ -304,6 +307,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -582,6 +586,60 @@ window.imprimirQRActual = () => {
     </html>
   `);
   w.document.close();
+};
+
+window.descargarTodosLosQR = async () => {
+  try {
+    const ids = Object.keys(productos || {});
+    if (!ids.length) return showToast('❌ No hay productos para generar QR', 'error');
+    if (!window.JSZip) return showToast('❌ No se cargó JSZip', 'error');
+
+    showToast('⏳ Generando ZIP de QR...', 'info', 3000);
+
+    const zip = new JSZip();
+    const carpeta = zip.folder('qrs-inventario-laura');
+    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+
+    for (const id of ids) {
+      const p = productos[id];
+      if (!p) continue;
+
+      const qrText = `${baseUrl}scanner.html?scanId=${id}`;
+      const canvas = document.createElement('canvas');
+
+      await QRCode.toCanvas(canvas, qrText, {
+        width: 500,
+        margin: 2,
+        errorCorrectionLevel: 'M'
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64 = dataUrl.split(',')[1];
+
+      const nombreSeguro = String(p.nombre || 'producto')
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/\s+/g, '_')
+        .slice(0, 80);
+
+      carpeta.file(`${nombreSeguro}__${id}.png`, base64, { base64: true });
+      carpeta.file(`${nombreSeguro}__${id}.txt`, qrText);
+    }
+
+    const contenidoZip = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(contenidoZip);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `qrs-inventario-laura-${new Date().toISOString().slice(0,10)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showToast(`✅ ZIP descargado con ${ids.length} QR`, 'success', 3500);
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error generando los QR', 'error', 3500);
+  }
 };
 
 window.programarRender = () => {
