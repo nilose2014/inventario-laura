@@ -317,6 +317,7 @@ let buscarTimeout = null;
 let dataListenerIniciado = false;
 let emailInicializado = false;
 let proxUpdateTimers = {};
+let emailEnviadoReciente = {};
 
 const EMAILJS_CONFIG = {
   service:'service_65ryfan',
@@ -465,25 +466,21 @@ window.programarRender = () => {
 };
 
 window.anadirProximoStock = async (id) => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede añadir stock próximo');
+  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede añadir stock próximo', 'error');
   const p = productos[id];
   const inputProx = document.querySelector(`input[data-producto="${id}"]`);
   const cantidad = Number(inputProx?.value) || 0;
-  if (cantidad <= 0) return alert('❌ Cantidad inválida');
+  if (cantidad <= 0) return showToast('❌ Cantidad inválida', 'error');
+
   const nuevoStock = Number(p.stock || 0) + cantidad;
-  await update(ref(db,'productos/'+id), { stock:nuevoStock, proximo:0 });
+  await update(ref(db,'productos/'+id), { stock:nuevoStock, proximo:0, emailAgotadoEnviado:false });
+
   if (inputProx) {
     inputProx.value = '0';
     inputProx.classList.remove('tiene-valor');
   }
+
   await guardarLog('stock-anadido', id, p.nombre, cantidad, currentUser.email, `Stock real: ${nuevoStock}`);
-  await enviarEmail({
-    producto:p.nombre,
-    stock:nuevoStock,
-    detalles:`➕ ${cantidad} uds. AÑADIDAS DEL STOCK PRÓXIMO | Nuevo stock: ${nuevoStock}`,
-    subject:'➕ STOCK AÑADIDO - '+p.nombre,
-    fecha:new Date().toLocaleString('es-ES')
-  });
   showToast(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`, 'success');
 };
 
@@ -609,18 +606,11 @@ window.eliminarUnaVenta = async (id) => {
         stock: nuevoStock,
         vendidos: nuevosVendidos,
         vBea: nuevoVBea,
-        vLaura: nuevoVLaura
+        vLaura: nuevoVLaura,
+        emailAgotadoEnviado:false
       });
 
       await guardarLog('eliminacion-venta', id, p.nombre, 1, currentUser.email, `Stock devuelto: ${nuevoStock}`);
-
-      await enviarEmail({
-        producto: p.nombre,
-        stock: nuevoStock,
-        detalles: `↩️ 1 VENTA CORREGIDA | +1 stock | Vendidos: ${nuevosVendidos}`,
-        subject: '↩️ VENTA CORREGIDA - ' + p.nombre,
-        fecha: new Date().toLocaleString('es-ES')
-      });
 
       showToast(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`, 'success');
     }
@@ -703,6 +693,16 @@ window.cargarBackupFirebase = () => {
 async function enviarEmail(datos) {
   if (!window.emailjs) return console.log('EmailJS cargando...');
 
+  const dedupeKey = `${datos.subject || ''}__${datos.producto || ''}__${datos.stock ?? ''}__${datos.detalles || ''}`;
+  if (emailEnviadoReciente[dedupeKey]) {
+    console.log('⛔ Email duplicado evitado:', dedupeKey);
+    return;
+  }
+  emailEnviadoReciente[dedupeKey] = true;
+  setTimeout(() => {
+    delete emailEnviadoReciente[dedupeKey];
+  }, 8000);
+
   if (!emailInicializado) {
     emailjs.init(EMAILJS_CONFIG.publicKey);
     emailInicializado = true;
@@ -713,6 +713,7 @@ async function enviarEmail(datos) {
     console.log('✅ Email enviado:', datos.subject);
   } catch(err) {
     console.log('❌ Error email:', err);
+    delete emailEnviadoReciente[dedupeKey];
   }
 }
 
@@ -941,29 +942,22 @@ window.reservar = async (id, cant) => {
 window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if (cant <= 0 || Number(p.stock || 0) < cant) return alert('❌ Stock insuficiente');
-  const nuevoStock = Number(p.stock || 0) - cant;
-  const eraStockCero = Number(p.stock || 0) === 0;
+  if (cant <= 0 || Number(p.stock || 0) < cant) return showToast('❌ Stock insuficiente', 'error');
+
+  const stockAnterior = Number(p.stock || 0);
+  const nuevoStock = stockAnterior - cant;
+  const yaEstabaAgotado = stockAnterior === 0;
+  const debeMarcarAgotado = nuevoStock === 0 && !yaEstabaAgotado && !p.emailAgotadoEnviado;
 
   await update(ref(db,'productos/'+id), {
-    stock:nuevoStock,
-    vendidos:Number(p.vendidos || 0) + cant,
-    vBea:Number(p.vBea || 0) + Number(p.bea || 0) * cant,
-    vLaura:Number(p.vLaura || 0) + Number(p.laura || 0) * cant
+    stock: nuevoStock,
+    vendidos: Number(p.vendidos || 0) + cant,
+    vBea: Number(p.vBea || 0) + Number(p.bea || 0) * cant,
+    vLaura: Number(p.vLaura || 0) + Number(p.laura || 0) * cant,
+    ...(debeMarcarAgotado ? { emailAgotadoEnviado:true } : {})
   });
 
   await guardarLog('venta', id, p.nombre, cant, currentUser.email, `Bea:€${Number(p.bea || 0).toFixed(2)} Laura:€${Number(p.laura || 0).toFixed(2)}`);
-
-  if (nuevoStock === 0 && !eraStockCero && !p.emailAgotadoEnviado) {
-    await update(ref(db,'productos/'+id), { emailAgotadoEnviado:true });
-    await enviarEmail({
-      producto:p.nombre,
-      stock:0,
-      detalles:`⛔ PRODUCTO AGOTADO | Bea: €${Number(p.bea || 0).toFixed(2)} | Laura: €${Number(p.laura || 0).toFixed(2)}`,
-      subject:'⛔ AGOTADO - ' + p.nombre,
-      fecha:new Date().toLocaleString('es-ES')
-    });
-  }
 
   await enviarEmail({
     producto:p.nombre,
@@ -972,6 +966,16 @@ window.vender = async (id, cant) => {
     subject:'🛒 VENTA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
+
+  if (debeMarcarAgotado) {
+    await enviarEmail({
+      producto:p.nombre,
+      stock:0,
+      detalles:`⛔ PRODUCTO AGOTADO | Bea: €${Number(p.bea || 0).toFixed(2)} | Laura: €${Number(p.laura || 0).toFixed(2)}`,
+      subject:'⛔ AGOTADO - ' + p.nombre,
+      fecha:new Date().toLocaleString('es-ES')
+    });
+  }
 
   showToast(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`, 'success');
 };
@@ -1006,11 +1010,12 @@ window.modificarStock = (id) => {
     onConfirm: async (values) => {
       const stock = Math.max(0, Number(values.stock));
       if (isNaN(stock)) return showToast('❌ Stock inválido', 'error');
-      await update(ref(db,'productos/'+id), { stock });
-      await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
+      const updates = { stock };
       if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
-        await update(ref(db,'productos/'+id), { emailAgotadoEnviado:false });
+        updates.emailAgotadoEnviado = false;
       }
+      await update(ref(db,'productos/'+id), updates);
+      await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
       showToast(`✅ Stock actualizado: ${stock}`, 'success');
     }
   });
