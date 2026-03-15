@@ -64,6 +64,12 @@ select{background:#fff;border:1px solid #ddd;border-radius:5px;padding:8px}
 #scrollTopBtn{position:fixed;bottom:30px;right:30px;background:#007bff;color:white;border:none;border-radius:50%;width:60px;height:60px;font-size:24px;cursor:pointer;box-shadow:0 4px 12px rgba(0,123,255,0.4);display:none;z-index:1000;transition:all 0.3s ease}
 #scrollTopBtn:hover{background:#0056b3;transform:scale(1.1)}
 #scrollTopBtn.show{display:block}
+#toastContainer{position:fixed;top:20px;right:20px;z-index:3000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{min-width:260px;max-width:420px;background:#1f2937;color:white;padding:12px 14px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.25);font-weight:bold;opacity:0;transform:translateY(-8px);transition:all .25s ease}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:#198754}
+.toast.error{background:#dc3545}
+.toast.info{background:#0d6efd}
 .reservar-btn{background:#17a2b8 !important}
 .reservar-btn:hover{background:#138496 !important}
 .confirmar-btn{background:#28a745 !important}
@@ -247,6 +253,7 @@ Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
 
 </div>
 
+<div id="toastContainer"></div>
 <button id="scrollTopBtn" title="Subir arriba">⬆️</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -285,6 +292,7 @@ let renderPendiente = false;
 let buscarTimeout = null;
 let dataListenerIniciado = false;
 let emailInicializado = false;
+let proxUpdateTimers = {};
 
 const EMAILJS_CONFIG = {
   service:'service_65ryfan',
@@ -343,11 +351,26 @@ window.clearSearch = () => {
   buscar.value = '';
   document.getElementById('buscar-clear').style.display = 'none';
   programarRender();
+  showToast('Búsqueda limpiada', 'info', 1200);
 };
 
 window.actualizarContadoresFiltrados = (count, stockTotal) => {
   document.getElementById('productosVisibles').textContent = `📦 ${count} productos`;
   document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
+};
+
+window.showToast = (message, type = 'info', duration = 2400) => {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 260);
+  }, duration);
 };
 
 window.programarRender = () => {
@@ -379,7 +402,7 @@ window.anadirProximoStock = async (id) => {
     subject:'➕ STOCK AÑADIDO - '+p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
-  alert(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`);
+  showToast(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`, 'success');
 };
 
 window.modificarProximoStock = (id) => {
@@ -390,7 +413,7 @@ window.modificarProximoStock = (id) => {
   if (isNaN(proximo)) return alert('❌ Stock próximo inválido');
   update(ref(db,'productos/'+id),{proximo}).then(()=>{
     guardarLog('proximo-modificado', id, productos[id].nombre, proximo, currentUser.email);
-    alert(`✅ Próximo actualizado: ${proximo}`);
+    showToast(`✅ Próximo actualizado: ${proximo}`, 'success');
   });
 };
 
@@ -471,7 +494,10 @@ window.renderTablaSolo = () => {
 
 window.updateProxInput = (id, value) => {
   const proximo = Math.max(0, Number(value));
-  update(ref(db,'productos/'+id), { proximo });
+  clearTimeout(proxUpdateTimers[id]);
+  proxUpdateTimers[id] = setTimeout(() => {
+    update(ref(db,'productos/'+id), { proximo });
+  }, 250);
   const input = document.querySelector(`input[data-producto="${id}"]`);
   if (input) updateProxInputVisual(input);
 };
@@ -505,7 +531,7 @@ window.eliminarUnaVenta = async (id) => {
     fecha: new Date().toLocaleString('es-ES')
   });
 
-  alert(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`);
+  showToast(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`, 'success');
 };
 
 window.hacerBackup = async () => {
@@ -538,7 +564,7 @@ window.hacerBackup = async () => {
 
     ultimoBackup = backupData;
     await guardarLog('backup-creado', null, 'BACKUP', 1, currentUser.email);
-    alert('✅ Backup completado y descargado');
+    showToast('✅ Backup completado y descargado', 'success');
   } catch(error) {
     alert('❌ Error en backup: ' + error.message);
   }
@@ -554,7 +580,7 @@ window.restaurarBackup = async (event) => {
     const backupData = JSON.parse(text);
     await set(ref(db,'productos'), backupData.productos || {});
     await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
-    alert('✅ Restauración completada. Recarga la página.');
+    showToast('✅ Restauración completada. Recargando...', 'success');
     location.reload();
   } catch(error) {
     alert('❌ Error restaurando: ' + error.message);
@@ -808,7 +834,7 @@ window.reservar = async (id, cant) => {
     subject:'⏳ RESERVA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
-  alert(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`);
+  showToast(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`, 'success');
 };
 
 window.vender = async (id, cant) => {
@@ -846,7 +872,7 @@ window.vender = async (id, cant) => {
     fecha:new Date().toLocaleString('es-ES')
   });
 
-  alert(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`);
+  showToast(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`, 'success');
 };
 
 window.cancelarReserva = async (id, cant) => {
@@ -865,7 +891,7 @@ window.cancelarReserva = async (id, cant) => {
     subject:'❌ RESERVA CANCELADA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
-  alert(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`);
+  showToast(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`, 'success');
 };
 
 window.modificarStock = (id) => {
@@ -876,7 +902,7 @@ window.modificarStock = (id) => {
   if (isNaN(stock)) return alert('❌ Stock inválido');
   update(ref(db,'productos/'+id), { stock }).then(async () => {
     await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
-    alert(`✅ Stock actualizado: ${stock}`);
+    showToast(`✅ Stock actualizado: ${stock}`, 'success');
     if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
       update(ref(db,'productos/'+id), { emailAgotadoEnviado:false });
     }
@@ -905,13 +931,13 @@ window.guardar = () => {
     update(ref(db,'productos/'+editId), data).then(async () => {
       await guardarLog('producto-editado', editId, nombre, 0, currentUser.email);
       limpiarFormulario();
-      alert('✅ Actualizado');
+      showToast('✅ Actualizado', 'success');
     });
   } else {
     push(productosRef, data).then(async (newRef) => {
       await guardarLog('producto-creado', newRef.key, nombre, 0, currentUser.email);
       limpiarFormulario();
-      alert('✅ Guardado');
+      showToast('✅ Guardado', 'success');
     });
   }
 };
@@ -923,7 +949,7 @@ window.modificarPrecioLaura = (id) => {
   if (isNaN(precio)) return alert('❌ Precio inválido');
   update(ref(db,'productos/'+id), { laura:precio }).then(async () => {
     await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
-    alert(`✅ Laura: €${precio.toFixed(2)}`);
+    showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
   });
 };
 
@@ -940,7 +966,7 @@ window.modificarPrecioLauraGlobal = () => {
     for (const [id, p] of Object.entries(productos)) {
       await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email);
     }
-    alert(`✅ Laura GLOBAL: €${precio.toFixed(2)}`);
+    showToast(`✅ Laura GLOBAL: €${precio.toFixed(2)}`, 'success');
   });
 };
 
@@ -960,7 +986,7 @@ window.borrar = (id) => {
   if (userRole !== 'admin') return alert('❌ Solo ADMIN puede borrar');
   if (confirm(`🗑️ Borrar "${productos[id]?.nombre || 'Producto'}"?`)) {
     guardarLog('producto-borrado', id, productos[id].nombre, 0, currentUser.email);
-    remove(ref(db,'productos/'+id)).then(() => alert('✅ Borrado'));
+    remove(ref(db,'productos/'+id)).then(() => showToast('✅ Borrado', 'success'));
   }
 };
 
@@ -976,7 +1002,7 @@ window.resetear = () => {
       updates[`productos/${id}/emailAgotadoEnviado`] = false;
     });
     guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
-    update(ref(db), updates).then(() => alert('✅ 🔄 RESET COMPLETO'));
+    update(ref(db), updates).then(() => showToast('✅ 🔄 RESET COMPLETO', 'success'));
   }
 };
 
