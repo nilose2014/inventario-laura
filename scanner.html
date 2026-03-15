@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escáner QR móvil - Venta rápida</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f0f2f5;padding:20px;max-width:900px;margin:0 auto;color:#1f2937}
+    .card{background:#fff;padding:20px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.08);margin-bottom:18px}
+    .hidden{display:none !important}
+    h1,h2,h3{margin-top:0}
+    button{padding:10px 14px;border:none;border-radius:10px;background:#007bff;color:#fff;cursor:pointer;font-weight:bold}
+    button:hover{background:#0056b3}
+    .green{background:#28a745}.green:hover{background:#218838}
+    .red{background:#dc3545}.red:hover{background:#c82333}
+    .cyan{background:#17a2b8}.cyan:hover{background:#138496}
+    .gray{background:#6c757d}.gray:hover{background:#5a6268}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    #reader{width:100%;max-width:520px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .stat{background:#f8f9fa;border:1px solid #e5e7eb;padding:12px;border-radius:10px;font-weight:bold}
+    .stat .value{display:block;font-size:24px;margin-top:6px}
+    .producto{border:2px solid #dbeafe;background:#eff6ff}
+    .acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .info{background:#e8f4fd;border:1px solid #bee5eb;padding:12px;border-radius:10px}
+    .error{background:#f8d7da;border:1px solid #f5c6cb;padding:12px;border-radius:10px;color:#721c24}
+    .success{background:#d4edda;border:1px solid #c3e6cb;padding:12px;border-radius:10px;color:#155724}
+    .small{font-size:13px;color:#6b7280}
+    input{padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;width:90px;text-align:center}
+    .qty-wrap{display:flex;align-items:center;gap:10px;margin-top:14px}
+    @media (max-width:700px){.grid{grid-template-columns:1fr}body{padding:10px}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📷 Escanear producto y vender rápido</h1>
+    <div class="toolbar">
+      <button onclick="iniciarEscaner()">📷 Escanear producto</button>
+      <button class="gray" onclick="detenerEscaner()">⏹️ Parar cámara</button>
+      <button class="cyan" onclick="buscarManual()">⌨️ Buscar manual</button>
+    </div>
+    <p class="small">Este modo está pensado para móvil. Requiere HTTPS para usar la cámara en la mayoría de navegadores. La librería html5-qrcode permite leer QR y otros códigos desde cámara en web. ([github.com](https://github.com/mebjas/html5-qrcode?utm_source=chatgpt.com))</p>
+  </div>
+
+  <div class="card hidden" id="scanCard">
+    <h2>🎥 Cámara</h2>
+    <div id="reader"></div>
+    <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto.</div>
+  </div>
+
+  <div class="card hidden producto" id="productoCard">
+    <h2>🛒 Venta rápida</h2>
+    <div class="grid">
+      <div class="stat">Producto<span class="value" id="prodNombre">-</span></div>
+      <div class="stat">Stock<span class="value" id="prodStock">0</span></div>
+      <div class="stat">Precio Bea<span class="value" id="prodBea">€0.00</span></div>
+      <div class="stat">Precio Laura<span class="value" id="prodLaura">€0.00</span></div>
+    </div>
+
+    <div class="qty-wrap">
+      <label for="cantidad">Cantidad</label>
+      <input id="cantidad" type="number" min="1" value="1">
+    </div>
+
+    <div class="acciones">
+      <button class="green" onclick="venderRapido()">🛒 Vender</button>
+      <button class="cyan" onclick="reservarRapido()">⏳ Reservar</button>
+      <button class="red" onclick="limpiarProducto()">❌ Cerrar ficha</button>
+    </div>
+
+    <div id="accionStatus" style="margin-top:14px"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, get, update, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4',
+      authDomain: 'inventario-laura.firebaseapp.com',
+      databaseURL: 'https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app',
+      projectId: 'inventario-laura',
+      storageBucket: 'inventario-laura.firebasestorage.app',
+      messagingSenderId: '778807935660',
+      appId: '1:778807935660:web:947e223465f9347b17d509'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const productosRef = ref(db, 'productos');
+    const logsRef = ref(db, 'logs');
+
+    let scanner = null;
+    let productoActual = null;
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      const status = document.getElementById('scanStatus');
+      status.className = user ? 'info' : 'error';
+      status.textContent = user ? 'Sesión detectada. Ya puedes escanear.' : 'Necesitas iniciar sesión en el inventario primero.';
+    });
+
+    function setStatus(id, text, kind = 'info') {
+      const el = document.getElementById(id);
+      el.className = kind;
+      el.textContent = text;
+    }
+
+    async function obtenerIP(){
+      try{
+        const cache = sessionStorage.getItem('inventario_ip');
+        if(cache) return cache;
+        const r = await fetch('https://api.ipify.org?format=json');
+        const data = await r.json();
+        const ip = data.ip || 'IP desconocida';
+        sessionStorage.setItem('inventario_ip', ip);
+        return ip;
+      }catch{
+        return 'IP desconocida';
+      }
+    }
+
+    function obtenerDispositivo(){
+      try{return navigator.userAgent || 'Dispositivo desconocido';}catch{return 'Dispositivo desconocido';}
+    }
+
+    async function guardarLog(tipo, productoId, productoNombre, cantidad, usuario, detalles = '', extras = {}) {
+      const ip = await obtenerIP();
+      await push(logsRef, {
+        timestamp: Date.now(),
+        tipo,
+        productoId,
+        productoNombre: productoNombre || '',
+        cantidad: Number(cantidad || 0),
+        usuario: usuario || '',
+        detalles,
+        ip,
+        dispositivo: obtenerDispositivo(),
+        fecha: new Date().toLocaleString('es-ES'),
+        ...extras
+      });
+    }
+
+    async function buscarProductoPorContenidoQR(contenido) {
+      const texto = String(contenido || '').trim();
+      const snap = await get(productosRef);
+      const productos = snap.val() || {};
+
+      // 1) QR directo con id
+      if (productos[texto]) return { id: texto, ...productos[texto] };
+
+      // 2) URL con ?scanId= o ?editId=
+      try {
+        const url = new URL(texto);
+        const scanId = url.searchParams.get('scanId') || url.searchParams.get('editId');
+        if (scanId && productos[scanId]) return { id: scanId, ...productos[scanId] };
+      } catch {}
+
+      // 3) QR con formato PROD:<id>
+      if (texto.startsWith('PROD:')) {
+        const id = texto.replace('PROD:', '').trim();
+        if (productos[id]) return { id, ...productos[id] };
+      }
+
+      // 4) coincidencia por nombre exacto
+      const lower = texto.toLowerCase();
+      for (const [id, p] of Object.entries(productos)) {
+        if (String(p?.nombre || '').toLowerCase() === lower) {
+          return { id, ...p };
+        }
+      }
+
+      return null;
+    }
+
+    function pintarProducto(p) {
+      productoActual = p;
+      document.getElementById('productoCard').classList.remove('hidden');
+      document.getElementById('prodNombre').textContent = p.nombre || '-';
+      document.getElementById('prodStock').textContent = Number(p.stock || 0);
+      document.getElementById('prodBea').textContent = `€${Number(p.bea || 0).toFixed(2)}`;
+      document.getElementById('prodLaura').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
+      document.getElementById('cantidad').value = 1;
+      setStatus('accionStatus', 'Producto listo para vender o reservar.', 'info');
+    }
+
+    async function procesarScan(texto) {
+      detenerEscaner();
+      const producto = await buscarProductoPorContenidoQR(texto);
+      if (!producto) {
+        document.getElementById('productoCard').classList.add('hidden');
+        setStatus('scanStatus', `No encontré producto para este QR: ${texto}`, 'error');
+        return;
+      }
+      pintarProducto(producto);
+      setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
+    }
+
+    window.iniciarEscaner = async () => {
+      if (!currentUser) {
+        setStatus('scanStatus', 'Necesitas iniciar sesión primero.', 'error');
+        document.getElementById('scanCard').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('scanCard').classList.remove('hidden');
+
+      if (!window.Html5Qrcode) {
+        setStatus('scanStatus', 'No se cargó la librería de escaneo.', 'error');
+        return;
+      }
+
+      try {
+        scanner = new Html5Qrcode('reader');
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: 220 },
+          async (decodedText) => {
+            await procesarScan(decodedText);
+          },
+          () => {}
+        );
+        setStatus('scanStatus', 'Cámara activa. Apunta al QR del producto.', 'info');
+      } catch (e) {
+        setStatus('scanStatus', 'No pude abrir la cámara. Comprueba permisos y HTTPS.', 'error');
+      }
+    };
+
+    window.detenerEscaner = async () => {
+      try {
+        if (scanner) {
+          await scanner.stop();
+          await scanner.clear();
+          scanner = null;
+        }
+      } catch {}
+    };
+
+    window.buscarManual = async () => {
+      const texto = prompt('Escribe ID, URL QR o nombre exacto del producto');
+      if (!texto) return;
+      const producto = await buscarProductoPorContenidoQR(texto);
+      if (!producto) {
+        setStatus('scanStatus', 'Producto no encontrado.', 'error');
+        return;
+      }
+      pintarProducto(producto);
+      document.getElementById('scanCard').classList.remove('hidden');
+      setStatus('scanStatus', `Producto encontrado manualmente: ${producto.nombre}`, 'success');
+    };
+
+    window.limpiarProducto = () => {
+      productoActual = null;
+      document.getElementById('productoCard').classList.add('hidden');
+      setStatus('accionStatus', '', 'info');
+    };
+
+    async function recargarProductoActual() {
+      if (!productoActual?.id) return null;
+      const snap = await get(ref(db, `productos/${productoActual.id}`));
+      if (!snap.exists()) return null;
+      const nuevo = { id: productoActual.id, ...snap.val() };
+      productoActual = nuevo;
+      pintarProducto(nuevo);
+      return nuevo;
+    }
+
+    window.venderRapido = async () => {
+      if (!productoActual || !currentUser) return;
+      const cantidad = Math.max(1, Number(document.getElementById('cantidad').value || 1));
+      const p = await recargarProductoActual();
+      if (!p) return setStatus('accionStatus', 'El producto ya no existe.', 'error');
+      const stock = Number(p.stock || 0);
+      if (stock < cantidad) return setStatus('accionStatus', 'Stock insuficiente.', 'error');
+
+      const nuevoStock = stock - cantidad;
+      await update(ref(db, `productos/${p.id}`), {
+        stock: nuevoStock,
+        vendidos: Number(p.vendidos || 0) + cantidad,
+        vBea: Number(p.vBea || 0) + Number(p.bea || 0) * cantidad,
+        vLaura: Number(p.vLaura || 0) + Number(p.laura || 0) * cantidad,
+        ...(nuevoStock === 0 ? { emailAgotadoEnviado: true } : {})
+      });
+
+      await guardarLog(
+        'venta',
+        p.id,
+        p.nombre,
+        cantidad,
+        currentUser.email,
+        `Bea:€${Number(p.bea || 0).toFixed(2)} Laura:€${Number(p.laura || 0).toFixed(2)} | Venta rápida QR`,
+        {
+          precioBea: Number(p.bea || 0),
+          precioLaura: Number(p.laura || 0),
+          totalBea: Number(p.bea || 0) * cantidad,
+          totalLaura: Number(p.laura || 0) * cantidad
+        }
+      );
+
+      await recargarProductoActual();
+      setStatus('accionStatus', `✅ Vendidas ${cantidad} unidades. Stock restante: ${nuevoStock}`, 'success');
+    };
+
+    window.reservarRapido = async () => {
+      if (!productoActual || !currentUser) return;
+      const cantidad = Math.max(1, Number(document.getElementById('cantidad').value || 1));
+      const p = await recargarProductoActual();
+      if (!p) return setStatus('accionStatus', 'El producto ya no existe.', 'error');
+      const stock = Number(p.stock || 0);
+      if (stock < cantidad) return setStatus('accionStatus', 'Stock insuficiente.', 'error');
+
+      const nuevoStock = stock - cantidad;
+      const nuevosReservados = Number(p.reservados || 0) + cantidad;
+      await update(ref(db, `productos/${p.id}`), {
+        stock: nuevoStock,
+        reservados: nuevosReservados
+      });
+
+      await guardarLog('reserva', p.id, p.nombre, cantidad, currentUser.email, 'Reserva rápida QR');
+      await recargarProductoActual();
+      setStatus('accionStatus', `✅ Reservadas ${cantidad} unidades. Stock restante: ${nuevoStock}`, 'success');
+    };
+  </script>
+
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+</body>
+</html>
