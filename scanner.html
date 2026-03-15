@@ -39,7 +39,7 @@
       <button class="gray" onclick="detenerEscaner()">⏹️ Parar cámara</button>
       <button class="cyan" onclick="buscarManual()">⌨️ Buscar manual</button>
     </div>
-    <p class="small">Este modo está pensado para móvil. Requiere HTTPS para usar la cámara en la mayoría de navegadores. La librería html5-qrcode permite leer QR y otros códigos desde cámara en web. ([github.com](https://github.com/mebjas/html5-qrcode?utm_source=chatgpt.com))</p>
+    <p class="small">Si entras desde un QR con enlace, el producto se abrirá automáticamente.</p>
   </div>
 
   <div class="card hidden" id="scanCard">
@@ -96,11 +96,34 @@
     let productoActual = null;
     let currentUser = null;
 
-    onAuthStateChanged(auth, (user) => {
+    function getQueryParam(name){
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       const status = document.getElementById('scanStatus');
       status.className = user ? 'info' : 'error';
       status.textContent = user ? 'Sesión detectada. Ya puedes escanear.' : 'Necesitas iniciar sesión en el inventario primero.';
+
+      const scanId = getQueryParam('scanId');
+      if (scanId) {
+        document.getElementById('scanCard').classList.remove('hidden');
+        if (!user) {
+          setStatus('scanStatus', 'El QR se ha leído, pero necesitas iniciar sesión primero.', 'error');
+          return;
+        }
+
+        const producto = await buscarProductoPorContenidoQR(scanId);
+        if (!producto) {
+          setStatus('scanStatus', `Producto no encontrado para scanId: ${scanId}`, 'error');
+          return;
+        }
+
+        pintarProducto(producto);
+        setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
+      }
     });
 
     function setStatus(id, text, kind = 'info') {
@@ -124,7 +147,11 @@
     }
 
     function obtenerDispositivo(){
-      try{return navigator.userAgent || 'Dispositivo desconocido';}catch{return 'Dispositivo desconocido';}
+      try{
+        return navigator.userAgent || 'Dispositivo desconocido';
+      }catch{
+        return 'Dispositivo desconocido';
+      }
     }
 
     async function guardarLog(tipo, productoId, productoNombre, cantidad, usuario, detalles = '', extras = {}) {
@@ -149,23 +176,19 @@
       const snap = await get(productosRef);
       const productos = snap.val() || {};
 
-      // 1) QR directo con id
       if (productos[texto]) return { id: texto, ...productos[texto] };
 
-      // 2) URL con ?scanId= o ?editId=
       try {
         const url = new URL(texto);
         const scanId = url.searchParams.get('scanId') || url.searchParams.get('editId');
         if (scanId && productos[scanId]) return { id: scanId, ...productos[scanId] };
       } catch {}
 
-      // 3) QR con formato PROD:<id>
       if (texto.startsWith('PROD:')) {
         const id = texto.replace('PROD:', '').trim();
         if (productos[id]) return { id, ...productos[id] };
       }
 
-      // 4) coincidencia por nombre exacto
       const lower = texto.toLowerCase();
       for (const [id, p] of Object.entries(productos)) {
         if (String(p?.nombre || '').toLowerCase() === lower) {
@@ -188,7 +211,7 @@
     }
 
     async function procesarScan(texto) {
-      detenerEscaner();
+      await detenerEscaner();
       const producto = await buscarProductoPorContenidoQR(texto);
       if (!producto) {
         document.getElementById('productoCard').classList.add('hidden');
@@ -205,6 +228,7 @@
         document.getElementById('scanCard').classList.remove('hidden');
         return;
       }
+
       document.getElementById('scanCard').classList.remove('hidden');
 
       if (!window.Html5Qrcode) {
@@ -272,6 +296,7 @@
       const cantidad = Math.max(1, Number(document.getElementById('cantidad').value || 1));
       const p = await recargarProductoActual();
       if (!p) return setStatus('accionStatus', 'El producto ya no existe.', 'error');
+
       const stock = Number(p.stock || 0);
       if (stock < cantidad) return setStatus('accionStatus', 'Stock insuficiente.', 'error');
 
@@ -308,6 +333,7 @@
       const cantidad = Math.max(1, Number(document.getElementById('cantidad').value || 1));
       const p = await recargarProductoActual();
       if (!p) return setStatus('accionStatus', 'El producto ya no existe.', 'error');
+
       const stock = Number(p.stock || 0);
       if (stock < cantidad) return setStatus('accionStatus', 'Stock insuficiente.', 'error');
 
