@@ -984,18 +984,18 @@ window.cancelarReserva = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
   const reservados = Number(p.reservados || 0);
-  if (cant <= 0 || cant > reservados) return alert('❌ Cantidad inválida');
+  if (cant <= 0 || cant > reservados) return showToast('❌ Cantidad inválida', 'error');
+
   const nuevoStock = Number(p.stock || 0) + cant;
   const nuevosReservados = reservados - cant;
-  await update(ref(db,'productos/'+id), { stock:nuevoStock, reservados:nuevosReservados });
-  await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
-  await enviarEmail({
-    producto:p.nombre,
+
+  await update(ref(db,'productos/'+id), {
     stock:nuevoStock,
-    detalles:`${cant} uds. RESERVA CANCELADA | Stock devuelto: ${nuevoStock}`,
-    subject:'❌ RESERVA CANCELADA - ' + p.nombre,
-    fecha:new Date().toLocaleString('es-ES')
+    reservados:nuevosReservados,
+    emailAgotadoEnviado:false
   });
+
+  await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
   showToast(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`, 'success');
 };
 
