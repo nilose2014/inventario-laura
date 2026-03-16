@@ -4,46 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS</title>
-<link rel="stylesheet" href="styles_mejorado.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="app-shell">
-<header class="hero-banner">
-  <div class="hero-badge">✨ Panel visual mejorado</div>
-  <h2>🛒 Inventario Laura Online</h2>
-  <p class="hero-subtitle">ORDENABLE · BACKUP · PRÓXIMO STOCK · LOGS · CÁMARA</p>
-</header>
+<h2>🛒 Inventario Laura Online - ORDENABLE + 🔄 BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS + 🎥 CÁMARA</h2>
 
 <div class="card login-card" id="loginDiv">
-  <div class="section-head compact">
-    <div>
-      <h3>🔐 Iniciar Sesión</h3>
-      <p>Accede con tu usuario para gestionar ventas, stock, fotos, QR y copias de seguridad.</p>
-    </div>
-  </div>
-  <div class="login-grid">
-    <div class="login-field">
-      <label for="userEmail">Email</label>
-      <input id="userEmail" type="email" placeholder="Email" list="userList">
-    </div>
-    <div class="login-field">
-      <label for="userPass">Contraseña</label>
-      <input id="userPass" type="password" placeholder="Contraseña">
-    </div>
-  </div>
-  <div class="form-botones login-actions">
-    <button onclick="login()">🚀 Entrar</button>
-    <button class="red" onclick="resetLogin()">🔄 Limpiar</button>
-  </div>
+  <h3>🔐 Iniciar Sesión</h3>
+  <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
+  <input id="userPass" type="password" placeholder="Contraseña"><br><br>
   <datalist id="userList">
     <option value="nilose2014@gmail.com">👑 ADMIN</option>
     <option value="djsubixj@gmail.com">👤 Usuario</option>
     <option value="xiomaralamasmala@gmail.com">👤 Usuario</option>
   </datalist>
+  <button onclick="login()">🚀 Entrar</button>
+  <button class="red" onclick="resetLogin()">🔄 Limpiar</button>
 </div>
 
-<div id="mainApp" class="main-app" style="display:none">
+<div id="mainApp" style="display:none">
 
 <div class="totales-superiores" id="totalesSuperiores">
   <div class="total-box-superior bea">
@@ -70,13 +50,8 @@
 
 <div id="status" class="error">Cargando...</div>
 
-<div class="card card-elevated" id="nuevoProductoDiv">
-  <div class="section-head">
-    <div>
-      <h3>📦 Nuevo / Editar Producto</h3>
-      <p>Completa los datos del artículo, precios y foto antes de guardar.</p>
-    </div>
-  </div>
+<div class="card" id="nuevoProductoDiv">
+  <strong>📦 Nuevo/Editar Producto:</strong><br><br>
 
   <div class="form-producto">
     <div class="form-campo">
@@ -116,13 +91,7 @@
   </div>
 </div>
 
-<div class="card card-elevated">
-<div class="section-head section-head-inline">
-  <div>
-    <h3>📋 Inventario</h3>
-    <p>Busca, ordena, escanea y descarga los QR sin perder ninguna función actual.</p>
-  </div>
-</div>
+<div class="card">
 <div class="filtros">
   <div style="position:relative;display:inline-block">
     <span style="margin-right:8px">🔍</span>
@@ -178,7 +147,7 @@
 </table>
 </div>
 </div>
-<div class="totales-container summary-bottom">
+<div class="totales-container">
   <div class="total-box">
     <strong>💰 Venta Bea</strong><br>
     <span id="tBea" style="font-size:24px">€0.00</span>
@@ -201,13 +170,7 @@
   </div>
 </div>
 
-<div class="card card-actions card-elevated">
-  <div class="section-head section-head-inline">
-    <div>
-      <h3>⚙️ Acciones rápidas</h3>
-      <p>Atajos para mantenimiento, precios globales, estadísticas, logs, escáner y cambio de usuario.</p>
-    </div>
-  </div>
+<div class="card card-actions">
 <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
 <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
 <button id="btnEstadisticas" onclick="irEstadisticas()" style="background:#6f42c1;display:none">📊 Ver Estadísticas</button>
@@ -217,13 +180,8 @@
 <button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
 </div>
 
-<div class="card hidden card-elevated" id="backupSection">
-  <div class="section-head">
-    <div>
-      <h3>💾 Sistema de Backup Completo</h3>
-      <p>Descarga y restaura copias del inventario manteniendo el flujo actual del sistema.</p>
-    </div>
-  </div>
+<div class="card hidden" id="backupSection">
+  <h3>💾 Sistema de Backup Completo</h3>
   <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
   <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
   <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
@@ -235,7 +193,6 @@
   </div>
 </div>
 
-</div>
 </div>
 
 <div id="toastContainer"></div>
