@@ -1081,3 +1081,47 @@ select{
     grid-template-columns:1fr;
   }
 }
+
+.accion-group{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.cantidad-input{
+  width:48px !important;
+  min-width:48px !important;
+  height:36px !important;
+  padding:4px 6px !important;
+  text-align:center !important;
+  font-size:14px !important;
+  font-weight:700 !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:12px !important;
+  background:#ffffff !important;
+  box-shadow:0 3px 8px rgba(15,23,42,.06) !important;
+}
+
+.cantidad-input:focus{
+  outline:none !important;
+  border-color:#93c5fd !important;
+  box-shadow:0 0 0 4px rgba(37,99,235,.12) !important;
+}
+
+.btn-vender{
+  background:var(--primary) !important;
+}
+
+.btn-vender:hover{
+  background:var(--primary-hover) !important;
+}
+
+.btn-reservar{
+  background:var(--info) !important;
+}
+
+.btn-reservar:hover{
+  background:var(--info-hover) !important;
+}
