@@ -140,7 +140,7 @@
 <table>
 <thead>
 <tr>
-<th>Producto</th><th>Foto</th><th>Stock</th><th>Próx.</th><th>Reservados</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Reservar</th><th>Vender</th><th>QR</th><th>Acciones</th>
+<th>Producto</th><th>Foto</th><th>Stock</th><th>Próx.</th><th>Reservados</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Reservar</th><th>Vender</th><th>QR</th><th id="thAcciones">Acciones</th>
 </tr>
 </thead>
 <tbody id="tabla"></tbody>
@@ -863,9 +863,13 @@ window.renderTablaSolo = () => {
        <button class="qr-btn" onclick="verQRProducto('${id}')" title="Ver QR del producto">QR</button>
       </td>
       <td>
-       <button class="icon-btn" onclick="editar('${id}')" ${userRole!=='admin' ? 'class="icon-btn disabled" disabled' : ''}>✏️</button>
-<button class="red icon-btn" onclick="borrar('${id}')" ${userRole!=='admin' ? 'class="red icon-btn disabled" disabled' : ''}>🗑️</button>
+       <button class="qr-btn" onclick="verQRProducto('${id}')" title="Ver QR del producto">QR</button>
       </td>
+      ${userRole === 'admin' ? `
+      <td>
+        <button class="icon-btn" onclick="editar('${id}')">✏️</button>
+        <button class="red icon-btn" onclick="borrar('${id}')">🗑️</button>
+      </td>` : ''}
     </tr>`;
   }
 
@@ -1117,14 +1121,16 @@ function updateUI() {
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
-
+  const thAcciones = document.getElementById('thAcciones');
   if (userRole === 'admin') {
+      if (thAcciones) thAcciones.style.display = '';
     status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK + 📊 ESTADÍSTICAS + 📋 LOGS + FOTOS ✅`;
     status.className = 'admin';
     guardarBtn.disabled = false; guardarBtn.className = '';
     resetBtn.disabled = false; resetBtn.className = 'red';
     precioGlobalBtn.disabled = false;
   } else {
+  if (thAcciones) thAcciones.style.display = 'none';
     status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + CORREGIR VENTAS + SUBIR FOTOS ✅`;
     status.className = 'user';
     guardarBtn.disabled = true; guardarBtn.className = 'disabled';
