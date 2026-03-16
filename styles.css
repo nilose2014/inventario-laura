@@ -429,11 +429,34 @@ select{
 }
 
 .prox-input{
-  background:#f0fdf4 !important;
-  border:2px solid #86efac !important;
-  font-weight:700;
+  width:72px !important;
+  min-width:72px !important;
+  height:38px !important;
+  padding:6px 8px !important;
+  text-align:center !important;
+  font-size:15px !important;
+  font-weight:800 !important;
+  color:#14532d !important;
+  background:#ffffff !important;
+  border:2px solid #22c55e !important;
+  border-radius:12px !important;
+  box-shadow:0 4px 10px rgba(34,197,94,.12) !important;
   transition:all .25s ease !important;
-  text-align:center;
+}
+
+.prox-input:focus{
+  outline:none !important;
+  border-color:#15803d !important;
+  box-shadow:0 0 0 4px rgba(34,197,94,.18) !important;
+}
+
+.prox-input.tiene-valor{
+  background:linear-gradient(135deg,#2563eb,#1d4ed8) !important;
+  border:2px solid #facc15 !important;
+  color:#ffffff !important;
+  font-weight:800 !important;
+  box-shadow:0 0 0 4px rgba(37,99,235,.12),0 8px 20px rgba(37,99,235,.18) !important;
+  transform:scale(1.04) !important;
 }
 
 .prox-input.tiene-valor{
