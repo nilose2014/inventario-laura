@@ -229,6 +229,18 @@
   </div>
 </div>
 
+<div id="fotoModal" class="modal-overlay">
+  <div class="modal-box foto-modal-box">
+    <div class="modal-title">🖼️ Imagen del producto</div>
+    <div class="foto-modal-wrap">
+      <img id="fotoModalImg" src="" alt="Imagen ampliada del producto">
+    </div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="modal-cancel" onclick="cerrarFotoModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <button id="scrollTopBtn" title="Subir arriba">⬆️</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -529,6 +541,17 @@ window.cerrarQRModal = () => {
   document.getElementById('qrImagenWrap').innerHTML = '';
 };
 
+window.abrirFotoModal = (src) => {
+  if (!src) return;
+  document.getElementById('fotoModalImg').src = src;
+  document.getElementById('fotoModal').classList.add('show');
+};
+
+window.cerrarFotoModal = () => {
+  document.getElementById('fotoModal').classList.remove('show');
+  document.getElementById('fotoModalImg').src = '';
+};
+
 window.verQRProducto = async (id) => {
   const p = productos[id];
   if (!p) return showToast('❌ Producto no encontrado', 'error');
@@ -821,7 +844,7 @@ window.renderTablaSolo = () => {
     <tr class="${filaClass}">
       <td>${p.nombre || ''}</td>
       <td>
-        ${p.imagen ? `<img src="${p.imagen}" class="foto-mini" alt="foto">` : '-'}
+       ${p.imagen ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">` : '-'}
         <br>
         <button class="btn-foto" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
       </td>
