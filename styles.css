@@ -1125,3 +1125,57 @@ select{
 .btn-reservar:hover{
   background:var(--info-hover) !important;
 }
+
+.icon-btn{
+  width:34px;
+  height:34px;
+  min-width:34px;
+  padding:0 !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-size:14px;
+  line-height:1;
+}
+
+.icon-btn-xs{
+  width:28px;
+  height:28px;
+  min-width:28px;
+  padding:0 !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:9px;
+  font-size:12px;
+  line-height:1;
+}
+
+.precio-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.precio-wrap strong{
+  min-width:48px;
+  text-align:right;
+}
+
+.tabla-scroll{
+  overflow-x:auto;
+}
+
+.card-actions{
+  text-align:center;
+}
+
+.total-valor-lg{
+  font-size:28px;
+}
+
+.total-valor-md{
+  font-size:24px;
+}
