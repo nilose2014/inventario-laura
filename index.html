@@ -760,6 +760,39 @@ window.subirFotoRapida = async (id) => {
   input.click();
 };
 
+window.borrarFotoProducto = async (id) => {
+  if (!currentUser || userRole !== 'admin') {
+    return showToast('❌ Solo ADMIN puede borrar fotos', 'error');
+  }
+
+  const producto = productos[id];
+  if (!producto || !producto.imagen) {
+    return showToast('❌ Este producto no tiene foto', 'error');
+  }
+
+  openConfirm({
+    title: '🗑️ Borrar foto',
+    message: `¿Seguro que quieres borrar la foto de "${producto.nombre}"?`,
+    confirmText: 'Borrar foto',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await update(ref(db, 'productos/' + id), { imagen: '' });
+        productos[id].imagen = '';
+
+        await syncProductoPublico(id, productos[id]);
+        await guardarLog('foto-borrada', id, producto.nombre, 0, currentUser.email, 'Foto eliminada');
+
+        programarRender();
+        showToast('✅ Foto borrada correctamente', 'success');
+      } catch (error) {
+        console.error(error);
+        showToast('❌ Error borrando foto', 'error', 3500);
+      }
+    }
+  });
+};
+
 window.programarRender = () => {
   if (renderPendiente) return;
   renderPendiente = true;
@@ -843,11 +876,12 @@ window.renderTablaSolo = () => {
     html += `
     <tr class="${filaClass}">
       <td>${p.nombre || ''}</td>
-      <td>
-       ${p.imagen ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">` : '-'}
-        <br>
-        <button class="btn-foto" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
-      </td>
+    <td>
+  ${p.imagen ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">` : '-'}
+  <br>
+  <button class="btn-foto" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
+  ${userRole === 'admin' && p.imagen ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>` : ''}
+</td>
       <td class="${stockCellClass}">
         ${stockDisponible}
         ${userRole==='admin' ? `<button class="stock-edit-btn icon-btn-xs" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
