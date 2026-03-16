@@ -813,7 +813,7 @@ window.renderTablaSolo = () => {
 
     html += `
     <tr class="${filaClass}">
-      <td style="font-weight:bold;text-align:left">${p.nombre || ''}</td>
+      <td>${p.nombre || ''}</td>
       <td>
         ${p.imagen ? `<img src="${p.imagen}" class="foto-mini" alt="foto">` : '-'}
         <br>
@@ -845,13 +845,17 @@ window.renderTablaSolo = () => {
         <strong>${Number(p.laura || 0).toFixed(2)}</strong>
         <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
       </td>
-      <td>
-        <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" style="width:50px">
-        <button class="reservar-btn" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
+           <td>
+        <div class="accion-group">
+          <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" class="cantidad-input">
+          <button class="reservar-btn btn-reservar" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
+        </div>
       </td>
       <td>
-        <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" style="width:50px">
-        <button onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
+        <div class="accion-group">
+          <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" class="cantidad-input">
+          <button class="btn-vender" onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
+        </div>
       </td>
       <td>
         <button class="qr-btn" onclick="verQRProducto('${id}')" title="Ver QR del producto">📱 QR</button>
