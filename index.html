@@ -136,7 +136,7 @@
   </div>
 </div><br>
 
-<div style="overflow-x:auto">
+<div class="tabla-scroll">
 <table>
 <thead>
 <tr>
@@ -170,7 +170,7 @@
   </div>
 </div>
 
-<div class="card" style="text-align:center">
+<div class="card card-actions">
 <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
 <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
 <button id="btnEstadisticas" onclick="irEstadisticas()" style="background:#6f42c1;display:none">📊 Ver Estadísticas</button>
@@ -821,14 +821,14 @@ window.renderTablaSolo = () => {
       </td>
       <td class="${stockCellClass}">
         ${stockDisponible}
-        ${userRole==='admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
+        ${userRole==='admin' ? `<button class="stock-edit-btn icon-btn-xs" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
       <td>
         <div class="prox-group">
           <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
           ${userRole==='admin' ? `
-            <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="Añadir al stock real">➕</button>
-            <button class="prox-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">✏️</button>
+            <button class="prox-btn icon-btn-xs" onclick="anadirProximoStock('${id}')" title="Añadir al stock real">➕</button>
+<button class="prox-edit-btn icon-btn-xs" onclick="modificarProximoStock('${id}')" title="Editar próximo">✏️</button>
           ` : ''}
         </div>
       </td>
@@ -841,10 +841,12 @@ window.renderTablaSolo = () => {
         ${(p.vendidos || 0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
       </td>
       <td>${Number(p.bea || 0).toFixed(2)}</td>
-      <td class="editable laura-negro">
-        <strong>${Number(p.laura || 0).toFixed(2)}</strong>
-        <button onclick="modificarPrecioLaura('${id}')" style="font-size:10px;padding:1px 4px;margin-left:3px">💲</button>
-      </td>
+   <td class="editable laura-negro">
+  <div class="precio-wrap">
+    <strong>${Number(p.laura || 0).toFixed(2)}</strong>
+    <button class="icon-btn-xs" onclick="modificarPrecioLaura('${id}')" title="Editar precio Laura">💲</button>
+  </div>
+</td>
            <td>
         <div class="accion-group">
           <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" class="cantidad-input">
@@ -858,11 +860,11 @@ window.renderTablaSolo = () => {
         </div>
       </td>
       <td>
-        <button class="qr-btn" onclick="verQRProducto('${id}')" title="Ver QR del producto">📱 QR</button>
+       <button class="qr-btn" onclick="verQRProducto('${id}')" title="Ver QR del producto">QR</button>
       </td>
       <td>
-        <button onclick="editar('${id}')" ${userRole!=='admin' ? 'class="disabled" disabled' : ''}>✏️</button>
-        <button class="red" onclick="borrar('${id}')" ${userRole!=='admin' ? 'class="disabled" disabled' : ''}>🗑️</button>
+       <button class="icon-btn" onclick="editar('${id}')" ${userRole!=='admin' ? 'class="icon-btn disabled" disabled' : ''}>✏️</button>
+<button class="red icon-btn" onclick="borrar('${id}')" ${userRole!=='admin' ? 'class="red icon-btn disabled" disabled' : ''}>🗑️</button>
       </td>
     </tr>`;
   }
