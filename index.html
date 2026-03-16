@@ -51,56 +51,92 @@
 <div id="status" class="error">Cargando...</div>
 
 <div class="card" id="nuevoProductoDiv">
-<strong>📦 Nuevo/Editar Producto:</strong><br><br>
-Producto <input id="nombre" placeholder="Nombre del producto" maxlength="100"><br>
-Stock <input id="stock" type="number" placeholder="0"><br>
-Próximo <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir"><br>
-Precio Bea <input id="bea" type="number" step="0.01" placeholder="0.00"><br>
-Precio Laura <input id="laura" type="number" step="0.01" placeholder="0.00"><br>
-Foto <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*"><br><br>
-<button onclick="guardar()" id="guardarBtn">💾 Guardar Nuevo</button>
-<button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
+  <strong>📦 Nuevo/Editar Producto:</strong><br><br>
+
+  <div class="form-producto">
+    <div class="form-campo">
+      <label for="nombre">Producto</label>
+      <input id="nombre" placeholder="Nombre del producto" maxlength="100">
+    </div>
+
+    <div class="form-campo">
+      <label for="stock">Stock</label>
+      <input id="stock" type="number" placeholder="0">
+    </div>
+
+    <div class="form-campo">
+      <label for="proximo">Próximo</label>
+      <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir">
+    </div>
+
+    <div class="form-campo">
+      <label for="bea">Precio Bea</label>
+      <input id="bea" type="number" step="0.01" placeholder="0.00">
+    </div>
+
+    <div class="form-campo">
+      <label for="laura">Precio Laura</label>
+      <input id="laura" type="number" step="0.01" placeholder="0.00">
+    </div>
+
+    <div class="form-campo">
+      <label for="fotoProducto">Foto</label>
+      <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*">
+    </div>
+  </div>
+
+  <div class="form-botones">
+    <button onclick="guardar()" id="guardarBtn">💾 Guardar Nuevo</button>
+    <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
+  </div>
 </div>
 
 <div class="card">
 <div class="filtros">
-🔍 <div style="position:relative;display:inline-block">
-  <input placeholder="Buscar producto..." id="buscar" oninput="handleBuscarInput()">
-  <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
-</div>
-<div class="contadores-filtrados">
-  <div id="productosVisibles">📦 0 productos</div>
-  <div id="stockVisible">📊 Stock: 0</div>
-</div>
+  <div style="position:relative;display:inline-block">
+    <span style="margin-right:8px">🔍</span>
+    <input placeholder="Buscar producto..." id="buscar" oninput="handleBuscarInput()">
+    <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+  </div>
 
-<button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+  <div class="contadores-filtrados">
+    <div id="productosVisibles">📦 0 productos</div>
+    <div id="stockVisible">📊 Stock: 0</div>
+  </div>
 
-<button id="btnEstadisticasTop" onclick="irEstadisticas()" style="background:#6f42c1;color:white;font-weight:bold;display:none">
-  📊 Ver Estadísticas
-</button>
-<button id="btnLogsTop" onclick="irLogs()" class="log-btn" style="display:none;font-size:13px !important;padding:8px 12px !important">
-  📋 Ver LOGS
-</button>
+  <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+  <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
 
-🆚 Ordenar:
-<select id="ordenar" onchange="programarRender()">
-  <option value="nombre-asc">A → Z</option>
-  <option value="nombre-desc">Z → A</option>
-  <option value="stock-asc">Stock ↓</option>
-  <option value="stock-desc">Stock ↑</option>
-  <option value="proximo-desc">Próximo ↓</option>
-  <option value="proximo-asc">Próximo ↑</option>
-  <option value="vendidos-desc">Vendidos ↓</option>
-  <option value="vendidos-asc">Vendidos ↑</option>
-  <option value="reservados-desc">Reservados ↓</option>
-  <option value="reservados-asc">Reservados ↑</option>
-  <option value="bea-asc">Bea ↓</option>
-  <option value="bea-desc">Bea ↑</option>
-  <option value="laura-asc">Laura ↓</option>
-  <option value="laura-desc">Laura ↑</option>
-</select>
+  <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
+    📊 Ver Estadísticas
+  </button>
+
+  <button id="btnLogsTop" onclick="irLogs()" class="log-btn" style="display:none">
+    📋 Ver LOGS
+  </button>
+
+  <div class="orden-wrap">
+    <span>🆚 Ordenar:</span>
+    <select id="ordenar" onchange="programarRender()">
+      <option value="nombre-asc">A → Z</option>
+      <option value="nombre-desc">Z → A</option>
+      <option value="stock-asc">Stock ↓</option>
+      <option value="stock-desc">Stock ↑</option>
+      <option value="proximo-desc">Próximo ↓</option>
+      <option value="proximo-asc">Próximo ↑</option>
+      <option value="vendidos-desc">Vendidos ↓</option>
+      <option value="vendidos-asc">Vendidos ↑</option>
+      <option value="reservados-desc">Reservados ↓</option>
+      <option value="reservados-asc">Reservados ↑</option>
+      <option value="bea-asc">Bea ↓</option>
+      <option value="bea-desc">Bea ↑</option>
+      <option value="laura-asc">Laura ↓</option>
+      <option value="laura-desc">Laura ↑</option>
+    </select>
+  </div>
 </div><br>
+
+<div style="overflow-x:auto">
 <table>
 <thead>
 <tr>
@@ -788,11 +824,13 @@ window.renderTablaSolo = () => {
         ${userRole==='admin' ? `<button class="stock-edit-btn" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
       </td>
       <td>
-       <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
-        ${userRole==='admin' ? `
-          <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="➕ AÑADIR al Stock Real">➕</button>
-          <button class="stock-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">📋</button>
-        ` : ''}
+        <div class="prox-group">
+          <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
+          ${userRole==='admin' ? `
+            <button class="prox-btn" onclick="anadirProximoStock('${id}')" title="Añadir al stock real">➕</button>
+            <button class="prox-edit-btn" onclick="modificarProximoStock('${id}')" title="Editar próximo">✏️</button>
+          ` : ''}
+        </div>
       </td>
       <td class="reservados">
         ${p.reservados || 0}
