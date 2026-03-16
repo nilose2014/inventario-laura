@@ -1591,3 +1591,7 @@ color:white;
   box-shadow:0 12px 30px rgba(0,0,0,.2);
   background:#fff;
 }
+
+.borrar-foto-btn{
+  margin-top:4px;
+}
