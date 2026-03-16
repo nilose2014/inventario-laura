@@ -1372,3 +1372,24 @@ select{
     width:100%;
   }
 }
+
+/* =========================
+   ACCIONES ADMIN / USER
+========================= */
+
+.acciones-admin{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+.col-acciones{
+  min-width:120px;
+}
+
+body.solo-user th.col-acciones,
+body.solo-user td.col-acciones{
+  display:none;
+}
