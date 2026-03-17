@@ -18,8 +18,13 @@
 </div>
 <div class="card login-card" id="loginDiv">
   <h3>🔐 Iniciar Sesión</h3>
-  <input id="userEmail" type="email" placeholder="Email" list="userList"><br>
-  <input id="userPass" type="password" placeholder="Contraseña"><br><br>
+<input id="userEmail" type="email" placeholder="Email" list="userList" autocomplete="username"><br>
+
+<div class="input-pass-wrap">
+  <input id="userPass" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button type="button" class="toggle-pass-btn" onclick="togglePassword()">👁️</button>
+</div>
+<br><br>
   <datalist id="userList">
     <option value="nilose2014@gmail.com">👑 ADMIN</option>
     <option value="djsubixj@gmail.com">👤 Usuario</option>
@@ -1165,6 +1170,23 @@ window.resetLogin = () => {
   document.getElementById('userEmail').value = '';
   document.getElementById('userPass').value = '';
 };
+
+window.togglePassword = () => {
+  const input = document.getElementById('userPass');
+  if (!input) return;
+
+  input.type = input.type === 'password' ? 'text' : 'password';
+};
+document.getElementById('userPass').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    login();
+  }
+});
+document.getElementById('userEmail').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    login();
+  }
+});
 
 function checkUserRole() {
   if (currentUser.email === 'nilose2014@gmail.com') {
