@@ -876,11 +876,22 @@ window.renderTablaSolo = () => {
     html += `
     <tr class="${filaClass}">
       <td>${p.nombre || ''}</td>
-    <td>
-  ${p.imagen ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">` : '-'}
-  <br>
-  <button class="btn-foto" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
-${['admin','user'].includes(userRole) && p.imagen ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>` : ''}
+<td>
+  <div class="foto-celda">
+    <div class="foto-col">
+      ${p.imagen
+        ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">`
+        : `<span>-</span>`
+      }
+      <div class="foto-acciones">
+        <button class="btn-foto" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
+        ${['admin','user'].includes(userRole) && p.imagen
+          ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>`
+          : ''
+        }
+      </div>
+    </div>
+  </div>
 </td>
       <td class="${stockCellClass}">
         ${stockDisponible}
