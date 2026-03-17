@@ -126,11 +126,17 @@
       border:1px solid rgba(255,255,255,.7);
       box-shadow:var(--shadow);
       transition:transform var(--transition), box-shadow var(--transition);
+      animation:fadeIn .25s ease;
     }
 
     .card:hover{
       transform:translateY(-2px);
       box-shadow:var(--shadow-lg);
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
     }
 
     .card-head{
@@ -207,6 +213,10 @@
       overflow:hidden;
       box-shadow:var(--shadow-sm);
       background:#fff;
+    }
+
+    #scanCard{
+      padding:16px;
     }
 
     .grid{
@@ -475,27 +485,6 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head">
-      <div>
-        <h2>🔍 Escanear o buscar</h2>
-        <p>Escanea el QR o busca el producto manualmente.</p>
-      </div>
-    </div>
-
-    <div class="toolbar">
-      <button onclick="iniciarEscaner()">📷 Escanear producto</button>
-      <button class="gray" onclick="detenerEscaner()">⏹️ Parar cámara</button>
-      <button class="cyan" onclick="buscarManual()">⌨️ Buscar manual</button>
-    </div>
-    <p class="small">Si entras desde un QR con enlace, el producto se abrirá automáticamente.</p>
-  </div>
-
-<div class="card hidden" id="scanCard">
-  <div id="reader"></div>
-  <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto.</div>
-</div>
-
   <div class="card hidden public-card" id="publicCard">
     <div class="logo-card-wrap">
       <img src="logo.png" alt="Logo Mundo Azul" class="logo-card">
@@ -554,6 +543,27 @@
     <div id="accionStatus" style="margin-top:14px"></div>
   </div>
 
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>🔍 Escanear o buscar</h2>
+        <p>Escanea el QR o busca el producto manualmente.</p>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button onclick="iniciarEscaner()">📷 Escanear producto</button>
+      <button class="gray" onclick="detenerEscaner()">⏹️ Parar cámara</button>
+      <button class="cyan" onclick="buscarManual()">⌨️ Buscar manual</button>
+    </div>
+    <p class="small">Si entras desde un QR con enlace, el producto se abrirá automáticamente.</p>
+  </div>
+
+  <div class="card hidden" id="scanCard">
+    <div id="reader"></div>
+    <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto.</div>
+  </div>
+
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, get, update, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
@@ -587,6 +597,7 @@
 
     function setStatus(id, text, kind = 'info') {
       const el = document.getElementById(id);
+      if (!el) return;
       el.className = kind;
       el.textContent = text;
     }
@@ -767,6 +778,7 @@
         return;
       }
       pintarProducto(producto);
+      document.getElementById('scanCard').classList.add('hidden');
       setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
     }
 
@@ -786,17 +798,16 @@
 
       const scanId = getQueryParam('scanId');
       if (scanId) {
-        document.getElementById('scanCard').classList.remove('hidden');
         const producto = await buscarProductoPorContenidoQR(scanId);
 
         if (!producto) {
+          document.getElementById('scanCard').classList.remove('hidden');
           setStatus('scanStatus', `Producto no encontrado para scanId: ${scanId}`, 'error');
           ocultarFichas();
           return;
         }
 
         pintarProducto(producto);
-        setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
       }
     });
 
@@ -839,12 +850,14 @@
       if (!texto) return;
       const producto = await buscarProductoPorContenidoQR(texto);
       if (!producto) {
+        document.getElementById('scanCard').classList.remove('hidden');
         setStatus('scanStatus', 'Producto no encontrado.', 'error');
         ocultarFichas();
         return;
       }
+      await detenerEscaner();
       pintarProducto(producto);
-      document.getElementById('scanCard').classList.remove('hidden');
+      document.getElementById('scanCard').classList.add('hidden');
       setStatus('scanStatus', `Producto encontrado manualmente: ${producto.nombre}`, 'success');
     };
 
