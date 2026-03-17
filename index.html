@@ -9,200 +9,260 @@
 </head>
 <body>
 
-<div class="app-header">
-  <img src="logo.png" class="logo-app" alt="Mundo Azul">
-  <div class="app-header-text">
-    <h2>🛒 Mundo Azul - 🔄 BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS + 🎥 CÁMARA</h2>
-    <p class="hero-subtitle">Inventario · Ventas · QR · Stock · Fotos</p>
-  </div>
-</div>
-<div class="card login-card" id="loginDiv">
-  <h3>🔐 Iniciar Sesión</h3>
-<input id="userEmail" type="email" placeholder="Email" list="userList" autocomplete="username"><br>
+<div class="app-shell">
 
-<div class="input-pass-wrap">
-  <input id="userPass" type="password" placeholder="Contraseña" autocomplete="current-password">
-  <button type="button" class="toggle-pass-btn" onclick="togglePassword()">👁️</button>
-</div>
-<br><br>
-  <datalist id="userList">
-    <option value="nilose2014@gmail.com">👑 ADMIN</option>
-    <option value="djsubixj@gmail.com">👤 Usuario</option>
-    <option value="xiomaralamasmala@gmail.com">👤 Usuario</option>
-  </datalist>
-  <button onclick="login()">🚀 Entrar</button>
-  <button class="red" onclick="resetLogin()">🔄 Limpiar</button>
-</div>
-
-<div id="mainApp" style="display:none">
-
-<div class="totales-superiores" id="totalesSuperiores">
-  <div class="total-box-superior bea">
-    <strong>💰 Venta Bea</strong><br>
-    <span id="tBeaSup" style="font-size:28px">€0.00</span>
-  </div>
-  <div class="total-box-superior laura">
-    <strong>💰 Venta Laura</strong><br>
-    <span id="tLauraSup" style="font-size:28px">€0.00</span>
-  </div>
-  <div class="total-box-superior diferencia" id="diferenciaBoxSup">
-    <strong>📊 Diferencia (L-B)</strong><br>
-    <span id="tDiferenciaSup" style="font-size:28px">€0.00</span>
-  </div>
-  <div class="total-box-superior reservados">
-    <strong>📦 Reservados</strong><br>
-    <span id="tTotalReservadosSup" style="font-size:28px">0</span>
-  </div>
-  <div class="total-box-superior vendidos">
-    <strong>📦 Total Vendidos</strong><br>
-    <span id="tTotalVendidosSup" style="font-size:28px">0</span>
-  </div>
-</div>
-
-<div id="status" class="error">Cargando...</div>
-
-<div class="card" id="nuevoProductoDiv">
-  <strong>📦 Nuevo/Editar Producto:</strong><br><br>
-
-  <div class="form-producto">
-    <div class="form-campo">
-      <label for="nombre">Producto</label>
-      <input id="nombre" placeholder="Nombre del producto" maxlength="100">
-    </div>
-
-    <div class="form-campo">
-      <label for="stock">Stock</label>
-      <input id="stock" type="number" placeholder="0">
-    </div>
-
-    <div class="form-campo">
-      <label for="proximo">Próximo</label>
-      <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir">
-    </div>
-
-    <div class="form-campo">
-      <label for="bea">Precio Bea</label>
-      <input id="bea" type="number" step="0.01" placeholder="0.00">
-    </div>
-
-    <div class="form-campo">
-      <label for="laura">Precio Laura</label>
-      <input id="laura" type="number" step="0.01" placeholder="0.00">
-    </div>
-
-    <div class="form-campo">
-      <label for="fotoProducto">Foto</label>
-      <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*">
+  <div class="app-header">
+    <img src="logo.png" class="logo-app" alt="Mundo Azul">
+    <div class="app-header-text">
+      <h2>🛒 Mundo Azul</h2>
+      <p class="hero-subtitle">Inventario · Ventas · QR · Stock · Fotos · Backup · Logs</p>
     </div>
   </div>
 
-  <div class="form-botones">
-    <button onclick="guardar()" id="guardarBtn">💾 Guardar Nuevo</button>
-    <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
-  </div>
-</div>
+  <div class="card login-card" id="loginDiv">
+    <div class="section-head compact">
+      <div>
+        <h3>🔐 Iniciar Sesión</h3>
+        <p>Accede al panel para gestionar inventario, ventas, stock y fotos.</p>
+      </div>
+    </div>
 
-<div class="card">
-<div class="filtros">
-  <div style="position:relative;display:inline-block">
-    <span style="margin-right:8px">🔍</span>
-    <input placeholder="Buscar producto..." id="buscar" oninput="handleBuscarInput()">
-    <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+    <div class="login-grid">
+      <div class="login-field">
+        <label for="userEmail">Email</label>
+        <input id="userEmail" type="email" placeholder="Email" list="userList" autocomplete="username">
+      </div>
+
+      <div class="login-field">
+        <label for="userPass">Contraseña</label>
+        <div class="input-pass-wrap">
+          <input id="userPass" type="password" placeholder="Contraseña" autocomplete="current-password">
+          <button type="button" class="toggle-pass-btn" onclick="togglePassword()">👁️</button>
+        </div>
+      </div>
+    </div>
+
+    <datalist id="userList">
+      <option value="nilose2014@gmail.com">👑 ADMIN</option>
+      <option value="djsubixj@gmail.com">👤 Usuario</option>
+      <option value="xiomaralamasmala@gmail.com">👤 Usuario</option>
+    </datalist>
+
+    <div class="form-botones login-actions">
+      <button onclick="login()">🚀 Entrar</button>
+      <button class="red" onclick="resetLogin()">🔄 Limpiar</button>
+    </div>
   </div>
 
-  <div class="contadores-filtrados">
-    <div id="productosVisibles">📦 0 productos</div>
-    <div id="stockVisible">📊 Stock: 0</div>
-  </div>
+  <div id="mainApp" style="display:none" class="main-app">
 
-  <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-  <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+    <div class="totales-superiores" id="totalesSuperiores">
+      <div class="total-box-superior bea">
+        <strong>💰 Venta Bea</strong>
+        <span id="tBeaSup">€0.00</span>
+      </div>
+      <div class="total-box-superior laura">
+        <strong>💰 Venta Laura</strong>
+        <span id="tLauraSup">€0.00</span>
+      </div>
+      <div class="total-box-superior diferencia" id="diferenciaBoxSup">
+        <strong>📊 Diferencia (L-B)</strong>
+        <span id="tDiferenciaSup">€0.00</span>
+      </div>
+      <div class="total-box-superior reservados">
+        <strong>📦 Reservados</strong>
+        <span id="tTotalReservadosSup">0</span>
+      </div>
+      <div class="total-box-superior vendidos">
+        <strong>📦 Total Vendidos</strong>
+        <span id="tTotalVendidosSup">0</span>
+      </div>
+    </div>
 
-  <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
-    📊 Ver Estadísticas
-  </button>
+    <div id="status" class="error">Cargando...</div>
 
-  <button id="btnLogsTop" onclick="irLogs()" class="log-btn" style="display:none">
-    📋 Ver LOGS
-  </button>
+    <div class="card card-elevated" id="nuevoProductoDiv">
+      <div class="section-head">
+        <div>
+          <h3>📦 Nuevo / Editar producto</h3>
+          <p>Crea productos, ajusta stock, precios y sube imagen.</p>
+        </div>
+      </div>
 
-  <div class="orden-wrap">
-    <span>🆚 Ordenar:</span>
-    <select id="ordenar" onchange="programarRender()">
-      <option value="nombre-asc">A → Z</option>
-      <option value="nombre-desc">Z → A</option>
-      <option value="stock-asc">Stock ↓</option>
-      <option value="stock-desc">Stock ↑</option>
-      <option value="proximo-desc">Próximo ↓</option>
-      <option value="proximo-asc">Próximo ↑</option>
-      <option value="vendidos-desc">Vendidos ↓</option>
-      <option value="vendidos-asc">Vendidos ↑</option>
-      <option value="reservados-desc">Reservados ↓</option>
-      <option value="reservados-asc">Reservados ↑</option>
-      <option value="bea-asc">Bea ↓</option>
-      <option value="bea-desc">Bea ↑</option>
-      <option value="laura-asc">Laura ↓</option>
-      <option value="laura-desc">Laura ↑</option>
-    </select>
-  </div>
-</div><br>
+      <div class="form-producto">
+        <div class="form-campo">
+          <label for="nombre">Producto</label>
+          <input id="nombre" placeholder="Nombre del producto" maxlength="100">
+        </div>
 
-<div class="tabla-scroll">
-<table>
-<thead>
-<tr>
-<th>Producto</th><th>Foto</th><th>Stock</th><th>Próx.</th><th>Reservados</th><th>Vendidos</th><th>Bea €</th><th>Laura €</th><th>Reservar</th><th>Vender</th><th>QR</th><th class="col-acciones" id="thAcciones">Acciones</th>
-</tr>
-</thead>
-<tbody id="tabla"></tbody>
-</table>
-</div>
-</div>
-<div class="totales-container">
-  <div class="total-box">
-    <strong>💰 Venta Bea</strong><br>
-    <span id="tBea" style="font-size:24px">€0.00</span>
-  </div>
-  <div class="total-box">
-    <strong>💰 Venta Laura</strong><br>
-    <span id="tLaura" style="font-size:24px">€0.00</span>
-  </div>
-  <div class="total-box" id="diferenciaBox">
-    <strong>📊 Diferencia (L-B)</strong><br>
-    <span id="tDiferencia" style="font-size:24px">€0.00</span>
-  </div>
-  <div class="total-box reservados">
-    <strong>📦 Reservados</strong><br>
-    <span id="tTotalReservados" style="font-size:24px">0</span>
-  </div>
-  <div class="total-box vendidos">
-    <strong>📦 Total Vendidos</strong><br>
-    <span id="tTotalVendidos" style="font-size:24px">0</span>
-  </div>
-</div>
+        <div class="form-campo">
+          <label for="stock">Stock</label>
+          <input id="stock" type="number" placeholder="0">
+        </div>
 
-<div class="card card-actions">
-<button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset COMPLETO</button>
-<button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura Global</button>
-<button id="btnEstadisticas" onclick="irEstadisticas()" style="background:#6f42c1;display:none">📊 Ver Estadísticas</button>
-<button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none;font-size:14px !important;padding:10px 15px !important">📋 Ver LOGS</button>
-<button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
-<button onclick="logout()" style="background:#28a745">🔐 Cambiar Usuario</button>
-</div>
+        <div class="form-campo">
+          <label for="proximo">Próximo</label>
+          <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir">
+        </div>
 
-<div class="card hidden" id="backupSection">
-  <h3>💾 Sistema de Backup Completo</h3>
-  <button class="backup-btn" onclick="hacerBackup()" style="margin-right:10px">📥 DESCARGAR BACKUP</button>
-  <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:5px">📤 RESTAURAR BACKUP</label>
-  <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+        <div class="form-campo">
+          <label for="bea">Precio Bea</label>
+          <input id="bea" type="number" step="0.01" placeholder="0.00">
+        </div>
 
-  <div id="backupArea">
-    <p>📋 Último backup disponible aquí 👇</p>
-    <div id="backupText">Genera tu primer backup con el botón superior...</div>
-    <div id="backupDate"></div>
+        <div class="form-campo">
+          <label for="laura">Precio Laura</label>
+          <input id="laura" type="number" step="0.01" placeholder="0.00">
+        </div>
+
+        <div class="form-campo">
+          <label for="fotoProducto">Foto</label>
+          <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*">
+        </div>
+      </div>
+
+      <div class="form-botones">
+        <button onclick="guardar()" id="guardarBtn">💾 Guardar nuevo</button>
+        <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
+      </div>
+    </div>
+
+    <div class="card card-elevated">
+      <div class="section-head compact">
+        <div>
+          <h3>📋 Inventario</h3>
+          <p>Busca, ordena, vende, reserva, genera QR y gestiona productos.</p>
+        </div>
+      </div>
+
+      <div class="filtros">
+        <div style="position:relative;display:inline-block">
+          <input placeholder="Buscar producto..." id="buscar" oninput="handleBuscarInput()">
+          <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+        </div>
+
+        <div class="contadores-filtrados">
+          <div id="productosVisibles">📦 0 productos</div>
+          <div id="stockVisible">📊 Stock: 0</div>
+        </div>
+
+        <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+        <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+
+        <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
+          📊 Ver estadísticas
+        </button>
+
+        <button id="btnLogsTop" onclick="irLogs()" class="log-btn" style="display:none">
+          📋 Ver logs
+        </button>
+
+        <div class="orden-wrap">
+          <span>🆚 Ordenar:</span>
+          <select id="ordenar" onchange="programarRender()">
+            <option value="nombre-asc">A → Z</option>
+            <option value="nombre-desc">Z → A</option>
+            <option value="stock-asc">Stock ↓</option>
+            <option value="stock-desc">Stock ↑</option>
+            <option value="proximo-desc">Próximo ↓</option>
+            <option value="proximo-asc">Próximo ↑</option>
+            <option value="vendidos-desc">Vendidos ↓</option>
+            <option value="vendidos-asc">Vendidos ↑</option>
+            <option value="reservados-desc">Reservados ↓</option>
+            <option value="reservados-asc">Reservados ↑</option>
+            <option value="bea-asc">Bea ↓</option>
+            <option value="bea-desc">Bea ↑</option>
+            <option value="laura-asc">Laura ↓</option>
+            <option value="laura-desc">Laura ↑</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Foto</th>
+              <th>Stock</th>
+              <th>Próx.</th>
+              <th>Reservados</th>
+              <th>Vendidos</th>
+              <th>Bea €</th>
+              <th>Laura €</th>
+              <th>Reservar</th>
+              <th>Vender</th>
+              <th>QR</th>
+              <th class="col-acciones" id="thAcciones">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="totales-container summary-bottom">
+      <div class="total-box">
+        <strong>💰 Venta Bea</strong>
+        <span id="tBea">€0.00</span>
+      </div>
+      <div class="total-box">
+        <strong>💰 Venta Laura</strong>
+        <span id="tLaura">€0.00</span>
+      </div>
+      <div class="total-box" id="diferenciaBox">
+        <strong>📊 Diferencia (L-B)</strong>
+        <span id="tDiferencia">€0.00</span>
+      </div>
+      <div class="total-box reservados">
+        <strong>📦 Reservados</strong>
+        <span id="tTotalReservados">0</span>
+      </div>
+      <div class="total-box vendidos">
+        <strong>📦 Total Vendidos</strong>
+        <span id="tTotalVendidos">0</span>
+      </div>
+    </div>
+
+    <div class="card card-actions">
+      <div class="section-head compact">
+        <div>
+          <h3>⚙️ Acciones rápidas</h3>
+          <p>Herramientas globales del sistema.</p>
+        </div>
+      </div>
+
+      <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset completo</button>
+      <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura global</button>
+      <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📊 Ver estadísticas</button>
+      <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
+      <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+      <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+      <button onclick="logout()">🔐 Cambiar usuario</button>
+    </div>
+
+    <div class="card hidden" id="backupSection">
+      <div class="section-head compact">
+        <div>
+          <h3>💾 Sistema de backup completo</h3>
+          <p>Guarda o restaura una copia completa del inventario.</p>
+        </div>
+      </div>
+
+      <div class="form-botones">
+        <button class="backup-btn" onclick="hacerBackup()">📥 Descargar backup</button>
+        <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:14px">📤 Restaurar backup</label>
+        <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+      </div>
+
+      <div id="backupArea">
+        <p>📋 Último backup disponible aquí 👇</p>
+        <div id="backupText">Genera tu primer backup con el botón superior...</div>
+        <div id="backupDate"></div>
+      </div>
+    </div>
+
   </div>
-</div>
 
 </div>
 
@@ -228,7 +288,7 @@
     <div id="qrCanvasWrap" class="qr-preview-wrap"></div>
     <div id="qrTexto" class="qr-code-text"></div>
     <div class="modal-actions" style="justify-content:center">
-      <button onclick="imprimirQRActual()" style="background:#28a745">🖨️ Imprimir QR</button>
+      <button onclick="imprimirQRActual()">🖨️ Imprimir QR</button>
       <button class="modal-cancel" onclick="cerrarQRModal()">Cerrar</button>
     </div>
   </div>
@@ -1173,19 +1233,22 @@ window.resetLogin = () => {
 
 window.togglePassword = () => {
   const input = document.getElementById('userPass');
-  if (!input) return;
+  const btn = document.querySelector('.toggle-pass-btn');
+  if (!input || !btn) return;
 
-  input.type = input.type === 'password' ? 'text' : 'password';
+  const visible = input.type === 'text';
+
+  input.type = visible ? 'password' : 'text';
+  btn.textContent = visible ? '👁️' : '🙈';
 };
+
+// ENTER para login
 document.getElementById('userPass').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    login();
-  }
+  if (e.key === 'Enter') login();
 });
+
 document.getElementById('userEmail').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    login();
-  }
+  if (e.key === 'Enter') login();
 });
 
 function checkUserRole() {
@@ -1223,6 +1286,7 @@ function toggleNuevoProducto() {
 }
 
 function updateUI() {
+document.body.classList.toggle('solo-user', userRole !== 'admin');
   const status = document.getElementById('status');
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
