@@ -451,30 +451,6 @@ td button{
   filter:none !important;
 }
 
-.stock-edit-btn{
-  font-size:11px;
-  padding:4px 6px;
-  margin-left:4px;
-  min-width:30px;
-  height:30px;
-}
-
-.prox-btn{
-  background:linear-gradient(135deg,#22c55e,#16a34a) !important;
-  font-size:11px !important;
-  padding:4px 7px !important;
-  min-width:30px;
-  height:30px;
-  box-shadow:0 8px 16px rgba(34,197,94,.22) !important;
-}
-
-.prox-edit-btn{
-  background:linear-gradient(135deg,#3b82f6,#2563eb) !important;
-  font-size:11px !important;
-  padding:4px 7px !important;
-  min-width:30px;
-  height:30px;
-}
 
 .undo-btn{
   background:linear-gradient(135deg,#fbbf24,#f59e0b) !important;
@@ -513,12 +489,6 @@ td button{
   background:linear-gradient(135deg,#ef4444,#dc2626) !important;
 }
 
-.qr-btn{
-  background:linear-gradient(135deg,#8b5cf6,#7c3aed) !important;
-  min-width:56px !important;
-  height:42px !important;
-  font-size:12px !important;
-}
 
 .scanner-btn{
   background:linear-gradient(135deg,#06b6d4,#0891b2) !important;
@@ -534,36 +504,6 @@ td button{
 
 .btn-vender{
   background:linear-gradient(135deg,#3b82f6,#2563eb) !important;
-}
-
-/* =========================
-   ICONOS / MINI BOTONES
-========================= */
-
-.icon-btn{
-  width:34px;
-  height:34px;
-  min-width:34px;
-  padding:0 !important;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:10px;
-  font-size:14px;
-  line-height:1;
-}
-
-.icon-btn-xs{
-  width:28px;
-  height:28px;
-  min-width:28px;
-  padding:0 !important;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:9px;
-  font-size:12px;
-  line-height:1;
 }
 
 /* =========================
@@ -1488,6 +1428,258 @@ body.solo-user td.col-acciones{
   }
 
   .form-botones button{
+    width:100%;
+  }
+}
+
+/* =========================
+   AJUSTE FINAL DE ALINEACIÓN
+========================= */
+
+/* buscador con icono integrado */
+#buscar{
+  width:100%;
+  min-width:0;
+  height:46px;
+  padding-left:42px !important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2364758b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:14px center;
+  background-size:16px 16px;
+}
+
+/* barra de filtros más recta */
+.filtros{
+  display:grid !important;
+  grid-template-columns:minmax(230px,280px) auto auto auto auto 1fr auto;
+  align-items:center !important;
+  gap:14px !important;
+}
+
+.filtros > *{
+  margin:0 !important;
+}
+
+.contadores-filtrados{
+  min-height:62px;
+  display:flex;
+  justify-content:center;
+  flex-direction:column;
+  padding:10px 16px;
+}
+
+.orden-wrap{
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:46px;
+}
+
+.orden-wrap span{
+  white-space:nowrap;
+  font-weight:800;
+}
+
+#ordenar{
+  width:200px;
+  min-height:46px;
+}
+
+/* botones superiores iguales */
+.filtros button:not(#buscar-clear),
+.card-actions button,
+.form-botones button{
+  min-height:46px !important;
+  height:46px !important;
+  padding:0 18px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px;
+  line-height:1 !important;
+  white-space:nowrap;
+}
+
+/* tabla con altura uniforme */
+#tabla td{
+  height:92px;
+  padding-top:10px !important;
+  padding-bottom:10px !important;
+}
+
+/* botones cuadrados bien centrados */
+.icon-btn{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  min-height:40px !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+  border-radius:12px !important;
+  font-size:16px !important;
+}
+
+.icon-btn-xs{
+  width:32px !important;
+  height:32px !important;
+  min-width:32px !important;
+  min-height:32px !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+  border-radius:10px !important;
+  font-size:13px !important;
+}
+
+/* stock edit */
+.stock-edit-btn{
+  width:32px !important;
+  height:32px !important;
+  min-width:32px !important;
+  min-height:32px !important;
+  margin-left:8px !important;
+  padding:0 !important;
+}
+
+/* próximo stock alineado */
+.prox-group{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+.prox-input{
+  width:76px !important;
+  height:44px !important;
+  min-width:76px !important;
+  min-height:44px !important;
+  margin:0 !important;
+}
+
+.prox-btn,
+.prox-edit-btn{
+  width:32px !important;
+  height:32px !important;
+  min-width:32px !important;
+  min-height:32px !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* reservar / vender rectos */
+.accion-group{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+.cantidad-input{
+  width:48px !important;
+  height:44px !important;
+  min-width:48px !important;
+  min-height:44px !important;
+  margin:0 !important;
+  border-radius:14px !important;
+}
+
+.btn-reservar,
+.btn-vender{
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  min-height:44px !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:14px !important;
+  font-size:16px !important;
+}
+
+/* QR centrado */
+.qr-btn{
+  width:58px !important;
+  height:44px !important;
+  min-width:58px !important;
+  min-height:44px !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:14px !important;
+}
+
+/* precio Laura más estable */
+.precio-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:44px;
+}
+
+.precio-wrap strong{
+  min-width:52px;
+  text-align:right;
+  font-weight:800;
+}
+
+/* foto centrada */
+.foto-celda{
+  min-height:70px;
+}
+
+.foto-col{
+  gap:7px;
+}
+
+.foto-acciones{
+  gap:6px;
+}
+
+/* columnas admin */
+.col-acciones{
+  min-width:110px !important;
+}
+
+.col-acciones .icon-btn{
+  margin:0 3px !important;
+}
+
+/* responsive */
+@media (max-width:1300px){
+  .filtros{
+    grid-template-columns:1fr 1fr 1fr;
+  }
+
+  .orden-wrap{
+    justify-self:start;
+  }
+}
+
+@media (max-width:900px){
+  .filtros{
+    grid-template-columns:1fr !important;
+  }
+
+  .orden-wrap{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  #ordenar{
     width:100%;
   }
 }
