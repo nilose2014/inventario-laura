@@ -1595,3 +1595,62 @@ color:white;
 .borrar-foto-btn{
   margin-top:4px;
 }
+/* =========================
+   ARREGLO CENTRADO FILAS TABLA
+========================= */
+
+#tabla td{
+  vertical-align:middle;
+}
+
+#tabla tr{
+  height:86px;
+}
+
+#tabla td:nth-child(2){
+  text-align:center;
+}
+
+.foto-celda{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:70px;
+}
+
+.foto-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.foto-acciones{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.foto-mini{
+  width:54px;
+  height:54px;
+  object-fit:cover;
+  border-radius:12px;
+  display:block;
+}
+
+.borrar-foto-btn{
+  margin:0 !important;
+}
+
+.btn-foto{
+  margin:0 !important;
+}
+
+#tabla td:first-child{
+  vertical-align:middle;
+}
