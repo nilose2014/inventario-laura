@@ -1240,7 +1240,16 @@ window.togglePassword = () => {
 
   input.type = visible ? 'password' : 'text';
   btn.textContent = visible ? '👁️' : '🙈';
+  btn.classList.toggle('visible', !visible);
 };
+
+document.getElementById('userPass').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') login();
+});
+
+document.getElementById('userEmail').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') login();
+});
 
 // ENTER para login
 document.getElementById('userPass').addEventListener('keydown', (e) => {
