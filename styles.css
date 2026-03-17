@@ -1673,3 +1673,38 @@ color:white;
   align-items:center !important;
   justify-content:center !important;
 }
+.input-pass-wrap{
+  position:relative;
+  display:inline-block;
+  width:100%;
+  max-width:320px;
+}
+
+.input-pass-wrap input{
+  width:100%;
+  padding-right:46px;
+}
+
+.toggle-pass-btn{
+  position:absolute;
+  right:6px;
+  top:50%;
+  transform:translateY(-50%);
+  width:34px;
+  height:34px;
+  min-width:34px;
+  padding:0;
+  border:none;
+  border-radius:10px;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:#334155;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.toggle-pass-btn:hover{
+  background:#eef2ff !important;
+  color:#1d4ed8;
+  transform:translateY(-50%);
+}
