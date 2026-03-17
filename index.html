@@ -761,8 +761,8 @@ window.subirFotoRapida = async (id) => {
 };
 
 window.borrarFotoProducto = async (id) => {
-  if (!currentUser || userRole !== 'admin') {
-    return showToast('❌ Solo ADMIN puede borrar fotos', 'error');
+  if (!currentUser || !['admin','user'].includes(userRole)) {
+    return showToast('❌ Debes iniciar sesión', 'error');
   }
 
   const producto = productos[id];
@@ -880,7 +880,7 @@ window.renderTablaSolo = () => {
   ${p.imagen ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">` : '-'}
   <br>
   <button class="btn-foto" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
-  ${userRole === 'admin' && p.imagen ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>` : ''}
+${['admin','user'].includes(userRole) && p.imagen ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>` : ''}
 </td>
       <td class="${stockCellClass}">
         ${stockDisponible}
