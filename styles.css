@@ -1683,3 +1683,10 @@ body.solo-user td.col-acciones{
     width:100%;
   }
 }
+
+body.solo-user #btnEstadisticasTop,
+body.solo-user #btnLogsTop,
+body.solo-user #btnEstadisticas,
+body.solo-user #btnLogs{
+  display:none !important;
+}
