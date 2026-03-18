@@ -933,10 +933,15 @@ window.renderTablaSolo = () => {
 
     const stockDisponible = Number(p.stock || 0);
     const proximoDisponible = Number(p.proximo || 0);
-    const stockClass = stockDisponible <= 0 ? 'sin-stock' : stockDisponible <= 5 ? 'stock-bajo' : '';
-    const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
-    const filaClass = (p.reservados || 0) > 0 ? 'reservado' : stockClass;
-    const tieneProximo = proximoDisponible > 0;
+ const stockClass = stockDisponible <= 0 ? 'sin-stock' : stockDisponible <= 5 ? 'stock-bajo' : '';
+const stockCellClass = userRole === 'admin' ? 'stock-editable' : '';
+const tieneProximo = proximoDisponible > 0;
+
+let filaClass = (p.reservados || 0) > 0 ? 'reservado' : stockClass;
+
+if (stockDisponible <= 0 && proximoDisponible > 0) {
+  filaClass += ' en-reposicion';
+}
 
 html += `
 <tr class="${filaClass}">
