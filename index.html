@@ -1261,25 +1261,40 @@ document.getElementById('userEmail').addEventListener('keydown', (e) => {
 });
 
 function checkUserRole() {
-  if (currentUser.email === 'nilose2014@gmail.com') {
+  const esAdmin = currentUser && currentUser.email === 'nilose2014@gmail.com';
+  const esUsuarioRegistrado = currentUser && [
+    'djsubixj@gmail.com',
+    'xiomaralamasmala@gmail.com'
+  ].includes(currentUser.email);
+
+  if (esAdmin) {
     userRole = 'admin';
+
     document.getElementById('backupSection').classList.remove('hidden');
-    document.getElementById('btnEstadisticasTop').style.display = 'inline-block';
-    document.getElementById('btnLogsTop').style.display = 'inline-block';
-    document.getElementById('btnEstadisticas').style.display = 'inline-block';
-    document.getElementById('btnLogs').style.display = 'inline-block';
-  } else if (['djsubixj@gmail.com','xiomaralamasmala@gmail.com'].includes(currentUser.email)) {
+
+    document.getElementById('btnEstadisticasTop').style.display = 'inline-flex';
+    document.getElementById('btnLogsTop').style.display = 'inline-flex';
+
+    document.getElementById('btnEstadisticas').style.display = 'inline-flex';
+    document.getElementById('btnLogs').style.display = 'inline-flex';
+  } else if (esUsuarioRegistrado) {
     userRole = 'user';
+
     document.getElementById('backupSection').classList.add('hidden');
+
     document.getElementById('btnEstadisticasTop').style.display = 'none';
     document.getElementById('btnLogsTop').style.display = 'none';
+
     document.getElementById('btnEstadisticas').style.display = 'none';
     document.getElementById('btnLogs').style.display = 'none';
   } else {
     userRole = 'user';
+
     document.getElementById('backupSection').classList.add('hidden');
+
     document.getElementById('btnEstadisticasTop').style.display = 'none';
     document.getElementById('btnLogsTop').style.display = 'none';
+
     document.getElementById('btnEstadisticas').style.display = 'none';
     document.getElementById('btnLogs').style.display = 'none';
   }
@@ -1287,7 +1302,8 @@ function checkUserRole() {
   updateUI();
   toggleNuevoProducto();
   loadData();
-  if (currentUser.email === 'nilose2014@gmail.com') cargarBackupFirebase();
+
+  if (esAdmin) cargarBackupFirebase();
 }
 
 function toggleNuevoProducto() {
