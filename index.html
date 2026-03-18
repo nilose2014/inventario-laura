@@ -981,10 +981,16 @@ html += `
     </div>
   </td>
 
-  <td class="reservados">
-    ${p.reservados || 0}
-    ${(p.reservados || 0) > 0 ? `<br><button class="cancelar-reserva" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>` : ''}
-  </td>
+<td class="reservados">
+  ${p.reservados || 0}
+  ${(p.reservados || 0) > 0 ? `
+    <div class="accion-group" style="margin-top:6px">
+      <button class="icon-btn-xs" onclick="verReserva('${id}')" title="Ver ficha reserva">ℹ️</button>
+      <button class="cancelar-reserva icon-btn-xs" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>
+      <button class="confirmar-btn icon-btn-xs" onclick="venderReserva('${id}')" title="Marcar reserva como vendida">☑</button>
+    </div>
+  ` : ''}
+</td>
 
   <td class="vendidos">
     ${p.vendidos || 0}
@@ -1464,22 +1470,180 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
 window.reservar = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if (cant <= 0 || Number(p.stock || 0) < cant) return alert('❌ Stock insuficiente');
-  const nuevoStock = Number(p.stock || 0) - cant;
-  const nuevosReservados = Number(p.reservados || 0) + cant;
-  await update(ref(db,'productos/'+id), { stock:nuevoStock, reservados:nuevosReservados });
-  productos[id].stock = nuevoStock;
-  productos[id].reservados = nuevosReservados;
-  await syncProductoPublico(id, productos[id]);
-  await guardarLog('reserva', id, p.nombre, cant, currentUser.email);
-  await enviarEmail({
-    producto:p.nombre,
-    stock:nuevoStock,
-    detalles:`${cant} uds. RESERVADAS | Stock disponible: ${nuevoStock}`,
-    subject:'⏳ RESERVA - ' + p.nombre,
-    fecha:new Date().toLocaleString('es-ES')
+
+  if (cant <= 0 || Number(p.stock || 0) < cant) {
+    return showToast('❌ Stock insuficiente', 'error');
+  }
+
+  openModal({
+    title: '⏳ Confirmar reserva',
+    message: `Vas a reservar ${cant} unidad(es) de "${p.nombre}". Completa la ficha antes de confirmar.`,
+    confirmText: 'Guardar reserva',
+    fields: [
+      { name: 'clienteNombre', label: 'Nombre', type: 'text', value: '' },
+      { name: 'clienteTelefono', label: 'Teléfono', type: 'text', value: '' },
+      { name: 'adelanto', label: 'Adelanto €', type: 'number', value: '0', min: 0, step: '0.01' },
+      { name: 'fechaRecogida', label: 'Fecha de recogida', type: 'date', value: '' },
+      { name: 'comentarios', label: 'Comentarios', type: 'text', value: '' }
+    ],
+    onConfirm: async (values) => {
+      const nombre = String(values.clienteNombre || '').trim();
+      const telefono = String(values.clienteTelefono || '').trim();
+      const adelanto = Math.max(0, Number(values.adelanto || 0));
+      const fechaRecogida = String(values.fechaRecogida || '').trim();
+      const comentarios = String(values.comentarios || '').trim();
+
+      if (!nombre) {
+        showToast('❌ El nombre es obligatorio', 'error');
+        return;
+      }
+
+      const nuevoStock = Number(p.stock || 0) - cant;
+      const nuevosReservados = Number(p.reservados || 0) + cant;
+
+      const reservaNueva = {
+        id: 'res_' + Date.now(),
+        nombre,
+        telefono,
+        adelanto,
+        fechaRecogida,
+        comentarios,
+        cantidad: cant,
+        vendida: false,
+        creadaPor: currentUser?.email || '',
+        creadaEn: Date.now()
+      };
+
+      const reservasDetalleActual = Array.isArray(p.reservasDetalle) ? [...p.reservasDetalle] : [];
+      reservasDetalleActual.push(reservaNueva);
+
+      await update(ref(db, 'productos/' + id), {
+        stock: nuevoStock,
+        reservados: nuevosReservados,
+        reservasDetalle: reservasDetalleActual
+      });
+
+      productos[id].stock = nuevoStock;
+      productos[id].reservados = nuevosReservados;
+      productos[id].reservasDetalle = reservasDetalleActual;
+
+      await syncProductoPublico(id, productos[id]);
+
+      await guardarLog(
+        'reserva',
+        id,
+        p.nombre,
+        cant,
+        currentUser.email,
+        `Reserva de ${nombre} | Tel:${telefono} | Adelanto:€${adelanto.toFixed(2)} | Recogida:${fechaRecogida || '-'} | ${comentarios || 'Sin comentarios'}`
+      );
+
+      await enviarEmail({
+        producto: p.nombre,
+        stock: nuevoStock,
+        detalles: `${cant} uds. RESERVADAS | Cliente: ${nombre} | Tel: ${telefono} | Adelanto: €${adelanto.toFixed(2)} | Recogida: ${fechaRecogida || '-'} | Stock disponible: ${nuevoStock}`,
+        subject: '⏳ RESERVA - ' + p.nombre,
+        fecha: new Date().toLocaleString('es-ES')
+      });
+
+      showToast(`✅ Reserva guardada para ${nombre}`, 'success');
+      programarRender();
+    }
   });
-  showToast(`✅ Reservadas ${cant} unidades. Stock disponible: ${nuevoStock}`, 'success');
+};
+
+window.verReserva = (id) => {
+  const p = productos[id];
+  if (!p) return showToast('❌ Producto no encontrado', 'error');
+
+  const reservas = Array.isArray(p.reservasDetalle) ? p.reservasDetalle : [];
+  if (!reservas.length) return showToast('❌ No hay ficha de reserva', 'error');
+
+  const ultima = reservas.find(r => !r.vendida) || reservas[reservas.length - 1];
+
+  openModal({
+    title: 'ℹ️ Datos de la reserva',
+    message: '',
+    confirmText: 'Cerrar',
+    fields: [
+      { name: 'clienteNombre', label: 'Nombre', type: 'text', value: ultima.nombre || '' },
+      { name: 'clienteTelefono', label: 'Teléfono', type: 'text', value: ultima.telefono || '' },
+      { name: 'adelanto', label: 'Adelanto €', type: 'number', value: Number(ultima.adelanto || 0).toFixed(2), min: 0, step: '0.01' },
+      { name: 'fechaRecogida', label: 'Fecha recogida', type: 'date', value: ultima.fechaRecogida || '' },
+      { name: 'comentarios', label: 'Comentarios', type: 'text', value: ultima.comentarios || '' }
+    ],
+    onConfirm: async () => {}
+  });
+
+  setTimeout(() => {
+    const ids = [
+      'modal-field-clienteNombre',
+      'modal-field-clienteTelefono',
+      'modal-field-adelanto',
+      'modal-field-fechaRecogida',
+      'modal-field-comentarios'
+    ];
+
+    ids.forEach(idCampo => {
+      const el = document.getElementById(idCampo);
+      if (el) el.setAttribute('readonly', true);
+    });
+  }, 30);
+};
+
+window.venderReserva = async (id) => {
+  const p = productos[id];
+  if (!p) return showToast('❌ Producto no encontrado', 'error');
+
+  const reservas = Array.isArray(p.reservasDetalle) ? [...p.reservasDetalle] : [];
+  const idx = reservas.findIndex(r => !r.vendida);
+
+  if (idx === -1) return showToast('❌ No hay reservas pendientes', 'error');
+
+  const reserva = reservas[idx];
+  const cantidad = Number(reserva.cantidad || 1);
+
+  openConfirm({
+    title: '☑ Convertir reserva en venta',
+    message: `¿Marcar como vendida la reserva de "${reserva.nombre}" (${cantidad} ud.)?`,
+    confirmText: 'Marcar vendida',
+    onConfirm: async () => {
+      reservas[idx].vendida = true;
+      reservas[idx].vendidaEn = Date.now();
+      reservas[idx].vendidaPor = currentUser?.email || '';
+
+      const nuevosReservados = Math.max(0, Number(p.reservados || 0) - cantidad);
+      const nuevosVendidos = Number(p.vendidos || 0) + cantidad;
+      const nuevoVBea = Number(p.vBea || 0) + Number(p.bea || 0) * cantidad;
+      const nuevoVLaura = Number(p.vLaura || 0) + Number(p.laura || 0) * cantidad;
+
+      await update(ref(db, 'productos/' + id), {
+        reservados: nuevosReservados,
+        vendidos: nuevosVendidos,
+        vBea: nuevoVBea,
+        vLaura: nuevoVLaura,
+        reservasDetalle: reservas
+      });
+
+      productos[id].reservados = nuevosReservados;
+      productos[id].vendidos = nuevosVendidos;
+      productos[id].vBea = nuevoVBea;
+      productos[id].vLaura = nuevoVLaura;
+      productos[id].reservasDetalle = reservas;
+
+      await guardarLog(
+        'venta-desde-reserva',
+        id,
+        p.nombre,
+        cantidad,
+        currentUser.email,
+        `Reserva entregada a ${reserva.nombre} | Tel:${reserva.telefono || '-'} | Adelanto:€${Number(reserva.adelanto || 0).toFixed(2)}`
+      );
+
+      showToast(`✅ Reserva de ${reserva.nombre} marcada como vendida`, 'success');
+      programarRender();
+    }
+  });
 };
 
 window.vender = async (id, cant) => {
@@ -1547,25 +1711,41 @@ window.vender = async (id, cant) => {
 window.cancelarReserva = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
+
   const reservados = Number(p.reservados || 0);
   if (cant <= 0 || cant > reservados) return showToast('❌ Cantidad inválida', 'error');
+
+  const reservasDetalle = Array.isArray(p.reservasDetalle) ? [...p.reservasDetalle] : [];
+  let pendientesAQuitar = cant;
+
+  const nuevasReservas = reservasDetalle.filter(reserva => {
+    if (pendientesAQuitar > 0 && !reserva.vendida) {
+      pendientesAQuitar -= Number(reserva.cantidad || 1);
+      return false;
+    }
+    return true;
+  });
 
   const nuevoStock = Number(p.stock || 0) + cant;
   const nuevosReservados = reservados - cant;
 
-  await update(ref(db,'productos/'+id), {
-    stock:nuevoStock,
-    reservados:nuevosReservados,
-    emailAgotadoEnviado:false
+  await update(ref(db, 'productos/' + id), {
+    stock: nuevoStock,
+    reservados: nuevosReservados,
+    reservasDetalle: nuevasReservas,
+    emailAgotadoEnviado: false
   });
 
   productos[id].stock = nuevoStock;
   productos[id].reservados = nuevosReservados;
+  productos[id].reservasDetalle = nuevasReservas;
   productos[id].emailAgotadoEnviado = false;
+
   await syncProductoPublico(id, productos[id]);
 
   await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
   showToast(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`, 'success');
+  programarRender();
 };
 
 window.modificarStock = (id) => {
@@ -1613,11 +1793,12 @@ window.guardar = async () => {
       bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
       laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
       imagen: imagenActual,
-      vendidos: editId ? Number(productos[editId]?.vendidos || 0) : 0,
-      reservados: editId ? Number(productos[editId]?.reservados || 0) : 0,
-      vBea: editId ? Number(productos[editId]?.vBea || 0) : 0,
-      vLaura: editId ? Number(productos[editId]?.vLaura || 0) : 0,
-      emailAgotadoEnviado: editId ? !!productos[editId]?.emailAgotadoEnviado : false
+   vendidos: editId ? Number(productos[editId]?.vendidos || 0) : 0,
+reservados: editId ? Number(productos[editId]?.reservados || 0) : 0,
+vBea: editId ? Number(productos[editId]?.vBea || 0) : 0,
+vLaura: editId ? Number(productos[editId]?.vLaura || 0) : 0,
+reservasDetalle: editId ? (Array.isArray(productos[editId]?.reservasDetalle) ? productos[editId].reservasDetalle : []) : [],
+emailAgotadoEnviado: editId ? !!productos[editId]?.emailAgotadoEnviado : false
     };
 
     if (editId) {
