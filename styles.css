@@ -778,6 +778,7 @@ tbody td:nth-child(12){
 .sin-stock td:first-child{
   font-weight:900 !important;
   color:#7f1d1d !important;
+  position:relative;
 }
 
 .sin-stock td:nth-child(3){
@@ -797,8 +798,9 @@ tbody td:nth-child(12){
 .sin-stock:hover td{
   background:linear-gradient(180deg,#ffd6d6 0%, #ffc9c9 100%) !important;
 }
+
 .sin-stock td:first-child::after{
-  content:" AGOTADO";
+  content:"AGOTADO";
   display:inline-block;
   margin-left:10px;
   padding:4px 8px;
@@ -808,6 +810,26 @@ tbody td:nth-child(12){
   font-size:11px;
   font-weight:900;
   vertical-align:middle;
+}
+
+.sin-stock.en-reposicion td:first-child{
+  padding-bottom:28px !important;
+}
+
+.sin-stock.en-reposicion td:first-child::before{
+  content:"EN REPOSICIÓN";
+  position:absolute;
+  left:10px;
+  bottom:6px;
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#f59e0b;
+  color:#ffffff;
+  font-size:11px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.02em;
 }
 
 .stock-bajo td{
