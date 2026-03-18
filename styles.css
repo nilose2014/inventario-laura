@@ -1748,3 +1748,23 @@ body.solo-user #btnEstadisticas,
 body.solo-user #btnLogs{
   display:none !important;
 }
+
+.reservados .accion-group{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex-wrap:nowrap;
+}
+
+.reservados .icon-btn-xs{
+  width:30px !important;
+  height:30px !important;
+  min-width:30px !important;
+  min-height:30px !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:10px !important;
+}
