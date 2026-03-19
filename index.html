@@ -457,6 +457,16 @@ window.irLogs = () => {
   window.open('logs.html', '_blank');
 };
 
+window.abrirScannerMovil = () => {
+  try {
+    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+    window.open(baseUrl + 'scanner.html', '_blank');
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error abriendo el scanner', 'error');
+  }
+};
+
 window.abrirCatalogo = () => {
   window.open('catalogo.html', '_blank');
 };
