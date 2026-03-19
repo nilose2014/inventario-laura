@@ -1410,34 +1410,28 @@ body.solo-user td.col-acciones{
   }
 
   .form-producto{
-    grid-template-columns:1fr;
-  }
-
-  .filtros{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .orden-wrap{
-    margin-left:0;
-  }
-
-  #buscar{
-    width:100%;
-    min-width:0;
+    grid-template-columns:repeat(3,minmax(180px,1fr));
+    gap:14px;
   }
 
   table{
-    display:block;
-    overflow-x:auto;
+    display:table;
+    min-width:1350px;
     white-space:nowrap;
+  }
+
+  .tabla-scroll{
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
   }
 }
 
 @media (max-width:700px){
   .totales-superiores,
   .totales-container{
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:repeat(5,minmax(160px,1fr));
+    overflow-x:auto;
   }
 
   .app-header{
@@ -1460,33 +1454,14 @@ body.solo-user td.col-acciones{
     font-size:12px;
   }
 
-  #nombre,
-  #buscar,
-  #ordenar{
-    width:100% !important;
-  }
-
   .card-actions{
-    justify-content:stretch;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
   }
 
   .card-actions button{
-    width:100%;
-  }
-}
-
-@media (max-width:520px){
-  .totales-superiores,
-  .totales-container{
-    grid-template-columns:1fr;
-  }
-
-  .form-botones{
-    flex-direction:column;
-  }
-
-  .form-botones button{
-    width:100%;
+    width:auto;
   }
 }
 
@@ -1736,24 +1711,40 @@ body.solo-user td.col-acciones{
 }
 @media (max-width:900px){
   .filtros{
-    flex-direction:column !important;
-    align-items:stretch !important;
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    gap:12px !important;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding-bottom:6px;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .filtros > *{
+    flex:0 0 auto !important;
   }
 
   .filtros > div:first-child{
-    max-width:none;
+    flex:0 0 260px !important;
+    min-width:260px !important;
+    max-width:260px !important;
+  }
+
+  .contadores-filtrados{
+    min-width:170px;
   }
 
   .orden-wrap{
-    width:100%;
-    min-width:0;
     margin-left:0 !important;
-    justify-content:space-between;
+    min-width:260px;
+    justify-content:flex-start;
   }
 
   #ordenar{
-    width:100%;
-    max-width:none;
+    width:180px !important;
+    min-width:180px !important;
+    max-width:180px !important;
   }
 }
 
