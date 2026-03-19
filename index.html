@@ -470,6 +470,46 @@ window.abrirScannerMovil = () => {
 window.abrirCatalogo = () => {
   window.open('catalogo.html', '_blank');
 };
+window.subirFotoRapida = async (id) => {
+  try {
+    if (!id) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      showToast('⏳ Subiendo foto...', 'info');
+
+      try {
+        const url = await subirImagenProducto(file, productos[id]?.nombre || 'producto');
+
+        await update(ref(db, 'productos/' + id), {
+          imagen: url
+        });
+
+        productos[id].imagen = url;
+
+        await syncProductoPublico(id, productos[id]);
+
+        await guardarLog('foto-subida', id, productos[id].nombre, 0, currentUser.email);
+
+        showToast('✅ Foto actualizada', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Error subiendo foto', 'error');
+      }
+    };
+
+    input.click();
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error abriendo selector de imagen', 'error');
+  }
+};
 
 window.descargarCatalogo = async () => {
   try {
