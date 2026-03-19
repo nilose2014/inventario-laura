@@ -1135,11 +1135,15 @@ window.descargarTodosLosQR = async () => {
     const carpeta = zip.folder('qrs-inventario-laura');
     const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
 
+    let generados = 0;
+    let conErrorImagen = 0;
+
     for (const id of ids) {
       const p = productos[id];
       if (!p) continue;
 
       const qrText = `${baseUrl}scanner.html?scanId=${id}`;
+      const nombreProducto = String(p.nombre || 'Producto');
 
       const finalCanvas = document.createElement('canvas');
       const ctx = finalCanvas.getContext('2d');
@@ -1154,14 +1158,14 @@ window.descargarTodosLosQR = async () => {
 
       ctx.fillStyle = '#111111';
       ctx.textAlign = 'center';
+
       ctx.font = 'bold 52px Arial';
       ctx.fillText('📱 QR del producto', width / 2, 90);
 
-      const nombreProducto = String(p.nombre || 'Producto');
       ctx.font = 'bold 46px Arial';
-
       const maxTextWidth = width - 80;
       let nombrePintar = nombreProducto;
+
       while (ctx.measureText(nombrePintar).width > maxTextWidth && nombrePintar.length > 3) {
         nombrePintar = nombrePintar.slice(0, -1);
       }
@@ -1169,15 +1173,44 @@ window.descargarTodosLosQR = async () => {
 
       ctx.fillText(nombrePintar, width / 2, 165);
 
+      let imagenDibujada = false;
+
       if (p.imagen) {
         try {
           const img = await cargarImagenEnObjeto(p.imagen);
           const imgSize = 170;
           const imgX = (width - imgSize) / 2;
           const imgY = 200;
-          ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
-        } catch(e) {
-          console.error('Error dibujando imagen QR', e);
+
+          if (ctx.roundRect) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(imgX, imgY, imgSize, imgSize, 22);
+            ctx.clip();
+            ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+            ctx.restore();
+          } else {
+            ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+          }
+
+          imagenDibujada = true;
+        } catch (e) {
+          conErrorImagen++;
+          console.error('Error dibujando imagen QR', p.nombre, p.imagen, e);
+
+          const boxSize = 170;
+          const boxX = (width - boxSize) / 2;
+          const boxY = 200;
+
+          ctx.fillStyle = '#f1f5f9';
+          ctx.fillRect(boxX, boxY, boxSize, boxSize);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(boxX, boxY, boxSize, boxSize);
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = 'bold 22px Arial';
+          ctx.fillText('SIN FOTO', width / 2, boxY + 98);
         }
       }
 
@@ -1193,6 +1226,10 @@ window.descargarTodosLosQR = async () => {
       const qrY = p.imagen ? 400 : 230;
       ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
 
+      ctx.fillStyle = '#475569';
+      ctx.font = '20px Arial';
+      ctx.fillText(id, width / 2, height - 40);
+
       const dataUrl = finalCanvas.toDataURL('image/png');
       const base64 = dataUrl.split(',')[1];
 
@@ -1203,25 +1240,32 @@ window.descargarTodosLosQR = async () => {
 
       carpeta.file(`${nombreSeguro}__${id}.png`, base64, { base64: true });
       carpeta.file(`${nombreSeguro}__${id}.txt`, qrText);
+
+      generados++;
     }
 
     const contenidoZip = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(contenidoZip);
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `qrs-inventario-laura-${new Date().toISOString().slice(0,10)}.zip`;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
 
-    showToast(`✅ ZIP descargado con ${ids.length} QR`, 'success', 3500);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+    if (conErrorImagen > 0) {
+      showToast(`⚠️ ZIP descargado con ${generados} QR. ${conErrorImagen} sin foto por CORS`, 'info', 5000);
+    } else {
+      showToast(`✅ ZIP descargado con ${generados} QR`, 'success', 3500);
+    }
   } catch (error) {
     console.error(error);
     showToast('❌ Error generando los QR', 'error', 3500);
   }
 };
-
 window.subirFotoRapida = async (id) => {
   if (!currentUser || !['admin','user'].includes(userRole)) {
     return showToast('❌ Debes iniciar sesión', 'error');
