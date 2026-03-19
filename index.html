@@ -146,8 +146,10 @@
           <div id="stockVisible">📊 Stock: 0</div>
         </div>
 
-        <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-        <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+       <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+<button onclick="abrirCatalogo()" class="catalogo-btn">📖 Abrir catálogo</button>
+<button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
+<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
 
         <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
           📊 Ver estadísticas
@@ -236,9 +238,11 @@
       <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura global</button>
       <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📊 Ver estadísticas</button>
       <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
-      <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-      <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
-      <button onclick="logout()">🔐 Cambiar usuario</button>
+<button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
+<button onclick="abrirCatalogo()" class="catalogo-btn">📖 Abrir catálogo</button>
+<button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
+<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+<button onclick="logout()">🔐 Cambiar usuario</button>
     </div>
 
     <div class="card hidden" id="backupSection">
@@ -453,8 +457,203 @@ window.irLogs = () => {
   window.open('logs.html', '_blank');
 };
 
-window.abrirScannerMovil = () => {
-  window.open('scanner.html', '_blank');
+window.abrirCatalogo = () => {
+  window.open('catalogo.html', '_blank');
+};
+
+window.descargarCatalogo = async () => {
+  try {
+    const productosLista = Object.values(productos || {})
+      .map(p => ({
+        nombre: String(p?.nombre || '').trim(),
+        laura: Number(p?.laura || 0),
+        imagen: String(p?.imagen || '').trim()
+      }))
+      .filter(p => p.nombre)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+    if (!productosLista.length) {
+      return showToast('❌ No hay productos para generar catálogo', 'error');
+    }
+
+    const tarjetasHTML = productosLista.map(p => `
+      <article class="catalog-card">
+        <div class="catalog-image-wrap">
+          ${p.imagen
+            ? `<img src="${p.imagen}" alt="${p.nombre.replace(/"/g, '&quot;')}" class="catalog-image">`
+            : `<div class="catalog-no-image">Sin foto</div>`
+          }
+        </div>
+        <div class="catalog-body">
+          <h3 class="catalog-name">${p.nombre}</h3>
+          <div class="catalog-price">€${p.laura.toFixed(2)}</div>
+        </div>
+      </article>
+    `).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo Mundo Azul</title>
+<style>
+:root{
+  --bg:#eef3ff;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#dbe4f0;
+  --shadow:0 14px 32px rgba(15,23,42,.10);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(37,99,235,.10), transparent 26%),
+    radial-gradient(circle at 100% 0%, rgba(124,58,237,.10), transparent 24%),
+    linear-gradient(180deg,#f8fbff 0%, #edf3fb 100%);
+  padding:24px;
+}
+.catalog-shell{
+  max-width:1400px;
+  margin:0 auto;
+}
+.catalog-header{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:20px 24px;
+  border-radius:28px;
+  margin-bottom:24px;
+  background:linear-gradient(135deg,#1d4ed8 0%, #2563eb 45%, #4f46e5 100%);
+  box-shadow:0 24px 56px rgba(37,99,235,.25);
+}
+.catalog-logo{
+  width:88px;
+  height:88px;
+  object-fit:contain;
+  background:rgba(255,255,255,.14);
+  border-radius:18px;
+  padding:8px;
+}
+.catalog-header h1{
+  margin:0;
+  color:#fff;
+  font-size:34px;
+  line-height:1.1;
+}
+.catalog-header p{
+  margin:8px 0 0 0;
+  color:rgba(255,255,255,.9);
+  font-weight:600;
+}
+.catalog-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
+.catalog-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.catalog-image-wrap{
+  aspect-ratio:1/1;
+  background:#f8fafc;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+}
+.catalog-image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:18px;
+}
+.catalog-no-image{
+  width:100%;
+  height:100%;
+  border:2px dashed #cbd5e1;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-weight:800;
+  background:#fff;
+}
+.catalog-body{
+  padding:16px;
+  text-align:center;
+}
+.catalog-name{
+  margin:0 0 12px 0;
+  font-size:20px;
+  line-height:1.2;
+}
+.catalog-price{
+  display:inline-block;
+  padding:10px 16px;
+  border-radius:999px;
+  background:#111827;
+  color:#fff;
+  font-size:26px;
+  font-weight:900;
+}
+@media (max-width:700px){
+  body{padding:12px}
+  .catalog-header{
+    padding:16px;
+    border-radius:22px;
+  }
+  .catalog-logo{
+    width:64px;
+    height:64px;
+  }
+  .catalog-header h1{
+    font-size:24px;
+  }
+}
+</style>
+</head>
+<body>
+  <div class="catalog-shell">
+    <header class="catalog-header">
+      <img src="logo.png" alt="Logo Mundo Azul" class="catalog-logo">
+      <div>
+        <h1>Catálogo Mundo Azul</h1>
+        <p>Nombre · Foto · Precio venta</p>
+      </div>
+    </header>
+
+    <section class="catalog-grid">
+      ${tarjetasHTML}
+    </section>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `catalogo-mundo-azul-${new Date().toISOString().slice(0,10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showToast('✅ Catálogo descargado', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error descargando catálogo', 'error');
+  }
 };
 
 async function obtenerIP(){
