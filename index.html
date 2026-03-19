@@ -504,6 +504,45 @@ window.subirFotoRapida = async (id) => {
       }
     };
 
+window.borrarFotoProducto = async (id) => {
+  try {
+    if (!id) return;
+
+    const p = productos[id];
+    if (!p || !p.imagen) {
+      return showToast('❌ No hay foto para borrar', 'error');
+    }
+
+    openConfirm({
+      title: '🗑️ Borrar foto',
+      message: `¿Seguro que quieres eliminar la foto de "${p.nombre}"?`,
+      confirmText: 'Borrar',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await update(ref(db, 'productos/' + id), {
+            imagen: ''
+          });
+
+          productos[id].imagen = '';
+
+          await syncProductoPublico(id, productos[id]);
+
+          await guardarLog('foto-borrada', id, p.nombre, 0, currentUser.email);
+
+          showToast('✅ Foto eliminada', 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('❌ Error borrando foto', 'error');
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error eliminando foto', 'error');
+  }
+};
     input.click();
   } catch (error) {
     console.error(error);
