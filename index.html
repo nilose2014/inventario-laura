@@ -470,6 +470,37 @@ window.abrirScannerMovil = () => {
 window.abrirCatalogo = () => {
   window.open('catalogo.html', '_blank');
 };
+
+window.subirFotoRapidaDesdeArchivo = async (id, file) => {
+  if (!currentUser || !['admin','user'].includes(userRole)) {
+    return showToast('❌ Debes iniciar sesión', 'error');
+  }
+
+  if (!file) return;
+  if (!file.type || !file.type.startsWith('image/')) {
+    return showToast('❌ El archivo no es una imagen', 'error');
+  }
+
+  try {
+    showToast('⏳ Comprimiendo y subiendo foto...', 'info', 3000);
+
+    const producto = productos[id];
+    const imagenUrl = await subirImagenProducto(file, producto?.nombre || 'producto');
+
+    await update(ref(db, 'productos/' + id), { imagen: imagenUrl });
+    productos[id].imagen = imagenUrl;
+
+    await syncProductoPublico(id, productos[id]);
+    await guardarLog('foto-subida', id, producto?.nombre || '', 0, currentUser?.email || '', 'Foto actualizada');
+
+    programarRender();
+    showToast('✅ Foto subida correctamente', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error subiendo foto', 'error', 3500);
+  }
+};
+
 window.subirFotoRapida = async (id) => {
   try {
     if (!id) return;
@@ -478,31 +509,18 @@ window.subirFotoRapida = async (id) => {
     input.type = 'file';
     input.accept = 'image/*';
 
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
+    input.onchange = async () => {
+      const file = input.files[0];
       if (!file) return;
-
-      showToast('⏳ Subiendo foto...', 'info');
-
-      try {
-        const url = await subirImagenProducto(file, productos[id]?.nombre || 'producto');
-
-        await update(ref(db, 'productos/' + id), {
-          imagen: url
-        });
-
-        productos[id].imagen = url;
-
-        await syncProductoPublico(id, productos[id]);
-
-        await guardarLog('foto-subida', id, productos[id].nombre, 0, currentUser.email);
-
-        showToast('✅ Foto actualizada', 'success');
-      } catch (err) {
-        console.error(err);
-        showToast('❌ Error subiendo foto', 'error');
-      }
+      await subirFotoRapidaDesdeArchivo(id, file);
     };
+
+    input.click();
+  } catch (error) {
+    console.error(error);
+    showToast('❌ Error abriendo selector de imagen', 'error');
+  }
+};
 
 window.borrarFotoProducto = async (id) => {
   try {
@@ -527,9 +545,9 @@ window.borrarFotoProducto = async (id) => {
           productos[id].imagen = '';
 
           await syncProductoPublico(id, productos[id]);
-
           await guardarLog('foto-borrada', id, p.nombre, 0, currentUser.email);
 
+          programarRender();
           showToast('✅ Foto eliminada', 'success');
         } catch (err) {
           console.error(err);
@@ -537,17 +555,44 @@ window.borrarFotoProducto = async (id) => {
         }
       }
     });
-
   } catch (error) {
     console.error(error);
     showToast('❌ Error eliminando foto', 'error');
   }
 };
-    input.click();
-  } catch (error) {
-    console.error(error);
-    showToast('❌ Error abriendo selector de imagen', 'error');
+
+window.dragOverFoto = (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  const zona = event.currentTarget;
+  if (zona) zona.classList.add('drag-over');
+};
+
+window.dragLeaveFoto = (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  const zona = event.currentTarget;
+  if (zona) zona.classList.remove('drag-over');
+};
+
+window.dropFotoProducto = async (event, id) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const zona = event.currentTarget;
+  if (zona) zona.classList.remove('drag-over');
+
+  if (!currentUser || !['admin','user'].includes(userRole)) {
+    return showToast('❌ Debes iniciar sesión', 'error');
   }
+
+  const files = event.dataTransfer?.files;
+  if (!files || !files.length) {
+    return showToast('❌ No se detectó ningún archivo', 'error');
+  }
+
+  const file = files[0];
+  await subirFotoRapidaDesdeArchivo(id, file);
 };
 
 window.descargarCatalogo = async () => {
@@ -1185,24 +1230,32 @@ html += `
 <tr class="${filaClass}">
   <td>${p.nombre || ''}</td>
 
-  <td>
-    <div class="foto-celda">
-      <div class="foto-col">
+<td>
+  <div class="foto-celda">
+    <div class="foto-col">
+      <div 
+        class="foto-drop-zone ${p.imagen ? 'con-foto' : 'sin-foto-drop'}"
+        ondragover="dragOverFoto(event)"
+        ondragleave="dragLeaveFoto(event)"
+        ondrop="dropFotoProducto(event,'${id}')"
+        title="Arrastra una imagen aquí"
+      >
         ${p.imagen
           ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">`
           : `<span class="sin-foto">-</span>`
         }
+      </div>
 
-        <div class="foto-acciones">
-          <button class="btn-foto icon-btn-xs" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
-          ${['admin','user'].includes(userRole) && p.imagen
-            ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>`
-            : ''
-          }
-        </div>
+      <div class="foto-acciones">
+        <button class="btn-foto icon-btn-xs" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
+        ${['admin','user'].includes(userRole) && p.imagen
+          ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>`
+          : ''
+        }
       </div>
     </div>
-  </td>
+  </div>
+</td>
 
   <td class="${stockCellClass}">
     ${stockDisponible}
