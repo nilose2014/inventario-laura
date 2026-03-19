@@ -432,7 +432,45 @@
       background:#fff;
       box-shadow:0 10px 22px rgba(0,0,0,.08);
     }
+.foto-clickable{
+  cursor:pointer;
+  transition:transform var(--transition), box-shadow var(--transition), filter var(--transition);
+}
 
+.foto-clickable:hover{
+  transform:scale(1.04);
+  box-shadow:0 16px 30px rgba(0,0,0,.16);
+  filter:saturate(1.04);
+}
+
+.foto-modal{
+  position:fixed;
+  inset:0;
+  z-index:5000;
+  background:rgba(15,23,42,.82);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  backdrop-filter:blur(4px);
+}
+
+.foto-modal-content{
+  max-width:95vw;
+  max-height:92vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#fotoModalImg{
+  max-width:95vw;
+  max-height:92vh;
+  object-fit:contain;
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+}
     @media (max-width:700px){
       .grid{grid-template-columns:1fr}
       body{padding:10px}
@@ -613,19 +651,19 @@
       document.getElementById('privadaImagenWrap').innerHTML = '';
     }
 
-    function renderImagenPublica(url){
-      const wrap = document.getElementById('publicImagenWrap');
-      wrap.innerHTML = '';
-      if (!url) return;
-      wrap.innerHTML = `<img src="${url}" alt="Foto producto" class="foto-producto">`;
-    }
+function renderImagenPublica(url){
+  const wrap = document.getElementById('publicImagenWrap');
+  wrap.innerHTML = '';
+  if (!url) return;
+  wrap.innerHTML = `<img src="${url}" alt="Foto producto" class="foto-producto foto-clickable" onclick="abrirFotoGrande('${url}')">`;
+}
 
-    function renderImagenPrivada(url){
-      const wrap = document.getElementById('privadaImagenWrap');
-      wrap.innerHTML = '';
-      if (!url) return;
-      wrap.innerHTML = `<img src="${url}" alt="Foto producto" class="foto-privada">`;
-    }
+function renderImagenPrivada(url){
+  const wrap = document.getElementById('privadaImagenWrap');
+  wrap.innerHTML = '';
+  if (!url) return;
+  wrap.innerHTML = `<img src="${url}" alt="Foto producto" class="foto-privada foto-clickable" onclick="abrirFotoGrande('${url}')">`;
+}
 
     function renderPublico(p){
       ocultarFichas();
@@ -870,6 +908,37 @@
         accionStatus.textContent = '';
       }
     };
+	
+	window.abrirFotoGrande = (src) => {
+  if (!src) return;
+  const modal = document.getElementById('fotoModal');
+  const img = document.getElementById('fotoModalImg');
+  if (!modal || !img) return;
+
+  img.src = src;
+  modal.classList.remove('hidden');
+};
+
+window.cerrarFotoGrande = (event) => {
+  const modal = document.getElementById('fotoModal');
+  const img = document.getElementById('fotoModalImg');
+  if (!modal || !img) return;
+
+  if (event.target.id === 'fotoModal' || event.target === modal) {
+    modal.classList.add('hidden');
+    img.src = '';
+  }
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('fotoModal');
+    const img = document.getElementById('fotoModalImg');
+    if (modal && !modal.classList.contains('hidden')) {
+      modal.classList.add('hidden');
+      if (img) img.src = '';
+    }
+  }
+});
 
     async function recargarProductoActual() {
       if (!productoActual?.id) return null;
@@ -955,5 +1024,10 @@
   </script>
 
   <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <div id="fotoModal" class="foto-modal hidden" onclick="cerrarFotoGrande(event)">
+  <div class="foto-modal-content">
+    <img id="fotoModalImg" src="" alt="Imagen ampliada del producto">
+  </div>
+</div>
 </body>
 </html>
