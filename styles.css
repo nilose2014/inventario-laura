@@ -1768,3 +1768,11 @@ body.solo-user #btnLogs{
   justify-content:center !important;
   border-radius:10px !important;
 }
+
+.catalogo-btn{
+  background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+}
+
+.catalogo-download-btn{
+  background:linear-gradient(135deg,#7c3aed,#4f46e5) !important;
+}
