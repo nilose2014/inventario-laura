@@ -1782,3 +1782,187 @@ body.solo-user #btnLogs{
 .catalogo-download-btn{
   background:linear-gradient(135deg,#7c3aed,#4f46e5) !important;
 }
+
+/* =========================
+   MOBILE APP FIX EXPO
+========================= */
+
+html, body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+.app-shell,
+.main-app{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+.card{
+  width:100%;
+  max-width:100%;
+}
+
+img{
+  max-width:100%;
+  height:auto;
+}
+
+/* tablas: permitir scroll horizontal solo dentro de su caja */
+.tabla-scroll{
+  width:100%;
+  overflow-x:auto;
+  overflow-y:visible;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* móvil real */
+@media (max-width: 768px){
+
+  body{
+    margin:0 !important;
+    padding:10px !important;
+    max-width:100% !important;
+    overflow-x:hidden !important;
+  }
+
+  .app-header{
+    padding:14px !important;
+    gap:12px !important;
+    border-radius:20px !important;
+  }
+
+  .app-header .logo-app{
+    width:56px !important;
+    max-width:56px !important;
+    max-height:56px !important;
+  }
+
+  .app-header h2{
+    font-size:20px !important;
+    line-height:1.2 !important;
+  }
+
+  .app-header .hero-subtitle{
+    font-size:12px !important;
+  }
+
+  .card{
+    padding:14px !important;
+    border-radius:18px !important;
+  }
+
+  /* LOGIN */
+  .login-grid{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  .input-pass-wrap{
+    max-width:100% !important;
+  }
+
+  /* FORMULARIO NUEVO / EDITAR */
+  .form-producto{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  .form-campo{
+    min-width:0 !important;
+  }
+
+  #stock,
+  #proximo,
+  #bea,
+  #laura,
+  #nombre,
+  #fotoProducto{
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  input,
+  select,
+  button{
+    width:100%;
+    max-width:100%;
+  }
+
+  .form-botones{
+    display:flex !important;
+    flex-direction:column !important;
+    gap:10px !important;
+  }
+
+  .form-botones button{
+    width:100% !important;
+    margin:0 !important;
+  }
+
+  /* FILTROS Y BOTONES SUPERIORES */
+  .filtros{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:10px !important;
+  }
+
+  .filtros > *{
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+  }
+
+  .filtros > div:first-child{
+    min-width:0 !important;
+    max-width:100% !important;
+    flex:none !important;
+  }
+
+  #buscar{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  .contadores-filtrados{
+    min-width:0 !important;
+    width:100% !important;
+  }
+
+  .orden-wrap{
+    width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+  }
+
+  #ordenar{
+    width:100% !important;
+  }
+
+  /* TOTALES */
+  .totales-superiores,
+  .totales-container{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+    overflow:visible !important;
+  }
+
+  /* ACCIONES RÁPIDAS */
+  .card-actions{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+  }
+
+  .card-actions button{
+    width:100% !important;
+  }
+}
