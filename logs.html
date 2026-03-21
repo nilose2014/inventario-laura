@@ -115,6 +115,8 @@
 
         <select id="logTipo" onchange="aplicarFiltros()">
           <option value="todos">Todos los tipos</option>
+		  <option value="usuario-conectado">Usuarios conectados</option>
+<option value="consulta-producto">Consultas de producto</option>
           <option value="venta">Solo VENTAS</option>
           <option value="reserva">Solo RESERVAS</option>
           <option value="cancelacion-reserva">Solo CANCEL. RESERVA</option>
@@ -143,14 +145,16 @@
       </div>
 
       <div class="quick-filters">
-        <button id="quick-all" class="gray active-filter" onclick="setQuickFilter('todos', this)">Todos</button>
-        <button class="green" onclick="setQuickFilter('venta', this)">Ventas</button>
-        <button class="cyan" onclick="setQuickFilter('reserva', this)">Reservas</button>
-        <button class="orange" onclick="setQuickFilter('stock-group', this)">Stock</button>
-        <button class="purple" onclick="setQuickFilter('precio-group', this)">Precios</button>
-        <button class="purple" onclick="setQuickFilter('backup-group', this)">Backups</button>
-        <button class="gray" onclick="setQuickFilter('reset-completo', this)">Resets</button>
-      </div>
+  <button id="quick-all" class="gray active-filter" onclick="setQuickFilter('todos', this)">Todos</button>
+  <button class="gray" onclick="setQuickFilter('usuario-conectado', this)">Conexiones</button>
+  <button class="cyan" onclick="setQuickFilter('consulta-producto', this)">Consultas</button>
+  <button class="green" onclick="setQuickFilter('venta', this)">Ventas</button>
+  <button class="cyan" onclick="setQuickFilter('reserva', this)">Reservas</button>
+  <button class="orange" onclick="setQuickFilter('stock-group', this)">Stock</button>
+  <button class="purple" onclick="setQuickFilter('precio-group', this)">Precios</button>
+  <button class="purple" onclick="setQuickFilter('backup-group', this)">Backups</button>
+  <button class="gray" onclick="setQuickFilter('reset-completo', this)">Resets</button>
+</div>
 
       <div id="alertasInteligentes" class="card" style="margin-bottom:15px;background:#fff7ed;border:2px solid #fdba74;padding:14px"></div>
 
@@ -237,26 +241,28 @@
     let ordenActual = { campo: 'fecha', dir: 'desc' };
     let quickFilterActual = 'todos';
 
-    function tipoClase(tipo){
-      switch(tipo){
-        case 'venta': return ['tipo-venta','log-venta'];
-        case 'reserva': return ['tipo-reserva','log-reserva'];
-        case 'cancelacion-reserva': return ['tipo-cancel-reserva','log-cancelacion'];
-        case 'eliminacion-venta': return ['tipo-elim-venta','log-eliminacion'];
-        case 'backup-creado':
-        case 'backup-restaurado': return ['tipo-backup','log-tipico'];
-        case 'stock-anadido':
-        case 'stock-modificado':
-        case 'proximo-modificado': return ['tipo-stock','log-tipico'];
-        case 'precio-laura':
-        case 'precio-laura-global':
-        case 'producto-creado':
-        case 'producto-editado':
-        case 'producto-borrado': return ['tipo-precio','log-tipico'];
-        case 'reset-completo': return ['tipo-reset','log-tipico'];
-        default: return ['',''];
-      }
-    }
+function tipoClase(tipo){
+  switch(tipo){
+    case 'venta': return ['tipo-venta','log-venta'];
+    case 'reserva': return ['tipo-reserva','log-reserva'];
+    case 'cancelacion-reserva': return ['tipo-cancel-reserva','log-cancelacion'];
+    case 'eliminacion-venta': return ['tipo-elim-venta','log-eliminacion'];
+    case 'usuario-conectado': return ['tipo-backup','log-tipico'];
+    case 'consulta-producto': return ['tipo-stock','log-tipico'];
+    case 'backup-creado':
+    case 'backup-restaurado': return ['tipo-backup','log-tipico'];
+    case 'stock-anadido':
+    case 'stock-modificado':
+    case 'proximo-modificado': return ['tipo-stock','log-tipico'];
+    case 'precio-laura':
+    case 'precio-laura-global':
+    case 'producto-creado':
+    case 'producto-editado':
+    case 'producto-borrado': return ['tipo-precio','log-tipico'];
+    case 'reset-completo': return ['tipo-reset','log-tipico'];
+    default: return ['',''];
+  }
+}
 
     function safeLower(v){ return String(v || '').toLowerCase().trim(); }
 
@@ -430,7 +436,7 @@
     window.setQuickFilter = (tipo, btn) => {
       quickFilterActual = tipo;
       refrescarQuickButtons(btn);
-      if (['venta','reserva','cancelacion-reserva','eliminacion-venta','backup-creado','backup-restaurado','stock-anadido','stock-modificado','proximo-modificado','precio-laura','precio-laura-global','producto-creado','producto-editado','producto-borrado','reset-completo','todos'].includes(tipo)) {
+if (['usuario-conectado','consulta-producto','venta','reserva','cancelacion-reserva','eliminacion-venta','backup-creado','backup-restaurado','stock-anadido','stock-modificado','proximo-modificado','precio-laura','precio-laura-global','producto-creado','producto-editado','producto-borrado','reset-completo','todos'].includes(tipo)) {
         document.getElementById('logTipo').value = tipo === 'todos' ? 'todos' : tipo;
       } else {
         document.getElementById('logTipo').value = 'todos';
