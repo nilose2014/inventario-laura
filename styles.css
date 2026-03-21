@@ -1387,6 +1387,8 @@ body.solo-user td.col-acciones{
 @media (max-width:980px){
   body{
     padding:14px;
+    max-width:100%;
+    overflow-x:hidden;
   }
 
   .app-header{
@@ -1407,20 +1409,28 @@ body.solo-user td.col-acciones{
   .card{
     padding:18px;
     border-radius:20px;
+    max-width:100%;
+    overflow:hidden;
   }
 
   .form-producto{
-    grid-template-columns:repeat(3,minmax(180px,1fr));
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:14px;
+  }
+
+  .form-campo{
+    min-width:0;
   }
 
   table{
     display:table;
-    min-width:1350px;
+    min-width:1200px;
     white-space:nowrap;
   }
 
   .tabla-scroll{
+    width:100%;
+    max-width:100%;
     overflow-x:auto;
     overflow-y:visible;
     -webkit-overflow-scrolling:touch;
@@ -1712,39 +1722,42 @@ body.solo-user td.col-acciones{
 @media (max-width:900px){
   .filtros{
     display:flex !important;
-    flex-wrap:nowrap !important;
-    align-items:center !important;
+    flex-wrap:wrap !important;
+    align-items:stretch !important;
     gap:12px !important;
-    overflow-x:auto;
-    overflow-y:hidden;
-    padding-bottom:6px;
-    -webkit-overflow-scrolling:touch;
+    overflow:visible !important;
+    padding-bottom:0;
   }
 
   .filtros > *{
-    flex:0 0 auto !important;
+    flex:1 1 100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
   }
 
   .filtros > div:first-child{
-    flex:0 0 260px !important;
-    min-width:260px !important;
-    max-width:260px !important;
+    flex:1 1 100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
   }
 
   .contadores-filtrados{
-    min-width:170px;
+    min-width:0 !important;
+    width:100% !important;
   }
 
   .orden-wrap{
     margin-left:0 !important;
-    min-width:260px;
+    min-width:0 !important;
+    width:100% !important;
     justify-content:flex-start;
+    flex-wrap:wrap;
   }
 
   #ordenar{
-    width:180px !important;
-    min-width:180px !important;
-    max-width:180px !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
   }
 }
 
@@ -1787,7 +1800,8 @@ body.solo-user #btnLogs{
    MOBILE APP FIX EXPO
 ========================= */
 
-html, body{
+html,
+body{
   width:100%;
   max-width:100%;
   overflow-x:hidden;
@@ -1800,7 +1814,8 @@ html, body{
   overflow-x:hidden;
 }
 
-.card{
+.card,
+.login-card{
   width:100%;
   max-width:100%;
 }
@@ -1810,16 +1825,15 @@ img{
   height:auto;
 }
 
-/* tablas: permitir scroll horizontal solo dentro de su caja */
 .tabla-scroll{
   width:100%;
+  max-width:100%;
   overflow-x:auto;
   overflow-y:visible;
   -webkit-overflow-scrolling:touch;
 }
 
-/* móvil real */
-@media (max-width: 768px){
+@media (max-width:768px){
 
   body{
     margin:0 !important;
@@ -1852,9 +1866,9 @@ img{
   .card{
     padding:14px !important;
     border-radius:18px !important;
+    overflow:hidden !important;
   }
 
-  /* LOGIN */
   .login-grid{
     display:grid !important;
     grid-template-columns:1fr !important;
@@ -1865,7 +1879,6 @@ img{
     max-width:100% !important;
   }
 
-  /* FORMULARIO NUEVO / EDITAR */
   .form-producto{
     display:grid !important;
     grid-template-columns:1fr !important;
@@ -1876,21 +1889,21 @@ img{
     min-width:0 !important;
   }
 
+  #nombre,
   #stock,
   #proximo,
   #bea,
   #laura,
-  #nombre,
   #fotoProducto{
     width:100% !important;
     max-width:100% !important;
   }
 
-  input,
-  select,
-  button{
-    width:100%;
-    max-width:100%;
+  /* solo inputs/selects generales al 100%, no tocar botones de tabla */
+  input:not(.cantidad-input):not(.prox-input),
+  select{
+    width:100% !important;
+    max-width:100% !important;
   }
 
   .form-botones{
@@ -1904,17 +1917,18 @@ img{
     margin:0 !important;
   }
 
-  /* FILTROS Y BOTONES SUPERIORES */
   .filtros{
     display:flex !important;
     flex-direction:column !important;
     align-items:stretch !important;
     gap:10px !important;
+    overflow:visible !important;
   }
 
   .filtros > *{
     width:100% !important;
     max-width:100% !important;
+    min-width:0 !important;
     margin:0 !important;
   }
 
@@ -1941,13 +1955,19 @@ img{
     margin-left:0 !important;
     flex-direction:column !important;
     align-items:stretch !important;
+    gap:10px !important;
+  }
+
+  .orden-wrap span{
+    white-space:normal !important;
   }
 
   #ordenar{
     width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
   }
 
-  /* TOTALES */
   .totales-superiores,
   .totales-container{
     grid-template-columns:1fr !important;
@@ -1955,7 +1975,6 @@ img{
     overflow:visible !important;
   }
 
-  /* ACCIONES RÁPIDAS */
   .card-actions{
     display:flex !important;
     flex-direction:column !important;
@@ -1964,5 +1983,72 @@ img{
 
   .card-actions button{
     width:100% !important;
+    margin:0 !important;
+  }
+
+  table{
+    min-width:1100px !important;
+  }
+
+  #tabla td{
+    height:auto !important;
+  }
+
+  #tabla td:nth-child(2){
+    width:100px;
+    min-width:100px;
+  }
+
+  .precio-wrap,
+  .accion-group,
+  .prox-group,
+  .foto-acciones,
+  .acciones-admin,
+  .reservados .accion-group{
+    flex-wrap:nowrap !important;
+  }
+
+  .cantidad-input{
+    width:48px !important;
+    min-width:48px !important;
+    height:40px !important;
+    min-height:40px !important;
+  }
+
+  .prox-input{
+    width:68px !important;
+    min-width:68px !important;
+    height:40px !important;
+    min-height:40px !important;
+  }
+
+  .btn-reservar,
+  .btn-vender,
+  .icon-btn,
+  .icon-btn-xs,
+  .prox-btn,
+  .prox-edit-btn,
+  .stock-edit-btn,
+  .qr-btn{
+    width:auto !important;
+    min-width:32px !important;
+  }
+
+  #toastContainer{
+    top:12px;
+    right:12px;
+    left:12px;
+  }
+
+  .toast{
+    min-width:0;
+    max-width:100%;
+  }
+
+  #scrollTopBtn{
+    right:16px;
+    bottom:16px;
+    width:52px;
+    height:52px;
   }
 }
