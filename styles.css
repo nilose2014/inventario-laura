@@ -2052,3 +2052,11 @@ img{
     height:52px;
   }
 }
+
+body.app-logeada #loginDiv{
+  display:none !important;
+}
+
+body.app-logeada #mainApp{
+  display:block !important;
+}
