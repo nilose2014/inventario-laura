@@ -379,6 +379,20 @@ function construirProductoPublico(producto){
     imagen: producto?.imagen || ''
   };
 }
+function calcularVendidosProducto(p){
+  const vendidosCampo = Number(p?.vendidos || 0);
+
+  const vendidosDesdeReservas = Array.isArray(p?.reservasDetalle)
+    ? p.reservasDetalle.reduce((acc, r) => {
+        if (r && r.vendida) {
+          return acc + Math.max(1, Number(r.cantidad || 1));
+        }
+        return acc;
+      }, 0)
+    : 0;
+
+  return Math.max(vendidosCampo, vendidosDesdeReservas);
+}
 
 async function syncProductoPublico(id, producto){
   if (!id) return;
@@ -1285,8 +1299,8 @@ html += `
 </td>
 
   <td class="vendidos">
-    ${p.vendidos || 0}
-    ${(p.vendidos || 0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
+    ${calcularVendidosProducto(p)}
+    ${calcularVendidosProducto(p) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
   </td>
 
   <td>${Number(p.bea || 0).toFixed(2)}</td>
@@ -1663,9 +1677,9 @@ function loadData() {
     totalesGlobales.reservados = 0;
 
     Object.values(productos).forEach(p => {
-      const vBeaReal = Number(p.vBea || 0);
+       const vBeaReal = Number(p.vBea || 0);
       const vLauraReal = Number(p.vLaura || 0);
-      const vendidosReal = Number(p.vendidos || 0);
+      const vendidosReal = calcularVendidosProducto(p);
       const reservadosReal = Number(p.reservados || 0);
       totalesGlobales.bea += vBeaReal;
       totalesGlobales.laura += vLauraReal;
@@ -1703,12 +1717,16 @@ function ordenarProductos(productosObj) {
         valorA = (pA.nombre || '').toLowerCase();
         valorB = (pB.nombre || '').toLowerCase();
         return dir === 'asc' ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
-      case 'stock':
-      case 'vendidos':
+          case 'stock':
       case 'reservados':
       case 'proximo':
         valorA = Number(pA[campo] || 0);
         valorB = Number(pB[campo] || 0);
+        break;
+
+      case 'vendidos':
+        valorA = calcularVendidosProducto(pA);
+        valorB = calcularVendidosProducto(pB);
         break;
       case 'bea':
         valorA = Number(pA.bea || 0);
