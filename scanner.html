@@ -685,25 +685,40 @@ function renderImagenPrivada(url){
       }
     }
 
-    function pintarProducto(p) {
-      productoActual = p;
-      ocultarFichas();
+ async function pintarProducto(p, origen = 'consulta') {
+  productoActual = p;
+  ocultarFichas();
 
-      if (!tieneSesionValida(currentUser)) {
-        renderPublico(p);
-        setStatus('scanStatus', `Producto detectado: ${p.nombre}`, 'success');
-        return;
-      }
+  if (!tieneSesionValida(currentUser)) {
+    renderPublico(p);
+    setStatus('scanStatus', `Producto detectado: ${p.nombre}`, 'success');
+    return;
+  }
 
-      document.getElementById('productoCard').classList.remove('hidden');
-      renderImagenPrivada(p.imagen || '');
-      document.getElementById('prodNombre').textContent = p.nombre || '-';
-      document.getElementById('prodStock').textContent = Number(p.stock || 0);
-      document.getElementById('prodBea').textContent = `€${Number(p.bea || 0).toFixed(2)}`;
-      document.getElementById('prodLaura').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
-      document.getElementById('cantidad').value = 1;
-      setStatus('accionStatus', 'Producto listo para vender o reservar.', 'info');
+  document.getElementById('productoCard').classList.remove('hidden');
+  renderImagenPrivada(p.imagen || '');
+  document.getElementById('prodNombre').textContent = p.nombre || '-';
+  document.getElementById('prodStock').textContent = Number(p.stock || 0);
+  document.getElementById('prodBea').textContent = `€${Number(p.bea || 0).toFixed(2)}`;
+  document.getElementById('prodLaura').textContent = `€${Number(p.laura || 0).toFixed(2)}`;
+  document.getElementById('cantidad').value = 1;
+  setStatus('accionStatus', 'Producto listo para vender o reservar.', 'info');
+
+  if (['qr', 'manual', 'url'].includes(origen)) {
+    try {
+      await guardarLog(
+        'consulta-producto',
+        p.id,
+        p.nombre,
+        0,
+        currentUser.email,
+        `Consulta desde scanner (${origen})`
+      );
+    } catch (e) {
+      console.error('Error guardando log de consulta', e);
     }
+  }
+}
 
     async function obtenerIP(){
       try{
@@ -807,18 +822,18 @@ function renderImagenPrivada(url){
       return await buscarProductoPublicoPorContenidoQR(contenido);
     }
 
-    async function procesarScan(texto) {
-      await detenerEscaner();
-      const producto = await buscarProductoPorContenidoQR(texto);
-      if (!producto) {
-        ocultarFichas();
-        setStatus('scanStatus', `No encontré producto para este QR: ${texto}`, 'error');
-        return;
-      }
-      pintarProducto(producto);
-      document.getElementById('scanCard').classList.add('hidden');
-      setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
-    }
+  async function procesarScan(texto) {
+  await detenerEscaner();
+  const producto = await buscarProductoPorContenidoQR(texto);
+  if (!producto) {
+    ocultarFichas();
+    setStatus('scanStatus', `No encontré producto para este QR: ${texto}`, 'error');
+    return;
+  }
+  await pintarProducto(producto, 'qr');
+  document.getElementById('scanCard').classList.add('hidden');
+  setStatus('scanStatus', `Producto detectado: ${producto.nombre}`, 'success');
+}
 
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
@@ -834,7 +849,7 @@ function renderImagenPrivada(url){
         }
       }
 
-      const scanId = getQueryParam('scanId');
+           const scanId = getQueryParam('scanId');
       if (scanId) {
         const producto = await buscarProductoPorContenidoQR(scanId);
 
@@ -845,7 +860,7 @@ function renderImagenPrivada(url){
           return;
         }
 
-        pintarProducto(producto);
+        await pintarProducto(producto, 'url');
       }
     });
 
@@ -883,21 +898,21 @@ function renderImagenPrivada(url){
       } catch {}
     };
 
-    window.buscarManual = async () => {
-      const texto = prompt('Escribe ID, URL QR o nombre exacto del producto');
-      if (!texto) return;
-      const producto = await buscarProductoPorContenidoQR(texto);
-      if (!producto) {
-        document.getElementById('scanCard').classList.remove('hidden');
-        setStatus('scanStatus', 'Producto no encontrado.', 'error');
-        ocultarFichas();
-        return;
-      }
-      await detenerEscaner();
-      pintarProducto(producto);
-      document.getElementById('scanCard').classList.add('hidden');
-      setStatus('scanStatus', `Producto encontrado manualmente: ${producto.nombre}`, 'success');
-    };
+ window.buscarManual = async () => {
+  const texto = prompt('Escribe ID, URL QR o nombre exacto del producto');
+  if (!texto) return;
+  const producto = await buscarProductoPorContenidoQR(texto);
+  if (!producto) {
+    document.getElementById('scanCard').classList.remove('hidden');
+    setStatus('scanStatus', 'Producto no encontrado.', 'error');
+    ocultarFichas();
+    return;
+  }
+  await detenerEscaner();
+  await pintarProducto(producto, 'manual');
+  document.getElementById('scanCard').classList.add('hidden');
+  setStatus('scanStatus', `Producto encontrado manualmente: ${producto.nombre}`, 'success');
+};
 
     window.limpiarProducto = () => {
       productoActual = null;
@@ -941,14 +956,14 @@ document.addEventListener('keydown', (e) => {
 });
 
     async function recargarProductoActual() {
-      if (!productoActual?.id) return null;
-      const snap = await get(ref(db, `productos/${productoActual.id}`));
-      if (!snap.exists()) return null;
-      const nuevo = { id: productoActual.id, ...snap.val() };
-      productoActual = nuevo;
-      pintarProducto(nuevo);
-      return nuevo;
-    }
+  if (!productoActual?.id) return null;
+  const snap = await get(ref(db, `productos/${productoActual.id}`));
+  if (!snap.exists()) return null;
+  const nuevo = { id: productoActual.id, ...snap.val() };
+  productoActual = nuevo;
+  await pintarProducto(nuevo, 'recarga');
+  return nuevo;
+}
 
     window.venderRapido = async () => {
       if (!productoActual || !currentUser) return;
