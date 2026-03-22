@@ -365,16 +365,26 @@
           </div>
 
           <div class="producto-modal-extra">
-            <button class="qr-btn" onclick="verQRProductoDesdeFicha()">QR</button>
-            <button id="productoModalEditarBtn" class="hidden" onclick="editarDesdeFicha()">✏️ Editar</button>
-            <button id="productoModalBorrarBtn" class="red hidden" onclick="borrarDesdeFicha()">🗑️ Borrar</button>
-          </div>
+
+  <button class="qr-btn" onclick="verQRProductoDesdeFicha()">QR</button>
+
+  <button id="btnVerReservaFicha" class="hidden" onclick="verReservaDesdeFicha()">📋 Reserva</button>
+
+  <button id="btnEliminarVentaFicha" class="hidden" onclick="eliminarVentaDesdeFicha()">↩️ Venta</button>
+
+  <button id="productoModalEditarBtn" class="hidden" onclick="editarDesdeFicha()">✏️ Editar</button>
+
+  <button id="productoModalBorrarBtn" class="red hidden" onclick="borrarDesdeFicha()">🗑️ Borrar</button>
+
+</div>
         </div>
       </div>
     </div>
 
     <div class="modal-actions" style="justify-content:center;margin-top:16px">
-      <button class="modal-cancel" onclick="cerrarFichaProducto()">Cerrar</button>
+     <button class="modal-cancel" onclick="cerrarFichaProducto()" style="font-size:18px;padding:14px 20px">
+  ✖ Cerrar
+</button>
     </div>
   </div>
 </div>
@@ -2322,7 +2332,22 @@ window.resetear = () => {
 window.abrirFichaProducto = (id) => {
   const p = productos[id];
   if (!p) return showToast('✖ Producto no encontrado', 'error');
+// 👇 PEGA ESTO JUSTO AQUÍ
+const btnReserva = document.getElementById('btnVerReservaFicha');
+const btnVenta = document.getElementById('btnEliminarVentaFicha');
 
+// mostrar si hay reservas
+if ((p.reservados || 0) > 0) {
+  btnReserva.classList.remove('hidden');
+} else {
+  btnReserva.classList.add('hidden');
+}
+
+// mostrar si hay ventas
+if ((p.vendidos || 0) > 0) {
+  btnVenta.classList.remove('hidden');
+} else {
+  btnVenta.classList.add('hidden');
   productoModalActualId = id;
 
   document.getElementById('productoModalNombre').textContent = p.nombre || 'Producto';
