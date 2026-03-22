@@ -2417,31 +2417,66 @@ window.venderDesdeFicha = () => {
 
 window.verQRProductoDesdeFicha = () => {
   if (!productoModalActualId) return;
-  verQRProducto(productoModalActualId);
+
+  const id = productoModalActualId;
+
+  cerrarFichaProducto();
+
+  setTimeout(() => {
+    verQRProducto(id);
+  }, 180);
 };
 
 window.editarDesdeFicha = () => {
   if (!productoModalActualId) return;
+
   const id = productoModalActualId;
+
   cerrarFichaProducto();
-  editar(id);
+
+  setTimeout(() => {
+    editar(id);
+  }, 180);
 };
 
 window.borrarDesdeFicha = () => {
   if (!productoModalActualId) return;
+
   const id = productoModalActualId;
+
   cerrarFichaProducto();
-  borrar(id);
+
+  setTimeout(() => {
+    borrar(id);
+  }, 180);
 };
 
 window.verReservaDesdeFicha = () => {
   if (!productoModalActualId) return;
-  verReserva(productoModalActualId);
+
+  const id = productoModalActualId;
+
+  // 🔴 cerrar ficha primero
+  cerrarFichaProducto();
+
+  // ⏱️ pequeño delay para que no se solapen modales
+  setTimeout(() => {
+    verReserva(id);
+  }, 180);
 };
 
 window.eliminarVentaDesdeFicha = () => {
   if (!productoModalActualId) return;
-  eliminarUnaVenta(productoModalActualId);
+
+  const id = productoModalActualId;
+
+  // cerrar ficha primero
+  cerrarFichaProducto();
+
+  // pequeño retraso para evitar solape de modales
+  setTimeout(() => {
+    eliminarUnaVenta(id);
+  }, 180);
 };
 
 window.refrescarFichaProductoSiAbierta = () => {
