@@ -1182,6 +1182,8 @@ tbody td:nth-child(12){
   z-index:4000;
   padding:16px;
   backdrop-filter:blur(6px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 
 .modal-overlay.show{
@@ -1195,6 +1197,9 @@ tbody td:nth-child(12){
   box-shadow:0 28px 70px rgba(0,0,0,.28);
   padding:24px;
   border:1px solid rgba(15,23,42,.08);
+  max-height:calc(100vh - 32px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 
 .modal-title{
@@ -1242,6 +1247,81 @@ tbody td:nth-child(12){
 
 .modal-danger{
   background:linear-gradient(135deg,#ef4444,#dc2626);
+}
+
+.producto-modal-box{
+  width:min(900px,100%);
+  max-height:calc(100vh - 32px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.producto-modal-content{
+  display:grid;
+  grid-template-columns:320px 1fr;
+  gap:20px;
+  align-items:start;
+}
+
+.producto-modal-foto-wrap{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.producto-modal-img{
+  width:100%;
+  max-width:320px;
+  max-height:380px;
+  object-fit:contain;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 12px 28px rgba(0,0,0,.14);
+}
+
+.producto-modal-info{
+  min-width:0;
+}
+
+.producto-modal-stats{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin:14px 0 18px 0;
+}
+
+.producto-stat{
+  background:#f8fafc;
+  border:1px solid #dbe4f0;
+  border-radius:16px;
+  padding:12px;
+  text-align:center;
+}
+
+.producto-stat strong{
+  display:block;
+  font-size:13px;
+  color:#475569;
+  margin-bottom:6px;
+}
+
+.producto-stat span{
+  display:block;
+  font-size:24px;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.producto-modal-actions{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.producto-modal-extra{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
 }
 
 /* =========================
@@ -1987,7 +2067,6 @@ img{
     max-width:100% !important;
   }
 
-  /* solo inputs/selects generales al 100%, no tocar botones de tabla */
   input:not(.cantidad-input):not(.prox-input),
   select{
     width:100% !important;
@@ -2138,6 +2217,124 @@ img{
     bottom:16px;
     width:52px;
     height:52px;
+  }
+
+  .modal-overlay{
+    align-items:flex-start !important;
+    justify-content:center !important;
+    padding:8px !important;
+    overflow-y:auto !important;
+  }
+
+  .modal-box{
+    width:100% !important;
+    max-width:100% !important;
+    max-height:calc(100dvh - 16px) !important;
+    margin:0 auto !important;
+    border-radius:18px !important;
+    padding:14px !important;
+    overflow-y:auto !important;
+  }
+
+  .producto-modal-box{
+    width:100% !important;
+    max-width:100% !important;
+    max-height:calc(100dvh - 16px) !important;
+    overflow-y:auto !important;
+    padding-bottom:18px !important;
+  }
+
+  .producto-modal-content{
+    display:flex !important;
+    flex-direction:column !important;
+    gap:14px !important;
+  }
+
+  .producto-modal-foto-wrap{
+    justify-content:center !important;
+    align-items:center !important;
+  }
+
+  .producto-modal-img{
+    width:100% !important;
+    max-width:100% !important;
+    max-height:250px !important;
+    object-fit:contain !important;
+  }
+
+  .producto-modal-info{
+    width:100% !important;
+  }
+
+  .producto-modal-info h3{
+    text-align:left !important;
+    font-size:18px !important;
+    line-height:1.2 !important;
+  }
+
+  .producto-modal-stats{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px !important;
+    margin:12px 0 14px 0 !important;
+  }
+
+  .producto-stat{
+    padding:10px !important;
+    border-radius:14px !important;
+  }
+
+  .producto-stat strong{
+    font-size:12px !important;
+  }
+
+  .producto-stat span{
+    font-size:20px !important;
+  }
+
+  .producto-modal-actions{
+    gap:10px !important;
+  }
+
+  .producto-modal-actions .accion-group{
+    display:grid !important;
+    grid-template-columns:72px 1fr !important;
+    gap:10px !important;
+    align-items:center !important;
+  }
+
+  .producto-modal-actions .cantidad-input{
+    width:72px !important;
+    min-width:72px !important;
+    height:44px !important;
+  }
+
+  .producto-modal-actions .btn-reservar,
+  .producto-modal-actions .btn-vender{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    justify-content:center !important;
+  }
+
+  .producto-modal-extra{
+    display:grid !important;
+    grid-template-columns:repeat(3,1fr) !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+
+  .producto-modal-extra button{
+    width:100% !important;
+    min-width:0 !important;
+    height:44px !important;
+  }
+
+  .modal-actions{
+    justify-content:center !important;
+  }
+
+  .modal-actions button{
+    width:100% !important;
   }
 }
 
