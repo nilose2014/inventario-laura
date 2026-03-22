@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventario Laura Online - ORDENABLE + BACKUP + 📦 PRÓXIMO STOCK + 📋 LOGS</title>
+<title>Inventario Laura Online - ORDENABLE + BACKUP + 馃摝 PR脫XIMO STOCK + 馃搵 LOGS</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -14,15 +14,15 @@
   <div class="app-header">
     <img src="logo.png" class="logo-app" alt="Mundo Azul">
     <div class="app-header-text">
-      <h2>🛒 Mundo Azul</h2>
-      <p class="hero-subtitle">Inventario · Ventas · QR · Stock · Fotos · Backup · Logs</p>
+      <h2>馃洅 Mundo Azul</h2>
+      <p class="hero-subtitle">Inventario 路 Ventas 路 QR 路 Stock 路 Fotos 路 Backup 路 Logs</p>
     </div>
   </div>
 
  <div class="card login-card hidden" id="loginDiv">
     <div class="section-head compact">
       <div>
-        <h3>🔐 Iniciar Sesión</h3>
+        <h3>馃攼 Iniciar Sesi贸n</h3>
         <p>Accede al panel para gestionar inventario, ventas, stock y fotos.</p>
       </div>
     </div>
@@ -34,23 +34,23 @@
       </div>
 
       <div class="login-field">
-        <label for="userPass">Contraseña</label>
+        <label for="userPass">Contrase帽a</label>
         <div class="input-pass-wrap">
-          <input id="userPass" type="password" placeholder="Contraseña" autocomplete="current-password">
-          <button type="button" class="toggle-pass-btn" onclick="togglePassword()">👁️</button>
+          <input id="userPass" type="password" placeholder="Contrase帽a" autocomplete="current-password">
+          <button type="button" class="toggle-pass-btn" onclick="togglePassword()">馃憗锔?/button>
         </div>
       </div>
     </div>
 
     <datalist id="userList">
-      <option value="nilose2014@gmail.com">👑 ADMIN</option>
-      <option value="djsubixj@gmail.com">👤 Usuario</option>
-      <option value="xiomaralamasmala@gmail.com">👤 Usuario</option>
+      <option value="nilose2014@gmail.com">馃憫 ADMIN</option>
+      <option value="djsubixj@gmail.com">馃懁 Usuario</option>
+      <option value="xiomaralamasmala@gmail.com">馃懁 Usuario</option>
     </datalist>
 
     <div class="form-botones login-actions">
-      <button onclick="login()">🚀 Entrar</button>
-      <button class="red" onclick="resetLogin()">🔄 Limpiar</button>
+      <button onclick="login()">馃殌 Entrar</button>
+      <button class="red" onclick="resetLogin()">馃攧 Limpiar</button>
     </div>
   </div>
 
@@ -58,23 +58,23 @@
 
     <div class="totales-superiores" id="totalesSuperiores">
       <div class="total-box-superior bea">
-        <strong>💰 Venta Bea</strong>
-        <span id="tBeaSup">€0.00</span>
+        <strong>馃挵 Venta Bea</strong>
+        <span id="tBeaSup">鈧?.00</span>
       </div>
       <div class="total-box-superior laura">
-        <strong>💰 Venta Laura</strong>
-        <span id="tLauraSup">€0.00</span>
+        <strong>馃挵 Venta Laura</strong>
+        <span id="tLauraSup">鈧?.00</span>
       </div>
       <div class="total-box-superior diferencia" id="diferenciaBoxSup">
-        <strong>📊 Diferencia (L-B)</strong>
-        <span id="tDiferenciaSup">€0.00</span>
+        <strong>馃搳 Diferencia (L-B)</strong>
+        <span id="tDiferenciaSup">鈧?.00</span>
       </div>
       <div class="total-box-superior reservados">
-        <strong>📦 Reservados</strong>
+        <strong>馃摝 Reservados</strong>
         <span id="tTotalReservadosSup">0</span>
       </div>
       <div class="total-box-superior vendidos">
-        <strong>📦 Total Vendidos</strong>
+        <strong>馃摝 Total Vendidos</strong>
         <span id="tTotalVendidosSup">0</span>
       </div>
     </div>
@@ -84,7 +84,7 @@
     <div class="card card-elevated" id="nuevoProductoDiv">
       <div class="section-head">
         <div>
-          <h3>📦 Nuevo / Editar producto</h3>
+          <h3>馃摝 Nuevo / Editar producto</h3>
           <p>Crea productos, ajusta stock, precios y sube imagen.</p>
         </div>
       </div>
@@ -101,8 +101,8 @@
         </div>
 
         <div class="form-campo">
-          <label for="proximo">Próximo</label>
-          <input id="proximo" type="number" placeholder="0" title="Stock futuro a añadir">
+          <label for="proximo">Pr贸ximo</label>
+          <input id="proximo" type="number" placeholder="0" title="Stock futuro a a帽adir">
         </div>
 
         <div class="form-campo">
@@ -122,15 +122,15 @@
       </div>
 
       <div class="form-botones">
-        <button onclick="guardar()" id="guardarBtn">💾 Guardar nuevo</button>
-        <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">❌ Cancelar</button>
+        <button onclick="guardar()" id="guardarBtn">馃捑 Guardar nuevo</button>
+        <button class="red" onclick="cancelarEdit()" id="cancelBtn" style="display:none">鉂?Cancelar</button>
       </div>
     </div>
 
     <div class="card card-elevated">
       <div class="section-head compact">
         <div>
-          <h3>📋 Inventario</h3>
+          <h3>馃搵 Inventario</h3>
           <p>Busca, ordena, vende, reserva, genera QR y gestiona productos.</p>
         </div>
       </div>
@@ -138,44 +138,44 @@
       <div class="filtros">
        <div style="position:relative;display:block">
   <input placeholder="Buscar producto..." id="buscar" oninput="handleBuscarInput()">
-  <button id="buscar-clear" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+  <button id="buscar-clear" onclick="clearSearch()" title="Limpiar b煤squeda">鉁?/button>
 </div>
 
         <div class="contadores-filtrados">
-          <div id="productosVisibles">📦 0 productos</div>
-          <div id="stockVisible">📊 Stock: 0</div>
+          <div id="productosVisibles">馃摝 0 productos</div>
+          <div id="stockVisible">馃搳 Stock: 0</div>
         </div>
 
-       <button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-<button onclick="abrirCatalogo()" class="catalogo-btn">📖 Abrir catálogo</button>
-<button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
-<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+       <button onclick="abrirScannerMovil()" class="scanner-btn">馃摲 Escanear producto</button>
+<button onclick="abrirCatalogo()" class="catalogo-btn">馃摉 Abrir cat谩logo</button>
+<button onclick="descargarCatalogo()" class="catalogo-download-btn">猬囷笍 Descargar cat谩logo</button>
+<button onclick="descargarTodosLosQR()" class="zip-btn">猬囷笍 Descargar todos los QR</button>
 
         <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
-          📊 Ver estadísticas
+          馃搳 Ver estad铆sticas
         </button>
 
         <button id="btnLogsTop" onclick="irLogs()" class="log-btn" style="display:none">
-          📋 Ver logs
+          馃搵 Ver logs
         </button>
 
         <div class="orden-wrap">
-          <span>🆚 Ordenar:</span>
+          <span>馃啔 Ordenar:</span>
           <select id="ordenar" onchange="programarRender()">
-            <option value="nombre-asc">A → Z</option>
-            <option value="nombre-desc">Z → A</option>
-            <option value="stock-asc">Stock ↓</option>
-            <option value="stock-desc">Stock ↑</option>
-            <option value="proximo-desc">Próximo ↓</option>
-            <option value="proximo-asc">Próximo ↑</option>
-            <option value="vendidos-desc">Vendidos ↓</option>
-            <option value="vendidos-asc">Vendidos ↑</option>
-            <option value="reservados-desc">Reservados ↓</option>
-            <option value="reservados-asc">Reservados ↑</option>
-            <option value="bea-asc">Bea ↓</option>
-            <option value="bea-desc">Bea ↑</option>
-            <option value="laura-asc">Laura ↓</option>
-            <option value="laura-desc">Laura ↑</option>
+            <option value="nombre-asc">A 鈫?Z</option>
+            <option value="nombre-desc">Z 鈫?A</option>
+            <option value="stock-asc">Stock 鈫?/option>
+            <option value="stock-desc">Stock 鈫?/option>
+            <option value="proximo-desc">Pr贸ximo 鈫?/option>
+            <option value="proximo-asc">Pr贸ximo 鈫?/option>
+            <option value="vendidos-desc">Vendidos 鈫?/option>
+            <option value="vendidos-asc">Vendidos 鈫?/option>
+            <option value="reservados-desc">Reservados 鈫?/option>
+            <option value="reservados-asc">Reservados 鈫?/option>
+            <option value="bea-asc">Bea 鈫?/option>
+            <option value="bea-desc">Bea 鈫?/option>
+            <option value="laura-asc">Laura 鈫?/option>
+            <option value="laura-desc">Laura 鈫?/option>
           </select>
         </div>
       </div>
@@ -187,11 +187,11 @@
               <th>Producto</th>
               <th>Foto</th>
               <th>Stock</th>
-              <th>Próx.</th>
+              <th>Pr贸x.</th>
               <th>Reservados</th>
               <th>Vendidos</th>
-              <th>Bea €</th>
-              <th>Laura €</th>
+              <th>Bea 鈧?/th>
+              <th>Laura 鈧?/th>
               <th>Reservar</th>
               <th>Vender</th>
               <th>QR</th>
@@ -205,23 +205,23 @@
 
     <div class="totales-container summary-bottom">
       <div class="total-box">
-        <strong>💰 Venta Bea</strong>
-        <span id="tBea">€0.00</span>
+        <strong>馃挵 Venta Bea</strong>
+        <span id="tBea">鈧?.00</span>
       </div>
       <div class="total-box">
-        <strong>💰 Venta Laura</strong>
-        <span id="tLaura">€0.00</span>
+        <strong>馃挵 Venta Laura</strong>
+        <span id="tLaura">鈧?.00</span>
       </div>
       <div class="total-box" id="diferenciaBox">
-        <strong>📊 Diferencia (L-B)</strong>
-        <span id="tDiferencia">€0.00</span>
+        <strong>馃搳 Diferencia (L-B)</strong>
+        <span id="tDiferencia">鈧?.00</span>
       </div>
       <div class="total-box reservados">
-        <strong>📦 Reservados</strong>
+        <strong>馃摝 Reservados</strong>
         <span id="tTotalReservados">0</span>
       </div>
       <div class="total-box vendidos">
-        <strong>📦 Total Vendidos</strong>
+        <strong>馃摝 Total Vendidos</strong>
         <span id="tTotalVendidos">0</span>
       </div>
     </div>
@@ -229,39 +229,39 @@
     <div class="card card-actions">
       <div class="section-head compact">
         <div>
-          <h3>⚙️ Acciones rápidas</h3>
+          <h3>鈿欙笍 Acciones r谩pidas</h3>
           <p>Herramientas globales del sistema.</p>
         </div>
       </div>
 
-      <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🔄 Reset completo</button>
-      <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">💲 Precio Laura global</button>
-      <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📊 Ver estadísticas</button>
-      <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
-<button onclick="abrirScannerMovil()" class="scanner-btn">📷 Escanear producto</button>
-<button onclick="abrirCatalogo()" class="catalogo-btn">📖 Abrir catálogo</button>
-<button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
-<button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
-<button onclick="logout()">🔐 Cambiar usuario</button>
+      <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">馃攧 Reset completo</button>
+      <button onclick="modificarPrecioLauraGlobal()" id="precioGlobalBtn">馃挷 Precio Laura global</button>
+      <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">馃搳 Ver estad铆sticas</button>
+      <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">馃搵 Ver logs</button>
+<button onclick="abrirScannerMovil()" class="scanner-btn">馃摲 Escanear producto</button>
+<button onclick="abrirCatalogo()" class="catalogo-btn">馃摉 Abrir cat谩logo</button>
+<button onclick="descargarCatalogo()" class="catalogo-download-btn">猬囷笍 Descargar cat谩logo</button>
+<button onclick="descargarTodosLosQR()" class="zip-btn">猬囷笍 Descargar todos los QR</button>
+<button onclick="logout()">馃攼 Cambiar usuario</button>
     </div>
 
     <div class="card hidden" id="backupSection">
       <div class="section-head compact">
         <div>
-          <h3>💾 Sistema de backup completo</h3>
+          <h3>馃捑 Sistema de backup completo</h3>
           <p>Guarda o restaura una copia completa del inventario.</p>
         </div>
       </div>
 
       <div class="form-botones">
-        <button class="backup-btn" onclick="hacerBackup()">📥 Descargar backup</button>
-        <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:14px">📤 Restaurar backup</label>
+        <button class="backup-btn" onclick="hacerBackup()">馃摜 Descargar backup</button>
+        <label for="backupFile" class="restore-btn" style="cursor:pointer;padding:10px 15px;border-radius:14px">馃摛 Restaurar backup</label>
         <input type="file" id="backupFile" accept=".json" style="display:none" onchange="restaurarBackup(event)">
       </div>
 
       <div id="backupArea">
-        <p>📋 Último backup disponible aquí 👇</p>
-        <div id="backupText">Genera tu primer backup con el botón superior...</div>
+        <p>馃搵 脷ltimo backup disponible aqu铆 馃憞</p>
+        <div id="backupText">Genera tu primer backup con el bot贸n superior...</div>
         <div id="backupDate"></div>
       </div>
     </div>
@@ -286,20 +286,20 @@
 
 <div id="qrModal" class="modal-overlay">
   <div class="modal-box" style="max-width:420px;text-align:center">
-    <div class="modal-title">📱 QR del producto</div>
+    <div class="modal-title">馃摫 QR del producto</div>
     <div id="qrProductoNombre" style="font-weight:bold;margin-bottom:10px"></div>
     <div id="qrImagenWrap"></div>
     <div id="qrCanvasWrap" class="qr-preview-wrap"></div>
     <div id="qrTexto" class="qr-code-text"></div>
     <div class="modal-actions" style="justify-content:center">
-      <button onclick="imprimirQRActual()">🖨️ Imprimir QR</button>
+      <button onclick="imprimirQRActual()">馃枿锔?Imprimir QR</button>
       <button class="modal-cancel" onclick="cerrarQRModal()">Cerrar</button>
     </div>
   </div>
 </div>
 <div id="fotoModal" class="modal-overlay">
   <div class="modal-box foto-modal-box">
-    <div class="modal-title">🖼️ Imagen del producto</div>
+    <div class="modal-title">馃柤锔?Imagen del producto</div>
     <div class="foto-modal-wrap">
       <img id="fotoModalImg" src="" alt="Imagen ampliada del producto">
     </div>
@@ -310,7 +310,7 @@
 </div>
 <div id="productoModal" class="modal-overlay">
   <div class="modal-box producto-modal-box">
-    <div class="modal-title">📦 Ficha del producto</div>
+    <div class="modal-title">馃摝 Ficha del producto</div>
 
     <div class="producto-modal-content">
       <div class="producto-modal-foto-wrap">
@@ -327,7 +327,7 @@
           </div>
 
           <div class="producto-stat">
-            <strong>Próximo</strong>
+            <strong>Pr贸ximo</strong>
             <span id="productoModalProximo">0</span>
           </div>
 
@@ -342,12 +342,12 @@
           </div>
 
           <div class="producto-stat">
-            <strong>Bea €</strong>
+            <strong>Bea 鈧?/strong>
             <span id="productoModalBea">0.00</span>
           </div>
 
           <div class="producto-stat">
-            <strong>Laura €</strong>
+            <strong>Laura 鈧?/strong>
             <span id="productoModalLaura">0.00</span>
           </div>
         </div>
@@ -355,18 +355,18 @@
         <div class="producto-modal-actions">
           <div class="accion-group">
             <input type="number" id="productoModalCantReserva" min="1" value="1" class="cantidad-input">
-            <button class="reservar-btn btn-reservar" onclick="reservarDesdeFicha()">⏳ Reservar</button>
+            <button class="reservar-btn btn-reservar" onclick="reservarDesdeFicha()">鈴?Reservar</button>
           </div>
 
           <div class="accion-group">
             <input type="number" id="productoModalCantVenta" min="1" value="1" class="cantidad-input">
-            <button class="btn-vender" onclick="venderDesdeFicha()">🛒 Vender</button>
+            <button class="btn-vender" onclick="venderDesdeFicha()">馃洅 Vender</button>
           </div>
 
           <div class="producto-modal-extra">
             <button class="qr-btn" onclick="verQRProductoDesdeFicha()">QR</button>
-            <button id="productoModalEditarBtn" class="hidden" onclick="editarDesdeFicha()">✏️ Editar</button>
-            <button id="productoModalBorrarBtn" class="red hidden" onclick="borrarDesdeFicha()">🗑️ Borrar</button>
+            <button id="productoModalEditarBtn" class="hidden" onclick="editarDesdeFicha()">鉁忥笍 Editar</button>
+            <button id="productoModalBorrarBtn" class="red hidden" onclick="borrarDesdeFicha()">馃棏锔?Borrar</button>
           </div>
         </div>
       </div>
@@ -378,7 +378,7 @@
   </div>
 </div>
 
-<button id="scrollTopBtn" title="Subir arriba">⬆️</button>
+<button id="scrollTopBtn" title="Subir arriba">猬嗭笍</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -434,6 +434,19 @@ const EMAILJS_CONFIG = {
   template:'template_06j67bo',
   publicKey:'q6b-zVGH0aBXeREzv'
 };
+
+function avisarAppUsuario(email = '') {
+  try {
+    if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'auth',
+        email: String(email || '').trim().toLowerCase()
+      }));
+    }
+  } catch (error) {
+    console.log('No se pudo avisar a la app:', error);
+  }
+}
 
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
@@ -523,7 +536,7 @@ window.irEstadisticas = () => {
 };
 
 window.irLogs = () => {
-  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede ver LOGS', 'error');
+  if (userRole !== 'admin') return showToast('鉂?Solo ADMIN puede ver LOGS', 'error');
   window.open('logs.html', '_blank');
 };
 
@@ -533,7 +546,7 @@ window.abrirScannerMovil = () => {
     window.open(baseUrl + 'scanner.html', '_blank');
   } catch (error) {
     console.error(error);
-    showToast('❌ Error abriendo el scanner', 'error');
+    showToast('鉂?Error abriendo el scanner', 'error');
   }
 };
 
@@ -543,16 +556,16 @@ window.abrirCatalogo = () => {
 
 window.subirFotoRapidaDesdeArchivo = async (id, file) => {
   if (!currentUser || !['admin','user'].includes(userRole)) {
-    return showToast('❌ Debes iniciar sesión', 'error');
+    return showToast('鉂?Debes iniciar sesi贸n', 'error');
   }
 
   if (!file) return;
   if (!file.type || !file.type.startsWith('image/')) {
-    return showToast('❌ El archivo no es una imagen', 'error');
+    return showToast('鉂?El archivo no es una imagen', 'error');
   }
 
   try {
-    showToast('⏳ Comprimiendo y subiendo foto...', 'info', 3000);
+    showToast('鈴?Comprimiendo y subiendo foto...', 'info', 3000);
 
     const producto = productos[id];
     const imagenUrl = await subirImagenProducto(file, producto?.nombre || 'producto');
@@ -564,10 +577,10 @@ window.subirFotoRapidaDesdeArchivo = async (id, file) => {
     await guardarLog('foto-subida', id, producto?.nombre || '', 0, currentUser?.email || '', 'Foto actualizada');
 
     programarRender();
-    showToast('✅ Foto subida correctamente', 'success');
+    showToast('鉁?Foto subida correctamente', 'success');
   } catch (error) {
     console.error(error);
-    showToast('❌ Error subiendo foto', 'error', 3500);
+    showToast('鉂?Error subiendo foto', 'error', 3500);
   }
 };
 
@@ -588,7 +601,7 @@ window.subirFotoRapida = async (id) => {
     input.click();
   } catch (error) {
     console.error(error);
-    showToast('❌ Error abriendo selector de imagen', 'error');
+    showToast('鉂?Error abriendo selector de imagen', 'error');
   }
 };
 
@@ -598,12 +611,12 @@ window.borrarFotoProducto = async (id) => {
 
     const p = productos[id];
     if (!p || !p.imagen) {
-      return showToast('❌ No hay foto para borrar', 'error');
+      return showToast('鉂?No hay foto para borrar', 'error');
     }
 
     openConfirm({
-      title: '🗑️ Borrar foto',
-      message: `¿Seguro que quieres eliminar la foto de "${p.nombre}"?`,
+      title: '馃棏锔?Borrar foto',
+      message: `驴Seguro que quieres eliminar la foto de "${p.nombre}"?`,
       confirmText: 'Borrar',
       danger: true,
       onConfirm: async () => {
@@ -618,16 +631,16 @@ window.borrarFotoProducto = async (id) => {
           await guardarLog('foto-borrada', id, p.nombre, 0, currentUser.email);
 
           programarRender();
-          showToast('✅ Foto eliminada', 'success');
+          showToast('鉁?Foto eliminada', 'success');
         } catch (err) {
           console.error(err);
-          showToast('❌ Error borrando foto', 'error');
+          showToast('鉂?Error borrando foto', 'error');
         }
       }
     });
   } catch (error) {
     console.error(error);
-    showToast('❌ Error eliminando foto', 'error');
+    showToast('鉂?Error eliminando foto', 'error');
   }
 };
 
@@ -653,12 +666,12 @@ window.dropFotoProducto = async (event, id) => {
   if (zona) zona.classList.remove('drag-over');
 
   if (!currentUser || !['admin','user'].includes(userRole)) {
-    return showToast('❌ Debes iniciar sesión', 'error');
+    return showToast('鉂?Debes iniciar sesi贸n', 'error');
   }
 
   const files = event.dataTransfer?.files;
   if (!files || !files.length) {
-    return showToast('❌ No se detectó ningún archivo', 'error');
+    return showToast('鉂?No se detect贸 ning煤n archivo', 'error');
   }
 
   const file = files[0];
@@ -677,7 +690,7 @@ window.descargarCatalogo = async () => {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
     if (!productosLista.length) {
-      return showToast('❌ No hay productos para generar catálogo', 'error');
+      return showToast('鉂?No hay productos para generar cat谩logo', 'error');
     }
 
     const tarjetasHTML = productosLista.map(p => `
@@ -690,7 +703,7 @@ window.descargarCatalogo = async () => {
         </div>
         <div class="catalog-body">
           <h3 class="catalog-name">${p.nombre}</h3>
-          <div class="catalog-price">€${p.laura.toFixed(2)}</div>
+          <div class="catalog-price">鈧?{p.laura.toFixed(2)}</div>
         </div>
       </article>
     `).join('');
@@ -700,7 +713,7 @@ window.descargarCatalogo = async () => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catálogo Mundo Azul</title>
+<title>Cat谩logo Mundo Azul</title>
 <style>
 :root{
   --bg:#eef3ff;
@@ -840,12 +853,12 @@ body{
     <header class="catalog-header">
       <img src="logo.png" alt="Logo Mundo Azul" class="catalog-logo">
       <div>
-        <h1>Catálogo Mundo Azul</h1>
-        <p>Nombre · Foto · Precio venta</p>
+        <h1>Cat谩logo Mundo Azul</h1>
+        <p>Nombre 路 Foto 路 Precio venta</p>
       </div>
     </header>
 
-    <p class="print-note">Se abrirá la ventana de impresión. Elige "Guardar como PDF".</p>
+    <p class="print-note">Se abrir谩 la ventana de impresi贸n. Elige "Guardar como PDF".</p>
 
     <section class="catalog-grid">
       ${tarjetasHTML}
@@ -864,17 +877,17 @@ body{
 
     const w = window.open('', '_blank');
     if (!w) {
-      return showToast('❌ El navegador bloqueó la ventana emergente', 'error');
+      return showToast('鉂?El navegador bloque贸 la ventana emergente', 'error');
     }
 
     w.document.open();
     w.document.write(html);
     w.document.close();
 
-    showToast('✅ Catálogo preparado para guardar en PDF', 'success');
+    showToast('鉁?Cat谩logo preparado para guardar en PDF', 'success');
   } catch (error) {
     console.error(error);
-    showToast('❌ Error generando catálogo PDF', 'error');
+    showToast('鉂?Error generando cat谩logo PDF', 'error');
   }
 };
 
@@ -939,12 +952,12 @@ window.clearSearch = () => {
   buscar.value = '';
   document.getElementById('buscar-clear').style.display = 'none';
   programarRender();
-  showToast('Búsqueda limpiada', 'info', 1200);
+  showToast('B煤squeda limpiada', 'info', 1200);
 };
 
 window.actualizarContadoresFiltrados = (count, stockTotal) => {
-  document.getElementById('productosVisibles').textContent = `📦 ${count} productos`;
-  document.getElementById('stockVisible').textContent = `📊 Stock: ${stockTotal}`;
+  document.getElementById('productosVisibles').textContent = `馃摝 ${count} productos`;
+  document.getElementById('stockVisible').textContent = `馃搳 Stock: ${stockTotal}`;
 };
 
 window.showToast = (message, type = 'info', duration = 2400) => {
@@ -1040,7 +1053,7 @@ window.cerrarFotoModal = () => {
 
 window.verQRProducto = async (id) => {
   const p = productos[id];
-  if (!p) return showToast('❌ Producto no encontrado', 'error');
+  if (!p) return showToast('鉂?Producto no encontrado', 'error');
 
   const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
   const qrText = `${baseUrl}scanner.html?scanId=${id}`;
@@ -1075,13 +1088,13 @@ window.verQRProducto = async (id) => {
     });
     modal.classList.add('show');
   } catch (e) {
-    showToast('❌ Error generando QR', 'error');
+    showToast('鉂?Error generando QR', 'error');
   }
 };
 
 window.imprimirQRActual = () => {
   const canvas = document.querySelector('#qrCanvasWrap canvas');
-  if (!canvas || !ultimoQRTexto) return showToast('❌ No hay QR para imprimir', 'error');
+  if (!canvas || !ultimoQRTexto) return showToast('鉂?No hay QR para imprimir', 'error');
 
   const img = canvas.toDataURL('image/png');
   const w = window.open('', '_blank');
@@ -1116,10 +1129,10 @@ window.imprimirQRActual = () => {
 window.descargarTodosLosQR = async () => {
   try {
     const ids = Object.keys(productos || {});
-    if (!ids.length) return showToast('❌ No hay productos para generar QR', 'error');
-    if (!window.JSZip) return showToast('❌ No se cargó JSZip', 'error');
+    if (!ids.length) return showToast('鉂?No hay productos para generar QR', 'error');
+    if (!window.JSZip) return showToast('鉂?No se carg贸 JSZip', 'error');
 
-    showToast('⏳ Generando ZIP de QR...', 'info', 3000);
+    showToast('鈴?Generando ZIP de QR...', 'info', 3000);
 
     const zip = new JSZip();
     const carpeta = zip.folder('qrs-inventario-laura');
@@ -1149,7 +1162,7 @@ window.descargarTodosLosQR = async () => {
       ctx.textAlign = 'center';
 
       ctx.font = 'bold 52px Arial';
-      ctx.fillText('📱 QR del producto', width / 2, 90);
+      ctx.fillText('馃摫 QR del producto', width / 2, 90);
 
       ctx.font = 'bold 46px Arial';
       const maxTextWidth = width - 80;
@@ -1204,10 +1217,10 @@ window.descargarTodosLosQR = async () => {
 
     setTimeout(() => URL.revokeObjectURL(url), 1500);
 
-    showToast(`✅ ZIP descargado con ${generados} QR sin foto`, 'success', 3500);
+    showToast(`鉁?ZIP descargado con ${generados} QR sin foto`, 'success', 3500);
   } catch (error) {
     console.error(error);
-    showToast('❌ Error generando los QR', 'error', 3500);
+    showToast('鉂?Error generando los QR', 'error', 3500);
   }
 };
 
@@ -1221,11 +1234,11 @@ window.programarRender = () => {
 };
 
 window.anadirProximoStock = async (id) => {
-  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede añadir stock próximo', 'error');
+  if (userRole !== 'admin') return showToast('鉂?Solo ADMIN puede a帽adir stock pr贸ximo', 'error');
   const p = productos[id];
   const inputProx = document.querySelector(`input[data-producto="${id}"]`);
   const cantidad = Number(inputProx?.value) || 0;
-  if (cantidad <= 0) return showToast('❌ Cantidad inválida', 'error');
+  if (cantidad <= 0) return showToast('鉂?Cantidad inv谩lida', 'error');
 
   const nuevoStock = Number(p.stock || 0) + cantidad;
   await update(ref(db,'productos/'+id), { stock:nuevoStock, proximo:0, emailAgotadoEnviado:false });
@@ -1240,24 +1253,24 @@ window.anadirProximoStock = async (id) => {
   }
 
   await guardarLog('stock-anadido', id, p.nombre, cantidad, currentUser.email, `Stock real: ${nuevoStock}`);
-  showToast(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`, 'success');
+  showToast(`鉁?A帽adidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`, 'success');
 };
 
 window.modificarProximoStock = (id) => {
-  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede modificar stock próximo', 'error');
+  if (userRole !== 'admin') return showToast('鉂?Solo ADMIN puede modificar stock pr贸ximo', 'error');
   const p = productos[id];
   openModal({
-    title: '📦 Editar stock próximo',
+    title: '馃摝 Editar stock pr贸ximo',
     fields: [
-      { name: 'proximo', label: `Próximo para ${p.nombre}`, type: 'number', value: p?.proximo || 0, min: 0 }
+      { name: 'proximo', label: `Pr贸ximo para ${p.nombre}`, type: 'number', value: p?.proximo || 0, min: 0 }
     ],
     onConfirm: async (values) => {
       const proximo = Math.max(0, Number(values.proximo));
-      if (isNaN(proximo)) return showToast('❌ Stock próximo inválido', 'error');
+      if (isNaN(proximo)) return showToast('鉂?Stock pr贸ximo inv谩lido', 'error');
       await update(ref(db,'productos/'+id), { proximo });
       productos[id].proximo = proximo;
       await guardarLog('proximo-modificado', id, productos[id].nombre, proximo, currentUser.email);
-      showToast(`✅ Próximo actualizado: ${proximo}`, 'success');
+      showToast(`鉁?Pr贸ximo actualizado: ${proximo}`, 'success');
     }
   });
 };
@@ -1312,7 +1325,7 @@ html += `
         ondragover="dragOverFoto(event)"
         ondragleave="dragLeaveFoto(event)"
         ondrop="dropFotoProducto(event,'${id}')"
-        title="Arrastra una imagen aquí"
+        title="Arrastra una imagen aqu铆"
       >
         ${p.imagen
           ? `<img src="${p.imagen}" class="foto-mini foto-clickable" alt="foto" onclick="abrirFotoModal('${p.imagen}')">`
@@ -1321,9 +1334,9 @@ html += `
       </div>
 
       <div class="foto-acciones">
-        <button class="btn-foto icon-btn-xs" onclick="subirFotoRapida('${id}')" title="Subir foto">🖼️</button>
+        <button class="btn-foto icon-btn-xs" onclick="subirFotoRapida('${id}')" title="Subir foto">馃柤锔?/button>
         ${['admin','user'].includes(userRole) && p.imagen
-          ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">✖</button>`
+          ? `<button class="red icon-btn-xs borrar-foto-btn" onclick="borrarFotoProducto('${id}')" title="Borrar foto">鉁?/button>`
           : ''
         }
       </div>
@@ -1333,15 +1346,15 @@ html += `
 
   <td class="${stockCellClass}">
     ${stockDisponible}
-    ${userRole==='admin' ? `<button class="stock-edit-btn icon-btn-xs" onclick="modificarStock('${id}')" title="Editar stock">📦</button>` : ''}
+    ${userRole==='admin' ? `<button class="stock-edit-btn icon-btn-xs" onclick="modificarStock('${id}')" title="Editar stock">馃摝</button>` : ''}
   </td>
 
   <td>
     <div class="prox-group">
       <input type="number" min="0" value="${proximoDisponible}" data-producto="${id}" class="prox-input ${tieneProximo ? 'tiene-valor' : ''}" onchange="updateProxInput('${id}',this.value)" oninput="updateProxInputVisual(this)" title="Stock futuro">
       ${userRole==='admin' ? `
-        <button class="prox-btn icon-btn-xs" onclick="anadirProximoStock('${id}')" title="Añadir al stock real">➕</button>
-        <button class="prox-edit-btn icon-btn-xs" onclick="modificarProximoStock('${id}')" title="Editar próximo">✏️</button>
+        <button class="prox-btn icon-btn-xs" onclick="anadirProximoStock('${id}')" title="A帽adir al stock real">鉃?/button>
+        <button class="prox-edit-btn icon-btn-xs" onclick="modificarProximoStock('${id}')" title="Editar pr贸ximo">鉁忥笍</button>
       ` : ''}
     </div>
   </td>
@@ -1350,16 +1363,16 @@ html += `
   ${p.reservados || 0}
   ${(p.reservados || 0) > 0 ? `
     <div class="accion-group" style="margin-top:6px">
-      <button class="icon-btn-xs" onclick="verReserva('${id}')" title="Ver ficha reserva">ℹ️</button>
-      <button class="cancelar-reserva icon-btn-xs" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">❌</button>
-      <button class="confirmar-btn icon-btn-xs" onclick="venderReserva('${id}')" title="Marcar reserva como vendida">☑</button>
+      <button class="icon-btn-xs" onclick="verReserva('${id}')" title="Ver ficha reserva">鈩癸笍</button>
+      <button class="cancelar-reserva icon-btn-xs" onclick="cancelarReserva('${id}',1)" title="Cancelar 1 reserva">鉂?/button>
+      <button class="confirmar-btn icon-btn-xs" onclick="venderReserva('${id}')" title="Marcar reserva como vendida">鈽?/button>
     </div>
   ` : ''}
 </td>
 
   <td class="vendidos">
     ${p.vendidos || 0}
-    ${(p.vendidos || 0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">↩️</button>` : ''}
+    ${(p.vendidos || 0) > 0 ? `<button class="undo-btn" onclick="eliminarUnaVenta('${id}')" title="Eliminar 1 venta">鈫╋笍</button>` : ''}
   </td>
 
   <td>${Number(p.bea || 0).toFixed(2)}</td>
@@ -1367,21 +1380,21 @@ html += `
   <td class="editable laura-negro">
     <div class="precio-wrap">
       <strong>${Number(p.laura || 0).toFixed(2)}</strong>
-      <button class="icon-btn-xs" onclick="modificarPrecioLaura('${id}')" title="Editar precio Laura">💲</button>
+      <button class="icon-btn-xs" onclick="modificarPrecioLaura('${id}')" title="Editar precio Laura">馃挷</button>
     </div>
   </td>
 
   <td>
     <div class="accion-group">
       <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" class="cantidad-input">
-      <button class="reservar-btn btn-reservar" onclick="reservar('${id}',this.previousElementSibling.value)">⏳</button>
+      <button class="reservar-btn btn-reservar" onclick="reservar('${id}',this.previousElementSibling.value)">鈴?/button>
     </div>
   </td>
 
   <td>
     <div class="accion-group">
       <input type="number" min="1" max="${Math.max(stockDisponible,1)}" value="1" class="cantidad-input">
-      <button class="btn-vender" onclick="vender('${id}',this.previousElementSibling.value)">🛒</button>
+      <button class="btn-vender" onclick="vender('${id}',this.previousElementSibling.value)">馃洅</button>
     </div>
   </td>
 
@@ -1391,8 +1404,8 @@ html += `
 
   <td class="col-acciones">
     ${userRole === 'admin' ? `
-      <button class="icon-btn" onclick="editar('${id}')">✏️</button>
-      <button class="red icon-btn" onclick="borrar('${id}')">🗑️</button>
+      <button class="icon-btn" onclick="editar('${id}')">鉁忥笍</button>
+      <button class="red icon-btn" onclick="borrar('${id}')">馃棏锔?/button>
     ` : ''}
   </td>
 </tr>`;
@@ -1416,11 +1429,11 @@ window.updateProxInput = (id, value) => {
 window.eliminarUnaVenta = async (id) => {
   const p = productos[id];
   const vendidos = Number(p.vendidos || 0);
-  if (vendidos === 0) return showToast('❌ No hay ventas para eliminar', 'error');
+  if (vendidos === 0) return showToast('鉂?No hay ventas para eliminar', 'error');
 
   openConfirm({
-    title: '↩️ Corregir venta',
-    message: `Se eliminará 1 venta de "${p.nombre}", volverá 1 unidad al stock y se descontarán los importes de Bea y Laura.`,
+    title: '鈫╋笍 Corregir venta',
+    message: `Se eliminar谩 1 venta de "${p.nombre}", volver谩 1 unidad al stock y se descontar谩n los importes de Bea y Laura.`,
     confirmText: 'Corregir',
     onConfirm: async () => {
       const nuevoStock = Number(p.stock || 0) + 1;
@@ -1459,13 +1472,13 @@ window.eliminarUnaVenta = async (id) => {
         }
       );
 
-      showToast(`✅ Eliminada 1 venta. Stock: ${nuevoStock}`, 'success');
+      showToast(`鉁?Eliminada 1 venta. Stock: ${nuevoStock}`, 'success');
     }
   });
 };
 
 window.hacerBackup = async () => {
-  if (currentUser.email !== 'nilose2014@gmail.com') return alert('❌ Solo nilose2014@gmail.com puede hacer backup');
+  if (currentUser.email !== 'nilose2014@gmail.com') return alert('鉂?Solo nilose2014@gmail.com puede hacer backup');
   try {
     const backupData = {
       productos,
@@ -1478,7 +1491,7 @@ window.hacerBackup = async () => {
 
     await set(backupRef, backupData);
     document.getElementById('backupText').textContent = JSON.stringify(backupData, null, 2);
-    document.getElementById('backupDate').innerHTML = `<strong>📅 Backup creado: ${new Date().toLocaleString('es-ES')}</strong>`;
+    document.getElementById('backupDate').innerHTML = `<strong>馃搮 Backup creado: ${new Date().toLocaleString('es-ES')}</strong>`;
 
     const oldLinks = document.querySelectorAll('.download-link');
     oldLinks.forEach(link => link.remove());
@@ -1488,26 +1501,26 @@ window.hacerBackup = async () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = `backup-inventario-${new Date().toISOString().slice(0,10)}.json`;
-    a.textContent = '💾 DESCARGAR BACKUP';
+    a.textContent = '馃捑 DESCARGAR BACKUP';
     a.className = 'download-link';
     document.getElementById('backupArea').appendChild(a);
 
     ultimoBackup = backupData;
     await guardarLog('backup-creado', null, 'BACKUP', 1, currentUser.email);
-    showToast('✅ Backup completado y descargado', 'success');
+    showToast('鉁?Backup completado y descargado', 'success');
   } catch(error) {
-    alert('❌ Error en backup: ' + error.message);
+    alert('鉂?Error en backup: ' + error.message);
   }
 };
 
 window.restaurarBackup = async (event) => {
-  if (currentUser.email !== 'nilose2014@gmail.com') return showToast('❌ Solo nilose2014@gmail.com puede restaurar', 'error');
+  if (currentUser.email !== 'nilose2014@gmail.com') return showToast('鉂?Solo nilose2014@gmail.com puede restaurar', 'error');
   const file = event.target.files[0];
   if (!file) return;
 
   openConfirm({
-    title: '📤 Restaurar backup',
-    message: 'Se reemplazarán TODOS los productos y se mantendrán los logs.',
+    title: '馃摛 Restaurar backup',
+    message: 'Se reemplazar谩n TODOS los productos y se mantendr谩n los logs.',
     confirmText: 'Restaurar',
     danger: true,
     onConfirm: async () => {
@@ -1524,10 +1537,10 @@ window.restaurarBackup = async (event) => {
         await set(ref(db,'productos_publicos'), publicos);
 
         await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
-        showToast('✅ Restauración completada. Recargando...', 'success');
+        showToast('鉁?Restauraci贸n completada. Recargando...', 'success');
         setTimeout(() => location.reload(), 700);
       } catch(error) {
-        showToast('❌ Error restaurando: ' + error.message, 'error', 3500);
+        showToast('鉂?Error restaurando: ' + error.message, 'error', 3500);
       }
     }
   });
@@ -1540,7 +1553,7 @@ window.cargarBackupFirebase = () => {
       ultimoBackup = snap.val();
       document.getElementById('backupText').textContent = JSON.stringify(ultimoBackup, null, 2);
       const fecha = new Date(ultimoBackup.timestamp).toLocaleString('es-ES');
-      document.getElementById('backupDate').innerHTML = `<strong>📅 Último backup Firebase: ${fecha}</strong>`;
+      document.getElementById('backupDate').innerHTML = `<strong>馃搮 脷ltimo backup Firebase: ${fecha}</strong>`;
     }
   });
 };
@@ -1550,7 +1563,7 @@ async function enviarEmail(datos) {
 
   const dedupeKey = `${datos.subject || ''}__${datos.producto || ''}__${datos.stock ?? ''}__${datos.detalles || ''}`;
   if (emailEnviadoReciente[dedupeKey]) {
-    console.log('⛔ Email duplicado evitado:', dedupeKey);
+    console.log('鉀?Email duplicado evitado:', dedupeKey);
     return;
   }
   emailEnviadoReciente[dedupeKey] = true;
@@ -1565,9 +1578,9 @@ async function enviarEmail(datos) {
 
   try {
     await emailjs.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, datos);
-    console.log('✅ Email enviado:', datos.subject);
+    console.log('鉁?Email enviado:', datos.subject);
   } catch(err) {
-    console.log('❌ Error email:', err);
+    console.log('鉂?Error email:', err);
     delete emailEnviadoReciente[dedupeKey];
   }
 }
@@ -1594,6 +1607,8 @@ onAuthStateChanged(auth, async (user) => {
     mainApp.classList.remove('hidden');
     mainApp.style.display = 'block';
 
+    avisarAppUsuario(user.email || '');
+
     if (!loginLogHecho) {
       loginLogHecho = true;
       try {
@@ -1615,6 +1630,8 @@ onAuthStateChanged(auth, async (user) => {
     loginDiv.classList.remove('hidden');
     loginDiv.style.display = 'block';
 
+    avisarAppUsuario('');
+
     dataListenerIniciado = false;
   }
 });
@@ -1622,11 +1639,11 @@ onAuthStateChanged(auth, async (user) => {
 window.login = () => {
   const email = document.getElementById('userEmail').value.trim();
   const pass = document.getElementById('userPass').value;
-  if (!email || !pass) return showToast('❌ Email y contraseña requeridos', 'error');
-  signInWithEmailAndPassword(auth, email, pass).catch(e => showToast('❌ Error: ' + e.message, 'error', 3500));
+  if (!email || !pass) return showToast('鉂?Email y contrase帽a requeridos', 'error');
+  signInWithEmailAndPassword(auth, email, pass).catch(e => showToast('鉂?Error: ' + e.message, 'error', 3500));
 };
 
-window.logout = () => signOut(auth).catch(e => alert('❌ Error: ' + e.message));
+window.logout = () => signOut(auth).catch(e => alert('鉂?Error: ' + e.message));
 
 window.resetLogin = () => {
   document.getElementById('userEmail').value = '';
@@ -1641,7 +1658,7 @@ window.togglePassword = () => {
   const visible = input.type === 'text';
 
   input.type = visible ? 'password' : 'text';
-  btn.textContent = visible ? '👁️' : '🙈';
+  btn.textContent = visible ? '馃憗锔? : '馃檲';
   btn.classList.toggle('visible', !visible);
 };
 
@@ -1706,26 +1723,35 @@ function toggleNuevoProducto() {
 }
 
 function updateUI() {
-document.body.classList.toggle('solo-user', userRole !== 'admin');
+  const esSoloUser = userRole !== 'admin';
+  document.body.classList.toggle('solo-user', esSoloUser);
+  document.body.classList.toggle('nav-user-limitado', esSoloUser);
+
   const status = document.getElementById('status');
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   const thAcciones = document.getElementById('thAcciones');
+
   if (userRole === 'admin') {
-      if (thAcciones) thAcciones.style.display = '';
-    status.innerHTML = `👑 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PRÓXIMO STOCK + 📊 ESTADÍSTICAS + 📋 LOGS + FOTOS ✅`;
+    if (thAcciones) thAcciones.style.display = '';
+    status.innerHTML = `馃憫 <strong>ADMIN (nilose2014@gmail.com):</strong> ${currentUser.email}<br>Todos los permisos + BACKUP + PR脫XIMO STOCK + 馃搳 ESTAD脥STICAS + 馃搵 LOGS + FOTOS 鉁卄;
     status.className = 'admin';
-    guardarBtn.disabled = false; guardarBtn.className = '';
-    resetBtn.disabled = false; resetBtn.className = 'red';
+    guardarBtn.disabled = false; 
+    guardarBtn.className = '';
+    resetBtn.disabled = false; 
+    resetBtn.className = 'red';
     precioGlobalBtn.disabled = false;
   } else {
-  if (thAcciones) thAcciones.style.display = 'none';
-    status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + CORREGIR VENTAS + SUBIR FOTOS ✅`;
+    if (thAcciones) thAcciones.style.display = 'none';
+    status.innerHTML = `馃懁 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Laura + CORREGIR VENTAS + SUBIR FOTOS 鉁卄;
     status.className = 'user';
-    guardarBtn.disabled = true; guardarBtn.className = 'disabled';
-    resetBtn.disabled = true; resetBtn.className = 'disabled';
-    precioGlobalBtn.disabled = false; precioGlobalBtn.className = '';
+    guardarBtn.disabled = true; 
+    guardarBtn.className = 'disabled';
+    resetBtn.disabled = true; 
+    resetBtn.className = 'disabled';
+    precioGlobalBtn.disabled = false; 
+    precioGlobalBtn.className = '';
   }
 }
 
@@ -1772,7 +1798,7 @@ function loadData() {
 programarRender();
 refrescarFichaProductoSiAbierta();
   }, (error) => {
-    document.getElementById('status').textContent = '❌ Error de conexión';
+    document.getElementById('status').textContent = '鉂?Error de conexi贸n';
     document.getElementById('status').className = 'error';
     console.error(error);
   });
@@ -1816,12 +1842,12 @@ function ordenarProductos(productosObj) {
 }
 
 function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados) {
-  document.getElementById('tBeaSup').textContent = `€${totalBea.toFixed(2)}`;
-  document.getElementById('tLauraSup').textContent = `€${totalLaura.toFixed(2)}`;
+  document.getElementById('tBeaSup').textContent = `鈧?{totalBea.toFixed(2)}`;
+  document.getElementById('tLauraSup').textContent = `鈧?{totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservadosSup').textContent = totalReservados;
   document.getElementById('tTotalVendidosSup').textContent = totalVendidos;
-  document.getElementById('tBea').textContent = `€${totalBea.toFixed(2)}`;
-  document.getElementById('tLaura').textContent = `€${totalLaura.toFixed(2)}`;
+  document.getElementById('tBea').textContent = `鈧?{totalBea.toFixed(2)}`;
+  document.getElementById('tLaura').textContent = `鈧?{totalLaura.toFixed(2)}`;
   document.getElementById('tTotalReservados').textContent = totalReservados;
   document.getElementById('tTotalVendidos').textContent = totalVendidos;
 
@@ -1831,8 +1857,8 @@ function actualizarTotales(totalBea, totalLaura, totalVendidos, totalReservados)
   const diferenciaInf = document.getElementById('tDiferencia');
   const diferenciaBoxInf = document.getElementById('diferenciaBox');
 
-  diferenciaSup.textContent = `€${diferencia.toFixed(2)}`;
-  diferenciaInf.textContent = `€${diferencia.toFixed(2)}`;
+  diferenciaSup.textContent = `鈧?{diferencia.toFixed(2)}`;
+  diferenciaInf.textContent = `鈧?{diferencia.toFixed(2)}`;
 
   if (diferencia > 0) {
     diferenciaSup.className = 'diferencia-positiva';
@@ -1857,17 +1883,17 @@ window.reservar = async (id, cant) => {
   cant = Number(cant);
 
   if (cant <= 0 || Number(p.stock || 0) < cant) {
-    return showToast('❌ Stock insuficiente', 'error');
+    return showToast('鉂?Stock insuficiente', 'error');
   }
 
   openModal({
-    title: '⏳ Confirmar reserva',
+    title: '鈴?Confirmar reserva',
     message: `Vas a reservar ${cant} unidad(es) de "${p.nombre}". Completa la ficha antes de confirmar.`,
     confirmText: 'Guardar reserva',
     fields: [
       { name: 'clienteNombre', label: 'Nombre', type: 'text', value: '' },
-      { name: 'clienteTelefono', label: 'Teléfono', type: 'text', value: '' },
-      { name: 'adelanto', label: 'Adelanto €', type: 'number', value: '0', min: 0, step: '0.01' },
+      { name: 'clienteTelefono', label: 'Tel茅fono', type: 'text', value: '' },
+      { name: 'adelanto', label: 'Adelanto 鈧?, type: 'number', value: '0', min: 0, step: '0.01' },
       { name: 'fechaRecogida', label: 'Fecha de recogida', type: 'date', value: '' },
       { name: 'comentarios', label: 'Comentarios', type: 'text', value: '' }
     ],
@@ -1879,7 +1905,7 @@ window.reservar = async (id, cant) => {
       const comentarios = String(values.comentarios || '').trim();
 
       if (!nombre) {
-        showToast('❌ El nombre es obligatorio', 'error');
+        showToast('鉂?El nombre es obligatorio', 'error');
         return;
       }
 
@@ -1920,18 +1946,18 @@ window.reservar = async (id, cant) => {
         p.nombre,
         cant,
         currentUser.email,
-        `Reserva de ${nombre} | Tel:${telefono} | Adelanto:€${adelanto.toFixed(2)} | Recogida:${fechaRecogida || '-'} | ${comentarios || 'Sin comentarios'}`
+        `Reserva de ${nombre} | Tel:${telefono} | Adelanto:鈧?{adelanto.toFixed(2)} | Recogida:${fechaRecogida || '-'} | ${comentarios || 'Sin comentarios'}`
       );
 
       await enviarEmail({
         producto: p.nombre,
         stock: nuevoStock,
-        detalles: `${cant} uds. RESERVADAS | Cliente: ${nombre} | Tel: ${telefono} | Adelanto: €${adelanto.toFixed(2)} | Recogida: ${fechaRecogida || '-'} | Stock disponible: ${nuevoStock}`,
-        subject: '⏳ RESERVA - ' + p.nombre,
+        detalles: `${cant} uds. RESERVADAS | Cliente: ${nombre} | Tel: ${telefono} | Adelanto: 鈧?{adelanto.toFixed(2)} | Recogida: ${fechaRecogida || '-'} | Stock disponible: ${nuevoStock}`,
+        subject: '鈴?RESERVA - ' + p.nombre,
         fecha: new Date().toLocaleString('es-ES')
       });
 
-      showToast(`✅ Reserva guardada para ${nombre}`, 'success');
+      showToast(`鉁?Reserva guardada para ${nombre}`, 'success');
       programarRender();
     }
   });
@@ -1939,21 +1965,21 @@ window.reservar = async (id, cant) => {
 
 window.verReserva = (id) => {
   const p = productos[id];
-  if (!p) return showToast('❌ Producto no encontrado', 'error');
+  if (!p) return showToast('鉂?Producto no encontrado', 'error');
 
   const reservas = Array.isArray(p.reservasDetalle) ? p.reservasDetalle : [];
-  if (!reservas.length) return showToast('❌ No hay ficha de reserva', 'error');
+  if (!reservas.length) return showToast('鉂?No hay ficha de reserva', 'error');
 
   const ultima = reservas.find(r => !r.vendida) || reservas[reservas.length - 1];
 
   openModal({
-    title: 'ℹ️ Datos de la reserva',
+    title: '鈩癸笍 Datos de la reserva',
     message: '',
     confirmText: 'Cerrar',
     fields: [
       { name: 'clienteNombre', label: 'Nombre', type: 'text', value: ultima.nombre || '' },
-      { name: 'clienteTelefono', label: 'Teléfono', type: 'text', value: ultima.telefono || '' },
-      { name: 'adelanto', label: 'Adelanto €', type: 'number', value: Number(ultima.adelanto || 0).toFixed(2), min: 0, step: '0.01' },
+      { name: 'clienteTelefono', label: 'Tel茅fono', type: 'text', value: ultima.telefono || '' },
+      { name: 'adelanto', label: 'Adelanto 鈧?, type: 'number', value: Number(ultima.adelanto || 0).toFixed(2), min: 0, step: '0.01' },
       { name: 'fechaRecogida', label: 'Fecha recogida', type: 'date', value: ultima.fechaRecogida || '' },
       { name: 'comentarios', label: 'Comentarios', type: 'text', value: ultima.comentarios || '' }
     ],
@@ -1978,19 +2004,19 @@ window.verReserva = (id) => {
 
 window.venderReserva = async (id) => {
   const p = productos[id];
-  if (!p) return showToast('❌ Producto no encontrado', 'error');
+  if (!p) return showToast('鉂?Producto no encontrado', 'error');
 
   const reservas = Array.isArray(p.reservasDetalle) ? [...p.reservasDetalle] : [];
   const idx = reservas.findIndex(r => !r.vendida);
 
-  if (idx === -1) return showToast('❌ No hay reservas pendientes', 'error');
+  if (idx === -1) return showToast('鉂?No hay reservas pendientes', 'error');
 
   const reserva = reservas[idx];
   const cantidad = Number(reserva.cantidad || 1);
 
   openConfirm({
-    title: '☑ Convertir reserva en venta',
-    message: `¿Marcar como vendida la reserva de "${reserva.nombre}" (${cantidad} ud.)?`,
+    title: '鈽?Convertir reserva en venta',
+    message: `驴Marcar como vendida la reserva de "${reserva.nombre}" (${cantidad} ud.)?`,
     confirmText: 'Marcar vendida',
     onConfirm: async () => {
       reservas[idx].vendida = true;
@@ -2022,10 +2048,10 @@ window.venderReserva = async (id) => {
         p.nombre,
         cantidad,
         currentUser.email,
-        `Reserva entregada a ${reserva.nombre} | Tel:${reserva.telefono || '-'} | Adelanto:€${Number(reserva.adelanto || 0).toFixed(2)}`
+        `Reserva entregada a ${reserva.nombre} | Tel:${reserva.telefono || '-'} | Adelanto:鈧?{Number(reserva.adelanto || 0).toFixed(2)}`
       );
 
-      showToast(`✅ Reserva de ${reserva.nombre} marcada como vendida`, 'success');
+      showToast(`鉁?Reserva de ${reserva.nombre} marcada como vendida`, 'success');
       programarRender();
     }
   });
@@ -2034,7 +2060,7 @@ window.venderReserva = async (id) => {
 window.vender = async (id, cant) => {
   const p = productos[id];
   cant = Number(cant);
-  if (cant <= 0 || Number(p.stock || 0) < cant) return showToast('❌ Stock insuficiente', 'error');
+  if (cant <= 0 || Number(p.stock || 0) < cant) return showToast('鉂?Stock insuficiente', 'error');
 
   const stockAnterior = Number(p.stock || 0);
   const nuevoStock = stockAnterior - cant;
@@ -2063,7 +2089,7 @@ window.vender = async (id, cant) => {
     p.nombre,
     cant,
     currentUser.email,
-    `Bea:€${Number(p.bea || 0).toFixed(2)} Laura:€${Number(p.laura || 0).toFixed(2)}`,
+    `Bea:鈧?{Number(p.bea || 0).toFixed(2)} Laura:鈧?{Number(p.laura || 0).toFixed(2)}`,
     {
       precioBea: Number(p.bea || 0),
       precioLaura: Number(p.laura || 0),
@@ -2075,8 +2101,8 @@ window.vender = async (id, cant) => {
   await enviarEmail({
     producto:p.nombre,
     stock:nuevoStock,
-    detalles:`${cant} uds. | Bea: €${Number(p.bea || 0).toFixed(2)} | Laura: €${Number(p.laura || 0).toFixed(2)}`,
-    subject:'🛒 VENTA - ' + p.nombre,
+    detalles:`${cant} uds. | Bea: 鈧?{Number(p.bea || 0).toFixed(2)} | Laura: 鈧?{Number(p.laura || 0).toFixed(2)}`,
+    subject:'馃洅 VENTA - ' + p.nombre,
     fecha:new Date().toLocaleString('es-ES')
   });
 
@@ -2084,13 +2110,13 @@ window.vender = async (id, cant) => {
     await enviarEmail({
       producto:p.nombre,
       stock:0,
-      detalles:`⛔ PRODUCTO AGOTADO | Bea: €${Number(p.bea || 0).toFixed(2)} | Laura: €${Number(p.laura || 0).toFixed(2)}`,
-      subject:'⛔ AGOTADO - ' + p.nombre,
+      detalles:`鉀?PRODUCTO AGOTADO | Bea: 鈧?{Number(p.bea || 0).toFixed(2)} | Laura: 鈧?{Number(p.laura || 0).toFixed(2)}`,
+      subject:'鉀?AGOTADO - ' + p.nombre,
       fecha:new Date().toLocaleString('es-ES')
     });
   }
 
-  showToast(`✅ Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`, 'success');
+  showToast(`鉁?Vendido ${cant} unidades${nuevoStock === 0 ? ' (AGOTADO)' : ''}`, 'success');
 };
 
 window.cancelarReserva = async (id, cant) => {
@@ -2098,7 +2124,7 @@ window.cancelarReserva = async (id, cant) => {
   cant = Number(cant);
 
   const reservados = Number(p.reservados || 0);
-  if (cant <= 0 || cant > reservados) return showToast('❌ Cantidad inválida', 'error');
+  if (cant <= 0 || cant > reservados) return showToast('鉂?Cantidad inv谩lida', 'error');
 
   const reservasDetalle = Array.isArray(p.reservasDetalle) ? [...p.reservasDetalle] : [];
   let pendientesAQuitar = cant;
@@ -2129,21 +2155,21 @@ window.cancelarReserva = async (id, cant) => {
   await syncProductoPublico(id, productos[id]);
 
   await guardarLog('cancelacion-reserva', id, p.nombre, cant, currentUser.email);
-  showToast(`✅ Canceladas ${cant} unidades. Stock: ${nuevoStock}`, 'success');
+  showToast(`鉁?Canceladas ${cant} unidades. Stock: ${nuevoStock}`, 'success');
   programarRender();
 };
 
 window.modificarStock = (id) => {
-  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede modificar stock', 'error');
+  if (userRole !== 'admin') return showToast('鉂?Solo ADMIN puede modificar stock', 'error');
   const p = productos[id];
   openModal({
-    title: '📦 Editar stock',
+    title: '馃摝 Editar stock',
     fields: [
       { name: 'stock', label: `Stock para ${p.nombre}`, type: 'number', value: p?.stock || 0, min: 0 }
     ],
     onConfirm: async (values) => {
       const stock = Math.max(0, Number(values.stock));
-      if (isNaN(stock)) return showToast('❌ Stock inválido', 'error');
+      if (isNaN(stock)) return showToast('鉂?Stock inv谩lido', 'error');
       const updates = { stock };
       if (stock > 0 && productos[id]?.emailAgotadoEnviado) {
         updates.emailAgotadoEnviado = false;
@@ -2152,22 +2178,22 @@ window.modificarStock = (id) => {
       productos[id] = { ...productos[id], ...updates };
       await syncProductoPublico(id, productos[id]);
       await guardarLog('stock-modificado', id, productos[id].nombre, stock, currentUser.email);
-      showToast(`✅ Stock actualizado: ${stock}`, 'success');
+      showToast(`鉁?Stock actualizado: ${stock}`, 'success');
     }
   });
 };
 
 window.guardar = async () => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede crear/editar');
+  if (userRole !== 'admin') return alert('鉂?Solo ADMIN puede crear/editar');
   const nombre = document.getElementById('nombre').value.trim();
-  if (!nombre) return alert('❌ Nombre requerido');
+  if (!nombre) return alert('鉂?Nombre requerido');
 
   let imagenActual = editId ? (productos[editId]?.imagen || '') : '';
   const file = document.getElementById('fotoProducto').files[0];
 
   try {
     if (file) {
-      showToast('⏳ Comprimiendo y subiendo foto...', 'info', 3000);
+      showToast('鈴?Comprimiendo y subiendo foto...', 'info', 3000);
       imagenActual = await subirImagenProducto(file, nombre);
     }
 
@@ -2192,49 +2218,49 @@ emailAgotadoEnviado: editId ? !!productos[editId]?.emailAgotadoEnviado : false
       await syncProductoPublico(editId, data);
       await guardarLog('producto-editado', editId, nombre, 0, currentUser.email);
       limpiarFormulario();
-      showToast('✅ Actualizado', 'success');
+      showToast('鉁?Actualizado', 'success');
     } else {
       const newRef = await push(productosRef, data);
       productos[newRef.key] = data;
       await syncProductoPublico(newRef.key, data);
       await guardarLog('producto-creado', newRef.key, nombre, 0, currentUser.email);
       limpiarFormulario();
-      showToast('✅ Guardado', 'success');
+      showToast('鉁?Guardado', 'success');
     }
   } catch (error) {
     console.error(error);
-    showToast('❌ Error guardando producto/foto', 'error', 3500);
+    showToast('鉂?Error guardando producto/foto', 'error', 3500);
   }
 };
 
 window.modificarPrecioLaura = (id) => {
   const p = productos[id];
   openModal({
-    title: '💰 Editar precio Laura',
+    title: '馃挵 Editar precio Laura',
     fields: [
       { name: 'precio', label: `Precio Laura para ${p.nombre}`, type: 'number', value: p?.laura || 0, min: 0, step: '0.01' }
     ],
     onConfirm: async (values) => {
       const precio = Math.max(0, Number(values.precio));
-      if (isNaN(precio)) return showToast('❌ Precio inválido', 'error');
+      if (isNaN(precio)) return showToast('鉂?Precio inv谩lido', 'error');
       await update(ref(db,'productos/'+id), { laura:precio });
       productos[id].laura = precio;
       await syncProductoPublico(id, productos[id]);
       await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
-      showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
+      showToast(`鉁?Laura: 鈧?{precio.toFixed(2)}`, 'success');
     }
   });
 };
 
 window.modificarPrecioLauraGlobal = () => {
   openModal({
-    title: '💲 Precio Laura Global',
+    title: '馃挷 Precio Laura Global',
     fields: [
       { name: 'precio', label: 'Nuevo precio Laura para TODOS', type: 'number', value: 0, min: 0, step: '0.01' }
     ],
     onConfirm: async (values) => {
       const precio = Math.max(0, Number(values.precio));
-      if (isNaN(precio)) return showToast('❌ Precio inválido', 'error');
+      if (isNaN(precio)) return showToast('鉂?Precio inv谩lido', 'error');
       const updates = {};
       Object.entries(productos).forEach(([id]) => {
         updates[`productos/${id}/laura`] = precio;
@@ -2245,13 +2271,13 @@ window.modificarPrecioLauraGlobal = () => {
         productos[id].laura = precio;
         await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email);
       }
-      showToast(`✅ Laura GLOBAL: €${precio.toFixed(2)}`, 'success');
+      showToast(`鉁?Laura GLOBAL: 鈧?{precio.toFixed(2)}`, 'success');
     }
   });
 };
 
 window.editar = (id) => {
-  if (userRole !== 'admin') return alert('❌ Solo ADMIN puede editar');
+  if (userRole !== 'admin') return alert('鉂?Solo ADMIN puede editar');
   const p = productos[id];
   document.getElementById('nombre').value = p.nombre || '';
   document.getElementById('stock').value = p.stock || 0;
@@ -2264,11 +2290,11 @@ window.editar = (id) => {
 };
 
 window.borrar = (id) => {
-  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede borrar', 'error');
+  if (userRole !== 'admin') return showToast('鉂?Solo ADMIN puede borrar', 'error');
   const nombre = productos[id]?.nombre || 'Producto';
   openConfirm({
-    title: '🗑️ Borrar producto',
-    message: `¿Seguro que quieres borrar "${nombre}"?`,
+    title: '馃棏锔?Borrar producto',
+    message: `驴Seguro que quieres borrar "${nombre}"?`,
     confirmText: 'Borrar',
     danger: true,
     onConfirm: async () => {
@@ -2276,16 +2302,16 @@ window.borrar = (id) => {
       await remove(ref(db,'productos/'+id));
       await remove(ref(db,'productos_publicos/'+id));
       delete productos[id];
-      showToast('✅ Borrado', 'success');
+      showToast('鉁?Borrado', 'success');
     }
   });
 };
 
 window.resetear = () => {
-  if (userRole !== 'admin') return showToast('❌ Solo ADMIN puede resetear', 'error');
+  if (userRole !== 'admin') return showToast('鉂?Solo ADMIN puede resetear', 'error');
   openConfirm({
-    title: '⚠️ Reset completo',
-    message: 'Se mantendrá el stock y el próximo stock, pero se borrarán ventas, vendidos y reservados.',
+    title: '鈿狅笍 Reset completo',
+    message: 'Se mantendr谩 el stock y el pr贸ximo stock, pero se borrar谩n ventas, vendidos y reservados.',
     confirmText: 'Resetear',
     danger: true,
     onConfirm: async () => {
@@ -2304,14 +2330,14 @@ window.resetear = () => {
       });
       await guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
       await update(ref(db), updates);
-      showToast('✅ 🔄 RESET COMPLETO', 'success');
+      showToast('鉁?馃攧 RESET COMPLETO', 'success');
     }
   });
 };
 
 window.abrirFichaProducto = (id) => {
   const p = productos[id];
-  if (!p) return showToast('❌ Producto no encontrado', 'error');
+  if (!p) return showToast('鉂?Producto no encontrado', 'error');
 
   productoModalActualId = id;
 
