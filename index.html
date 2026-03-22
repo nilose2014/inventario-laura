@@ -364,9 +364,11 @@
             <button class="btn-vender" onclick="venderDesdeFicha()">🛍️ Vender</button>
           </div>
 
-          <div class="producto-modal-extra">
+       <div class="producto-modal-extra">
 
   <button class="qr-btn" onclick="verQRProductoDesdeFicha()">QR</button>
+
+  <button id="btnEditarLauraFicha" onclick="modificarPrecioLauraDesdeFicha()">💷 Laura</button>
 
   <button id="btnVerReservaFicha" class="hidden" onclick="verReservaDesdeFicha()">📋 Reserva</button>
 
@@ -2259,6 +2261,10 @@ window.guardar = async () => {
 };
 
 window.modificarPrecioLaura = (id) => {
+  if (!currentUser || !['admin', 'user'].includes(userRole)) {
+    return showToast('✖ No tienes permiso para modificar el precio Laura', 'error');
+  }
+
   const p = productos[id];
   openModal({
     title: '💵 Editar precio Laura',
@@ -2273,6 +2279,8 @@ window.modificarPrecioLaura = (id) => {
       await syncProductoPublico(id, productos[id]);
       await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
       showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
+      refrescarFichaProductoSiAbierta();
+      programarRender();
     }
   });
 };
@@ -2402,15 +2410,22 @@ window.abrirFichaProducto = (id) => {
   document.getElementById('productoModalCantVenta').value = 1;
 
   const editarBtn = document.getElementById('productoModalEditarBtn');
-  const borrarBtn = document.getElementById('productoModalBorrarBtn');
+const borrarBtn = document.getElementById('productoModalBorrarBtn');
+const editarLauraBtn = document.getElementById('btnEditarLauraFicha');
 
-  if (userRole === 'admin') {
-    editarBtn.classList.remove('hidden');
-    borrarBtn.classList.remove('hidden');
-  } else {
-    editarBtn.classList.add('hidden');
-    borrarBtn.classList.add('hidden');
-  }
+if (userRole === 'admin') {
+  editarBtn.classList.remove('hidden');
+  borrarBtn.classList.remove('hidden');
+  editarLauraBtn.classList.remove('hidden');
+} else if (userRole === 'user') {
+  editarBtn.classList.add('hidden');
+  borrarBtn.classList.add('hidden');
+  editarLauraBtn.classList.remove('hidden');
+} else {
+  editarBtn.classList.add('hidden');
+  borrarBtn.classList.add('hidden');
+  editarLauraBtn.classList.add('hidden');
+}
 
   document.getElementById('productoModal').classList.add('show');
 };
@@ -2457,7 +2472,46 @@ window.verQRProductoDesdeFicha = () => {
     verQRProducto(id);
   }, 180);
 };
+window.modificarPrecioLauraDesdeFicha = () => {
+  if (!productoModalActualId) return;
 
+  if (!currentUser || !['admin', 'user'].includes(userRole)) {
+    return showToast('✖ No tienes permiso para modificar el precio Laura', 'error');
+  }
+
+  const id = productoModalActualId;
+  const p = productos[id];
+  if (!p) return showToast('✖ Producto no encontrado', 'error');
+
+  openModal({
+    title: '💵 Editar precio Laura',
+    fields: [
+      {
+        name: 'precio',
+        label: `Precio Laura para ${p.nombre}`,
+        type: 'number',
+        value: p?.laura || 0,
+        min: 0,
+        step: '0.01'
+      }
+    ],
+    onConfirm: async (values) => {
+      const precio = Math.max(0, Number(values.precio));
+      if (isNaN(precio)) return showToast('✖ Precio inválido', 'error');
+
+      await update(ref(db, 'productos/' + id), { laura: precio });
+      productos[id].laura = precio;
+
+      await syncProductoPublico(id, productos[id]);
+      await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+
+      document.getElementById('productoModalLaura').textContent = precio.toFixed(2);
+      programarRender();
+
+      showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
+    }
+  });
+};
 window.editarDesdeFicha = () => {
   if (!productoModalActualId) return;
 
