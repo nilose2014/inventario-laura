@@ -990,6 +990,9 @@ window.closeModal = () => {
   document.getElementById('modalMessage').textContent = '';
   document.getElementById('modalConfirmBtn').onclick = null;
   document.getElementById('modalCancelBtn').onclick = null;
+
+  const extraBtns = modal.querySelectorAll('.reserva-extra-btn');
+  extraBtns.forEach(btn => btn.remove());
 };
 
 window.openModal = ({ title, message = '', fields = [], confirmText = 'Guardar', danger = false, onConfirm }) => {
@@ -1965,6 +1968,7 @@ window.verReserva = (id) => {
   if (!reservas.length) return showToast('✖ No hay ficha de reserva', 'error');
 
   const ultima = reservas.find(r => !r.vendida) || reservas[reservas.length - 1];
+  const hayPendiente = reservas.some(r => !r.vendida);
 
   openModal({
     title: 'ℹ️ Datos de la reserva',
@@ -1993,6 +1997,33 @@ window.verReserva = (id) => {
       const el = document.getElementById(idCampo);
       if (el) el.setAttribute('readonly', true);
     });
+
+    const actions = document.querySelector('#appModal .modal-actions');
+    if (!actions) return;
+
+    const oldExtraBtns = actions.querySelectorAll('.reserva-extra-btn');
+    oldExtraBtns.forEach(btn => btn.remove());
+
+    if (hayPendiente) {
+      const btnEliminar = document.createElement('button');
+      btnEliminar.textContent = '🗑️ Eliminar reserva';
+      btnEliminar.className = 'modal-danger reserva-extra-btn';
+      btnEliminar.onclick = async () => {
+        closeModal();
+        setTimeout(() => cancelarReserva(id, Number(ultima.cantidad || 1)), 120);
+      };
+
+      const btnVender = document.createElement('button');
+      btnVender.textContent = '✔️ Vender reserva';
+      btnVender.className = 'reserva-extra-btn';
+      btnVender.onclick = async () => {
+        closeModal();
+        setTimeout(() => venderReserva(id), 120);
+      };
+
+      actions.insertBefore(btnEliminar, document.getElementById('modalConfirmBtn'));
+      actions.insertBefore(btnVender, document.getElementById('modalConfirmBtn'));
+    }
   }, 30);
 };
 
