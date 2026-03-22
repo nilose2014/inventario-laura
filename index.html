@@ -434,7 +434,18 @@ const EMAILJS_CONFIG = {
   template: 'template_06j67bo',
   publicKey: 'q6b-zVGH0aBXeREzv'
 };
-
+function avisarAppUsuario(email = '') {
+  try {
+    if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'auth',
+        email: String(email || '').trim().toLowerCase()
+      }));
+    }
+  } catch (error) {
+    console.log('No se pudo avisar a la app:', error);
+  }
+}
 function avisarAppUsuario(email = '') {
   try {
     if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
@@ -1631,6 +1642,7 @@ onAuthStateChanged(auth, async (user) => {
     loginDiv.style.display = 'block';
 
     avisarAppUsuario('');
+
     dataListenerIniciado = false;
   }
 });
