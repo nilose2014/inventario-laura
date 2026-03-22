@@ -2329,25 +2329,26 @@ window.resetear = () => {
   });
 };
 
+<script>
 window.abrirFichaProducto = (id) => {
   const p = productos[id];
   if (!p) return showToast('✖ Producto no encontrado', 'error');
-// 👇 PEGA ESTO JUSTO AQUÍ
-const btnReserva = document.getElementById('btnVerReservaFicha');
-const btnVenta = document.getElementById('btnEliminarVentaFicha');
 
-// mostrar si hay reservas
-if ((p.reservados || 0) > 0) {
-  btnReserva.classList.remove('hidden');
-} else {
-  btnReserva.classList.add('hidden');
-}
+  const btnReserva = document.getElementById('btnVerReservaFicha');
+  const btnVenta = document.getElementById('btnEliminarVentaFicha');
 
-// mostrar si hay ventas
-if ((p.vendidos || 0) > 0) {
-  btnVenta.classList.remove('hidden');
-} else {
-  btnVenta.classList.add('hidden');
+  if ((p.reservados || 0) > 0) {
+    btnReserva.classList.remove('hidden');
+  } else {
+    btnReserva.classList.add('hidden');
+  }
+
+  if ((p.vendidos || 0) > 0) {
+    btnVenta.classList.remove('hidden');
+  } else {
+    btnVenta.classList.add('hidden');
+  }
+
   productoModalActualId = id;
 
   document.getElementById('productoModalNombre').textContent = p.nombre || 'Producto';
@@ -2383,6 +2384,7 @@ if ((p.vendidos || 0) > 0) {
 
   document.getElementById('productoModal').classList.add('show');
 };
+</script>
 
 window.cerrarFichaProducto = () => {
   document.getElementById('productoModal').classList.remove('show');
@@ -2433,7 +2435,15 @@ window.borrarDesdeFicha = () => {
   cerrarFichaProducto();
   borrar(id);
 };
+window.verReservaDesdeFicha = () => {
+  if (!productoModalActualId) return;
+  verReserva(productoModalActualId);
+};
 
+window.eliminarVentaDesdeFicha = () => {
+  if (!productoModalActualId) return;
+  eliminarUnaVenta(productoModalActualId);
+};
 window.refrescarFichaProductoSiAbierta = () => {
   if (!productoModalActualId) return;
   const p = productos[productoModalActualId];
