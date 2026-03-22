@@ -2329,7 +2329,6 @@ window.resetear = () => {
   });
 };
 
-<script>
 window.abrirFichaProducto = (id) => {
   const p = productos[id];
   if (!p) return showToast('✖ Producto no encontrado', 'error');
@@ -2384,7 +2383,6 @@ window.abrirFichaProducto = (id) => {
 
   document.getElementById('productoModal').classList.add('show');
 };
-</script>
 
 window.cerrarFichaProducto = () => {
   document.getElementById('productoModal').classList.remove('show');
@@ -2435,6 +2433,7 @@ window.borrarDesdeFicha = () => {
   cerrarFichaProducto();
   borrar(id);
 };
+
 window.verReservaDesdeFicha = () => {
   if (!productoModalActualId) return;
   verReserva(productoModalActualId);
@@ -2444,6 +2443,7 @@ window.eliminarVentaDesdeFicha = () => {
   if (!productoModalActualId) return;
   eliminarUnaVenta(productoModalActualId);
 };
+
 window.refrescarFichaProductoSiAbierta = () => {
   if (!productoModalActualId) return;
   const p = productos[productoModalActualId];
