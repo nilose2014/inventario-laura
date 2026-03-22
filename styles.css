@@ -2400,3 +2400,20 @@ body.app-logeada #loginDiv{
 body.app-logeada #mainApp{
   display:block !important;
 }
+/* =====================================
+   NAV APP: ocultar opciones admin a usuarios
+===================================== */
+body.nav-user-limitado .nav-admin-only{
+  display:none !important;
+}
+/* 🔥 FIX CRÍTICO PARA EXPO (barra inferior) */
+.modal-box{
+  margin-bottom: 90px !important;
+}
+
+/* en móviles aún más */
+@media (max-width: 768px){
+  .modal-box{
+    margin-bottom: 110px !important;
+  }
+}
