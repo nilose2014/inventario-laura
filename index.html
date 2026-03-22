@@ -2483,34 +2483,38 @@ window.modificarPrecioLauraDesdeFicha = () => {
   const p = productos[id];
   if (!p) return showToast('✖ Producto no encontrado', 'error');
 
-  openModal({
-    title: '💵 Editar precio Laura',
-    fields: [
-      {
-        name: 'precio',
-        label: `Precio Laura para ${p.nombre}`,
-        type: 'number',
-        value: p?.laura || 0,
-        min: 0,
-        step: '0.01'
+  cerrarFichaProducto();
+
+  setTimeout(() => {
+    openModal({
+      title: '💵 Editar precio Laura',
+      fields: [
+        {
+          name: 'precio',
+          label: `Precio Laura para ${p.nombre}`,
+          type: 'number',
+          value: p?.laura || 0,
+          min: 0,
+          step: '0.01'
+        }
+      ],
+      onConfirm: async (values) => {
+        const precio = Math.max(0, Number(values.precio));
+        if (isNaN(precio)) return showToast('✖ Precio inválido', 'error');
+
+        await update(ref(db, 'productos/' + id), { laura: precio });
+        productos[id].laura = precio;
+
+        await syncProductoPublico(id, productos[id]);
+        await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+
+        document.getElementById('productoModalLaura').textContent = precio.toFixed(2);
+        programarRender();
+
+        showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
       }
-    ],
-    onConfirm: async (values) => {
-      const precio = Math.max(0, Number(values.precio));
-      if (isNaN(precio)) return showToast('✖ Precio inválido', 'error');
-
-      await update(ref(db, 'productos/' + id), { laura: precio });
-      productos[id].laura = precio;
-
-      await syncProductoPublico(id, productos[id]);
-      await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
-
-      document.getElementById('productoModalLaura').textContent = precio.toFixed(2);
-      programarRender();
-
-      showToast(`✅ Laura: €${precio.toFixed(2)}`, 'success');
-    }
-  });
+    });
+  }, 180);
 };
 window.editarDesdeFicha = () => {
   if (!productoModalActualId) return;
