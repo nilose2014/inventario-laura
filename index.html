@@ -2361,7 +2361,10 @@ window.reservarDesdeFicha = () => {
   const cant = document.getElementById('productoModalCantReserva').value || 1;
 
   cerrarFichaProducto();
-  reservar(id, cant);
+
+  setTimeout(() => {
+    reservar(id, cant);
+  }, 180);
 };
 
 window.venderDesdeFicha = () => {
@@ -2371,7 +2374,10 @@ window.venderDesdeFicha = () => {
   const cant = document.getElementById('productoModalCantVenta').value || 1;
 
   cerrarFichaProducto();
-  vender(id, cant);
+
+  setTimeout(() => {
+    vender(id, cant);
+  }, 180);
 };
 
 window.verQRProductoDesdeFicha = () => {
