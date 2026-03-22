@@ -1832,17 +1832,21 @@ body.solo-user td.col-acciones{
 }
 .producto-modal-actions .btn-reservar,
 .producto-modal-actions .btn-vender{
-  width:auto !important;
-  min-width:170px !important;
+  width:190px !important;
+  min-width:190px !important;
+  max-width:190px !important;
   height:46px !important;
   min-height:46px !important;
-  padding:0 18px !important;
+  padding:0 16px !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
   border-radius:14px !important;
   font-size:15px !important;
   white-space:nowrap !important;
+  flex:0 0 190px !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
 }
 
 .producto-modal-actions .accion-group{
@@ -1851,6 +1855,15 @@ body.solo-user td.col-acciones{
   justify-content:flex-start !important;
   gap:10px !important;
   flex-wrap:nowrap !important;
+  width:100% !important;
+}
+.producto-modal-actions .accion-group .cantidad-input{
+  flex:0 0 58px !important;
+}
+
+.producto-modal-actions .accion-group .btn-reservar,
+.producto-modal-actions .accion-group .btn-vender{
+  flex:0 0 190px !important;
 }
 
 .producto-modal-actions .cantidad-input{
