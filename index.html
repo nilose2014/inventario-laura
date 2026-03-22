@@ -446,18 +446,6 @@ function avisarAppUsuario(email = '') {
     console.log('No se pudo avisar a la app:', error);
   }
 }
-function avisarAppUsuario(email = '') {
-  try {
-    if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'auth',
-        email: String(email || '').trim().toLowerCase()
-      }));
-    }
-  } catch (error) {
-    console.log('No se pudo avisar a la app:', error);
-  }
-}
 
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
