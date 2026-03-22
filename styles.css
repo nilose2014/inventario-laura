@@ -748,6 +748,49 @@ tbody td:first-child{
   color:#0f172a;
 }
 
+.producto-link{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border:none;
+  background:transparent;
+  color:#0f172a;
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+  border-radius:12px;
+  box-shadow:none;
+  min-height:auto;
+  height:auto;
+  margin:0;
+  text-align:left;
+  justify-content:flex-start;
+  max-width:100%;
+}
+
+.producto-link:hover{
+  background:#dbeafe;
+  color:#1d4ed8;
+  transform:none;
+  box-shadow:none;
+  filter:none;
+}
+
+.producto-link::before{
+  content:"🔎";
+  font-size:13px;
+  opacity:.85;
+}
+
+.producto-link span{
+  display:inline-block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 thead th:nth-child(1),
 tbody td:nth-child(1){
   min-width:280px;
