@@ -2356,14 +2356,22 @@ window.cerrarFichaProducto = () => {
 
 window.reservarDesdeFicha = () => {
   if (!productoModalActualId) return;
+
+  const id = productoModalActualId;
   const cant = document.getElementById('productoModalCantReserva').value || 1;
-  reservar(productoModalActualId, cant);
+
+  cerrarFichaProducto();
+  reservar(id, cant);
 };
 
 window.venderDesdeFicha = () => {
   if (!productoModalActualId) return;
+
+  const id = productoModalActualId;
   const cant = document.getElementById('productoModalCantVenta').value || 1;
-  vender(productoModalActualId, cant);
+
+  cerrarFichaProducto();
+  vender(id, cant);
 };
 
 window.verQRProductoDesdeFicha = () => {
