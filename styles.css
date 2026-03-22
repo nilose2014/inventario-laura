@@ -749,46 +749,57 @@ tbody td:first-child{
 }
 
 .producto-link{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 10px;
   border:none;
-  background:transparent;
-  color:#0f172a;
-  font-size:14px;
-  font-weight:900;
-  cursor:pointer;
-  border-radius:12px;
-  box-shadow:none;
-  min-height:auto;
-  height:auto;
-  margin:0;
+  background:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  margin:0 !important;
+  min-height:auto !important;
+  height:auto !important;
+  min-width:0 !important;
+  display:inline;
+  color:inherit;
+  font:inherit;
+  font-weight:800;
   text-align:left;
-  justify-content:flex-start;
-  max-width:100%;
+  cursor:pointer;
+  border-radius:0 !important;
 }
 
 .producto-link:hover{
-  background:#dbeafe;
+  background:none !important;
   color:#1d4ed8;
-  transform:none;
-  box-shadow:none;
-  filter:none;
+  text-decoration:underline;
+  box-shadow:none !important;
+  transform:none !important;
+  filter:none !important;
 }
 
-.producto-link::before{
-  content:"🔎";
-  font-size:13px;
-  opacity:.85;
+.producto-link:active{
+  transform:none !important;
 }
 
-.producto-link span{
-  display:inline-block;
-  max-width:100%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+.producto-link:focus{
+  outline:none;
+  color:#1d4ed8;
+  text-decoration:underline;
+}
+
+.ficha-producto-box{
+  width:min(760px,96vw) !important;
+  max-width:min(760px,96vw) !important;
+  max-height:90vh !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch;
+}
+
+.ficha-producto-head{
+  display:flex;
+  gap:18px;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  margin-bottom:16px;
 }
 
 thead th:nth-child(1),
@@ -1481,40 +1492,74 @@ body.solo-user td.col-acciones{
 }
 
 @media (max-width:700px){
-  .totales-superiores,
-  .totales-container{
-    grid-template-columns:repeat(5,minmax(160px,1fr));
-    overflow-x:auto;
+  .ficha-producto-box{
+    width:calc(100vw - 16px) !important;
+    max-width:calc(100vw - 16px) !important;
+    max-height:88vh !important;
+    padding:16px !important;
+    border-radius:18px !important;
   }
 
-  .app-header{
+  .ficha-precios{
+    grid-template-columns:1fr;
+  }
+
+  .ficha-acciones{
+    grid-template-columns:1fr;
     gap:12px;
-    padding:14px 16px;
   }
 
-  .app-header .logo-app{
-    width:60px;
-    max-width:60px;
-    max-height:60px;
+  .ficha-accion-card{
+    padding:14px;
   }
 
-  .app-header h2{
-    font-size:19px;
-    line-height:1.2;
+  .ficha-producto-head{
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:14px;
   }
 
-  .app-header .hero-subtitle{
-    font-size:12px;
+  .ficha-producto-img,
+  .ficha-producto-sin-foto{
+    width:120px;
+    height:120px;
   }
 
-  .card-actions{
-    display:flex;
-    flex-wrap:wrap;
+  .ficha-producto-info{
+    min-width:0;
+    width:100%;
+  }
+
+  .ficha-producto-info h4{
+    font-size:22px;
+    line-height:1.15;
+  }
+
+  .ficha-badges{
     justify-content:center;
   }
 
-  .card-actions button{
-    width:auto;
+  .ficha-accion-row{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .ficha-cantidad{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  .ficha-accion-row button{
+    width:100% !important;
+  }
+
+  .ficha-acciones-botones{
+    flex-direction:column;
+  }
+
+  .ficha-acciones-botones button{
+    width:100% !important;
   }
 }
 
