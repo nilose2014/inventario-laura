@@ -799,7 +799,7 @@ window.descargarCatalogo = async () => {
       </article>
     `).join('');
 
-    const html = `<!DOCTYPE html>
+const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -835,15 +835,6 @@ body{
   margin-bottom:24px;
   background:linear-gradient(135deg,#1d4ed8 0%, #2563eb 45%, #4f46e5 100%);
   box-shadow:0 24px 56px rgba(37,99,235,.20);
-}
-.catalog-logo{
-  width:88px;
-  height:88px;
-  object-fit:contain;
-  background:rgba(255,255,255,.14);
-  border-radius:18px;
-  padding:8px;
-  flex-shrink:0;
 }
 .catalog-header h1{
   margin:0;
@@ -941,12 +932,12 @@ body{
 </head>
 <body>
   <div class="catalog-shell">
- <header class="catalog-header">
-  <div>
-    <h1>Catálogo Mundo Azul</h1>
-    <p>Nombre · Foto · Precio venta</p>
-  </div>
-</header>
+    <header class="catalog-header">
+      <div>
+        <h1>Catálogo Mundo Azul</h1>
+        <p>Nombre · Foto · Precio venta</p>
+      </div>
+    </header>
 
     <p class="print-note">Se abrirá la ventana de impresión. Elige "Guardar como PDF".</p>
 
