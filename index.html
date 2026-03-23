@@ -1035,16 +1035,16 @@ body{
 </body>
 </html>`;
 
-    if (estaEnAppMovil()) {
-      mostrarCargaNativa('Preparando catálogo PDF...', 'Generando versión ligera para móvil', 12);
+   if (estaEnAppMovil()) {
+  mostrarCargaNativa('Preparando catálogo PDF...', 'Preparando productos e imágenes', 12);
 
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'GENERAR_CATALOGO_PDF',
-        fileName: `catalogo-mundo-azul-${new Date().toISOString().slice(0,10)}.pdf`,
-        html: htmlMovil
-      }));
-      return;
-    }
+  window.ReactNativeWebView.postMessage(JSON.stringify({
+    type: 'GENERAR_CATALOGO_PDF',
+    fileName: `catalogo-mundo-azul-${new Date().toISOString().slice(0,10)}.pdf`,
+    items: productosLista
+  }));
+  return;
+}
 
     const w = window.open('', '_blank');
     if (!w) {
