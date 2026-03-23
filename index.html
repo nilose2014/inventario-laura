@@ -941,13 +941,12 @@ body{
 </head>
 <body>
   <div class="catalog-shell">
-    <header class="catalog-header">
-      <img src="logo.png" alt="Logo Mundo Azul" class="catalog-logo">
-      <div>
-        <h1>Catálogo Mundo Azul</h1>
-        <p>Nombre · Foto · Precio venta</p>
-      </div>
-    </header>
+ <header class="catalog-header">
+  <div>
+    <h1>Catálogo Mundo Azul</h1>
+    <p>Nombre · Foto · Precio venta</p>
+  </div>
+</header>
 
     <p class="print-note">Se abrirá la ventana de impresión. Elige "Guardar como PDF".</p>
 
@@ -955,14 +954,6 @@ body{
       ${tarjetasHTML}
     </section>
   </div>
-
-  <script>
-    window.onload = () => {
-      setTimeout(() => {
-        window.print();
-      }, 500);
-    };
-  <\/script>
 </body>
 </html>`;
 
