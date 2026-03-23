@@ -506,6 +506,14 @@ async function syncTodosProductosPublicosDesdeProductos(productosObj) {
 function estaEnAppMovil() {
   return !!(window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function');
 }
+function escaparHtml(texto = '') {
+  return String(texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 window.mostrarCargaNativa = (title = 'Preparando archivo...', text = 'Espera un momento', percent = 8) => {
   const overlay = document.getElementById('nativeLoadingOverlay');
   const titleEl = document.getElementById('nativeLoadingTitle');
@@ -784,22 +792,101 @@ window.descargarCatalogo = async () => {
       return showToast('✖ No hay productos para generar catálogo', 'error');
     }
 
-    const tarjetasHTML = productosLista.map(p => `
+    const tarjetasHTMLDesktop = productosLista.map(p => `
       <article class="catalog-card">
         <div class="catalog-image-wrap">
           ${p.imagen
-            ? `<img src="${p.imagen}" alt="${p.nombre.replace(/"/g, '&quot;')}" class="catalog-image">`
+            ? `<img src="${p.imagen}" alt="${escaparHtml(p.nombre)}" class="catalog-image">`
             : `<div class="catalog-no-image">Sin foto</div>`
           }
         </div>
         <div class="catalog-body">
-          <h3 class="catalog-name">${p.nombre}</h3>
+          <h3 class="catalog-name">${escaparHtml(p.nombre)}</h3>
           <div class="catalog-price">€${p.laura.toFixed(2)}</div>
         </div>
       </article>
     `).join('');
 
-const html = `<!DOCTYPE html>
+    const filasMovil = productosLista.map(p => `
+      <tr>
+        <td>${escaparHtml(p.nombre)}</td>
+        <td>€${p.laura.toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const htmlMovil = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo Mundo Azul</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  color:#111827;
+  background:#ffffff;
+  padding:22px;
+}
+.wrap{
+  max-width:900px;
+  margin:0 auto;
+}
+h1{
+  margin:0 0 8px 0;
+  font-size:28px;
+}
+.sub{
+  margin:0 0 18px 0;
+  color:#475569;
+  font-size:14px;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+th,td{
+  border:1px solid #dbe4f0;
+  padding:10px;
+  font-size:14px;
+}
+th{
+  background:#2563eb;
+  color:#fff;
+  text-align:left;
+}
+td:last-child, th:last-child{
+  width:140px;
+  text-align:right;
+  white-space:nowrap;
+}
+@page{
+  margin:18px;
+}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Catálogo Mundo Azul</h1>
+    <p class="sub">Versión móvil PDF · Nombre y precio</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Precio</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filasMovil}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+
+    const htmlDesktop = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -942,22 +1029,22 @@ body{
     <p class="print-note">Se abrirá la ventana de impresión. Elige "Guardar como PDF".</p>
 
     <section class="catalog-grid">
-      ${tarjetasHTML}
+      ${tarjetasHTMLDesktop}
     </section>
   </div>
 </body>
 </html>`;
 
     if (estaEnAppMovil()) {
-  mostrarCargaNativa('Preparando catálogo PDF...', 'Recopilando productos e imágenes', 10);
+      mostrarCargaNativa('Preparando catálogo PDF...', 'Generando versión ligera para móvil', 12);
 
-  window.ReactNativeWebView.postMessage(JSON.stringify({
-    type: 'GENERAR_CATALOGO_PDF',
-    fileName: `catalogo-mundo-azul-${new Date().toISOString().slice(0,10)}.pdf`,
-    html
-  }));
-  return;
-}
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'GENERAR_CATALOGO_PDF',
+        fileName: `catalogo-mundo-azul-${new Date().toISOString().slice(0,10)}.pdf`,
+        html: htmlMovil
+      }));
+      return;
+    }
 
     const w = window.open('', '_blank');
     if (!w) {
@@ -965,12 +1052,18 @@ body{
     }
 
     w.document.open();
-    w.document.write(html);
+    w.document.write(htmlDesktop);
     w.document.close();
+
+    setTimeout(() => {
+      w.focus();
+      w.print();
+    }, 500);
 
     showToast('✅ Catálogo preparado para guardar en PDF', 'success');
   } catch (error) {
     console.error(error);
+    ocultarCargaNativa();
     showToast('✖ Error generando catálogo PDF', 'error');
   }
 };
