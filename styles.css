@@ -1507,6 +1507,24 @@ body.solo-user td.col-acciones{
   display:none;
 }
 
+.oculto-index-row{
+  opacity:.78;
+}
+
+.oculto-index-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:6px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  background:#fff3cd;
+  color:#856404;
+  border:1px solid #ffe69c;
+}
+
 /* =========================
    RESPONSIVE
 ========================= */
