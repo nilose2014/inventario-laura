@@ -196,6 +196,9 @@ canvas{width:100% !important;max-height:380px !important}
 .edit-btn:hover{
   background:#dc6d11;
 }
+.money-positive{color:#198754;font-weight:bold}
+.money-negative{color:#dc3545;font-weight:bold}
+.money-neutral{color:#475569;font-weight:bold}
 
 @media (max-width:1100px){
   .grid-top{grid-template-columns:repeat(2,1fr)}
@@ -848,13 +851,14 @@ function renderChartsYPeriodos(){
 function getNetosEnPeriodo(desde, hasta){
   const hist = calcularHistorialDesdeLogs(desde, hasta);
   const ventas = Object.values(hist.ventasPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
-  const ingresosBea = Object.values(hist.porProducto || {}).reduce((acc, p) => acc + Number(p?.beaTotal || 0), 0);
   const ingresosLaura = Object.values(hist.ingresosPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
+  const ingresosBea = Object.values(hist.porProducto || {}).reduce((acc, p) => acc + Number(p?.beaTotal || 0), 0);
+  const diferencia = ingresosLaura - ingresosBea;
   return {
     ventas: Math.max(0, ventas),
     ingresosBea: Math.max(0, ingresosBea),
     ingresosLaura: Math.max(0, ingresosLaura),
-    diferencia: Math.max(0, ingresosLaura) - Math.max(0, ingresosBea)
+    diferencia
   };
 }
 
@@ -888,42 +892,60 @@ function dibujarChart(canvasId, type, labels, data, label, kind){
 function renderPeriodos(desdeFiltro, hastaFiltro){
   const tbody = document.getElementById('tablaPeriodos');
   const hoy = new Date();
-  hoy.setHours(12,0,0,0);
+  hoy.setHours(0,0,0,0);
 
-  const ayer = new Date(hoy);
-  ayer.setDate(hoy.getDate() - 1);
-
-  const anteayer = new Date(hoy);
-  anteayer.setDate(hoy.getDate() - 2);
-
-  const inicioSemana = new Date(hoy);
+  const makeDate = (base) => {
+    const d = new Date(base);
+    d.setHours(0,0,0,0);
+    return d;
+  };
+  const addDays = (base, days) => {
+    const d = makeDate(base);
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+  const startOfMonth = (base) => new Date(base.getFullYear(), base.getMonth(), 1);
+  const endOfMonth = (year, month) => new Date(year, month + 1, 0);
+  const inicioSemana = makeDate(hoy);
   const day = (inicioSemana.getDay() + 6) % 7;
   inicioSemana.setDate(inicioSemana.getDate() - day);
 
-  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  inicioMes.setHours(12,0,0,0);
+  const periodosBase = [
+    { nombre: 'Hoy', desde: makeDate(hoy), hasta: makeDate(hoy) },
+    { nombre: 'Ayer', desde: addDays(hoy, -1), hasta: addDays(hoy, -1) },
+    { nombre: 'Anteayer', desde: addDays(hoy, -2), hasta: addDays(hoy, -2) },
+    { nombre: 'Esta semana', desde: inicioSemana, hasta: makeDate(hoy) },
+    { nombre: 'Este mes', desde: startOfMonth(hoy), hasta: makeDate(hoy) },
+    { nombre: 'Mes pasado', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1), hasta: endOfMonth(hoy.getFullYear(), hoy.getMonth() - 1) },
+    { nombre: 'Mes anterior', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hasta: endOfMonth(hoy.getFullYear(), hoy.getMonth() - 2) },
+    { nombre: 'Último trimestre', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hasta: makeDate(hoy) },
+    { nombre: 'Últimos 6 meses', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1), hasta: makeDate(hoy) },
+    { nombre: 'Últimos 9 meses', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 8, 1), hasta: makeDate(hoy) },
+    { nombre: 'Último año', desde: new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate()), hasta: makeDate(hoy) }
+  ];
 
-  const periodos = [
-    { nombre: 'Hoy', desde: ymd(hoy), hasta: ymd(hoy) },
-    { nombre: 'Ayer', desde: ymd(ayer), hasta: ymd(ayer) },
-    { nombre: 'Anteayer', desde: ymd(anteayer), hasta: ymd(anteayer) },
-    { nombre: 'Esta semana', desde: ymd(inicioSemana), hasta: ymd(hoy) },
-    { nombre: 'Este mes', desde: ymd(inicioMes), hasta: ymd(hoy) }
-  ].map(p => ({
-    ...p,
-    desde: desdeFiltro && desdeFiltro > p.desde ? desdeFiltro : p.desde,
-    hasta: hastaFiltro && hastaFiltro < p.hasta ? hastaFiltro : p.hasta
-  })).filter(p => !p.desde || !p.hasta || p.desde <= p.hasta);
+  const periodos = periodosBase.map(p => {
+    const desdeBase = ymd(p.desde);
+    const hastaBase = ymd(p.hasta);
+    const desde = desdeFiltro && desdeFiltro > desdeBase ? desdeFiltro : desdeBase;
+    const hasta = hastaFiltro && hastaFiltro < hastaBase ? hastaFiltro : hastaBase;
+    return { ...p, desde, hasta };
+  });
 
   const rows = periodos.map(periodo => {
+    if (periodo.desde > periodo.hasta) {
+      return `<tr><td>${periodo.nombre}</td><td>0</td><td>${formatEuro(0)}</td><td>${formatEuro(0)}</td><td><span class="money-neutral">${formatEuro(0)}</span></td></tr>`;
+    }
+
     const neto = getNetosEnPeriodo(periodo.desde, periodo.hasta);
-    const diferenciaClass = neto.diferencia >= 0 ? 'style="color:#15803d;font-weight:bold"' : 'style="color:#b91c1c;font-weight:bold"';
+    const diffClass = neto.diferencia > 0 ? 'money-positive' : (neto.diferencia < 0 ? 'money-negative' : 'money-neutral');
+
     return `<tr>
       <td>${periodo.nombre}</td>
       <td>${neto.ventas}</td>
       <td>${formatEuro(neto.ingresosBea)}</td>
       <td>${formatEuro(neto.ingresosLaura)}</td>
-      <td ${diferenciaClass}>${formatEuro(neto.diferencia)}</td>
+      <td><span class="${diffClass}">${formatEuro(neto.diferencia)}</span></td>
     </tr>`;
   }).join('');
 
