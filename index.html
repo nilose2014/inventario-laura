@@ -2041,8 +2041,18 @@ function checkUserRole() {
     document.getElementById('btnLogs').style.display = 'inline-flex';
     const btnGestionOcultosTop = document.getElementById('btnGestionOcultosTop');
     if (btnGestionOcultosTop) btnGestionOcultosTop.style.display = 'inline-flex';
-  } else {
+  } else if (esUsuarioRegistrado) {
     userRole = 'user';
+
+    document.getElementById('backupSection').classList.add('hidden');
+    document.getElementById('btnEstadisticasTop').style.display = 'none';
+    document.getElementById('btnLogsTop').style.display = 'none';
+    document.getElementById('btnEstadisticas').style.display = 'none';
+    document.getElementById('btnLogs').style.display = 'none';
+    const btnGestionOcultosTop = document.getElementById('btnGestionOcultosTop');
+    if (btnGestionOcultosTop) btnGestionOcultosTop.style.display = 'none';
+  } else {
+    userRole = null;
 
     document.getElementById('backupSection').classList.add('hidden');
     document.getElementById('btnEstadisticasTop').style.display = 'none';
@@ -2162,7 +2172,7 @@ function refrescarEstadoBloqueoPreciosLaura() {
   const modal = document.getElementById('modalPreciosLauraObligatorio');
   const mainApp = document.getElementById('mainApp');
 
-  const debeBloquear = !!currentUser && ['admin', 'user'].includes(userRole) && pendientes.length > 0;
+ const debeBloquear = !!currentUser && userRole === 'user' && pendientes.length > 0;
 
   document.body.classList.toggle('bloqueo-precios-laura-activo', debeBloquear);
 
@@ -2183,7 +2193,7 @@ window.mostrarModalPreciosLauraObligatorio = () => {
 
   if (!lista || !count) return;
 
-  if (!currentUser || !['admin', 'user'].includes(userRole) || !pendientes.length) {
+  if (!currentUser || userRole !== 'user' || !pendientes.length) {
     refrescarEstadoBloqueoPreciosLaura();
     return;
   }
