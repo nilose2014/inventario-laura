@@ -310,6 +310,22 @@
 
 <div id="toastContainer"></div>
 
+
+<div id="modalPreciosLauraObligatorio" class="modal-overlay modal-precios-obligatorio">
+  <div class="modal-box modal-precios-obligatorio-box">
+    <div class="modal-title">⚠️ Productos sin precio Laura</div>
+    <div class="modal-message modal-precios-obligatorio-msg">
+      Hay productos con precio Bea pero sin precio Laura. Debes completar todos los precios para continuar.
+    </div>
+    <div id="preciosLauraObligatorioCount" class="precios-laura-obligatorio-count">0 productos pendientes</div>
+    <div id="preciosLauraObligatorioLista" class="precios-laura-obligatorio-lista"></div>
+    <div class="modal-actions precios-laura-obligatorio-actions">
+      <button id="btnGuardarPreciosLauraObligatorio" class="green" onclick="guardarPreciosLauraObligatorio()">💾 Guardar y continuar</button>
+    </div>
+  </div>
+</div>
+
+
 <div id="appModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title" id="modalTitle">Modal</div>
@@ -1968,6 +1984,7 @@ onAuthStateChanged(auth, async (user) => {
     loginDiv.style.display = 'block';
 
     avisarAppUsuario('');
+    refrescarEstadoBloqueoPreciosLaura();
 
     dataListenerIniciado = false;
   }
@@ -2123,12 +2140,168 @@ function loadData() {
     programarRender();
     actualizarPanelOcultosIndex();
     refrescarFichaProductoSiAbierta();
+    window.mostrarModalPreciosLauraObligatorio();
   }, (error) => {
     document.getElementById('status').textContent = '✖ Error de conexión';
     document.getElementById('status').className = 'error';
     console.error(error);
   });
 }
+
+
+function obtenerProductosSinPrecioLaura() {
+  return Object.entries(productos || {}).filter(([id, p]) => {
+    const bea = Number(p?.bea || 0);
+    const laura = Number(p?.laura || 0);
+    return bea > 0 && laura <= 0;
+  }).sort((a, b) => String(a[1]?.nombre || '').localeCompare(String(b[1]?.nombre || ''), 'es'));
+}
+
+function refrescarEstadoBloqueoPreciosLaura() {
+  const pendientes = obtenerProductosSinPrecioLaura();
+  const modal = document.getElementById('modalPreciosLauraObligatorio');
+  const mainApp = document.getElementById('mainApp');
+
+  const debeBloquear = !!currentUser && ['admin', 'user'].includes(userRole) && pendientes.length > 0;
+
+  document.body.classList.toggle('bloqueo-precios-laura-activo', debeBloquear);
+
+  if (modal) {
+    modal.classList.toggle('show', debeBloquear);
+    modal.style.display = debeBloquear ? 'flex' : 'none';
+  }
+
+  if (mainApp) {
+    mainApp.classList.toggle('precios-laura-bloqueado', debeBloquear);
+  }
+}
+
+window.mostrarModalPreciosLauraObligatorio = () => {
+  const lista = document.getElementById('preciosLauraObligatorioLista');
+  const count = document.getElementById('preciosLauraObligatorioCount');
+  const pendientes = obtenerProductosSinPrecioLaura();
+
+  if (!lista || !count) return;
+
+  if (!currentUser || !['admin', 'user'].includes(userRole) || !pendientes.length) {
+    refrescarEstadoBloqueoPreciosLaura();
+    return;
+  }
+
+  count.textContent = pendientes.length === 1
+    ? '1 producto pendiente'
+    : `${pendientes.length} productos pendientes`;
+
+  lista.innerHTML = pendientes.map(([id, p]) => {
+    const nombre = escaparHtml(p?.nombre || '');
+    const imagen = String(p?.imagen || '').trim();
+    const bea = Number(p?.bea || 0).toFixed(2);
+
+    return `
+      <div class="precio-laura-obligatorio-item">
+        <div class="precio-laura-obligatorio-foto-wrap">
+          ${imagen
+            ? `<img src="${imagen}" alt="${nombre}" class="precio-laura-obligatorio-foto">`
+            : `<div class="precio-laura-obligatorio-foto precio-laura-obligatorio-foto-vacia">Sin foto</div>`
+          }
+        </div>
+
+        <div class="precio-laura-obligatorio-info">
+          <div class="precio-laura-obligatorio-nombre">${nombre}</div>
+          <div class="precio-laura-obligatorio-bea">Bea: €${bea}</div>
+        </div>
+
+        <div class="precio-laura-obligatorio-input-wrap">
+          <label for="precioLauraObligatorio_${id}">Laura €</label>
+          <input
+            id="precioLauraObligatorio_${id}"
+            class="precio-laura-obligatorio-input"
+            type="number"
+            min="0"
+            step="0.01"
+            inputmode="decimal"
+            placeholder="0.00"
+            value=""
+            oninput="limpiarErrorPrecioLauraObligatorio('${id}')"
+          >
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  refrescarEstadoBloqueoPreciosLaura();
+};
+
+window.limpiarErrorPrecioLauraObligatorio = (id) => {
+  const input = document.getElementById(`precioLauraObligatorio_${id}`);
+  if (!input) return;
+  input.classList.remove('precio-laura-obligatorio-input-error');
+};
+
+window.guardarPreciosLauraObligatorio = async () => {
+  const pendientes = obtenerProductosSinPrecioLaura();
+  if (!pendientes.length) {
+    refrescarEstadoBloqueoPreciosLaura();
+    return;
+  }
+
+  const updates = {};
+  let hayErrores = false;
+  let primerInputError = null;
+
+  for (const [id, p] of pendientes) {
+    const input = document.getElementById(`precioLauraObligatorio_${id}`);
+    const valor = Number(input?.value);
+
+    if (!input || !Number.isFinite(valor) || valor <= 0) {
+      hayErrores = true;
+      if (input) {
+        input.classList.add('precio-laura-obligatorio-input-error');
+        if (!primerInputError) primerInputError = input;
+      }
+      continue;
+    }
+
+    updates[`productos/${id}/laura`] = valor;
+    updates[`productos_publicos/${id}/laura`] = valor;
+  }
+
+  if (hayErrores) {
+    showToast('✖ Debes completar todos los precios Laura', 'error', 3000);
+    if (primerInputError) primerInputError.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnGuardarPreciosLauraObligatorio');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+  }
+
+  try {
+    await update(ref(db), updates);
+
+    for (const [id] of pendientes) {
+      const nuevoPrecio = Number(updates[`productos/${id}/laura`]);
+      if (productos[id]) productos[id].laura = nuevoPrecio;
+      await guardarLog('precio-laura', id, productos[id]?.nombre || '', nuevoPrecio, currentUser?.email || '', 'Precio Laura completado desde aviso obligatorio');
+    }
+
+    showToast('✅ Precios Laura guardados', 'success');
+    window.mostrarModalPreciosLauraObligatorio();
+    refrescarFichaProductoSiAbierta();
+    programarRender();
+  } catch (error) {
+    console.error(error);
+    showToast('✖ Error guardando precios Laura', 'error', 3500);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '💾 Guardar y continuar';
+    }
+  }
+};
+
 
 function ordenarProductos(productosObj) {
   const orden = document.getElementById('ordenar').value;
