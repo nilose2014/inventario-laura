@@ -2535,3 +2535,167 @@ body.nav-user-limitado .nav-admin-only{
     width:100%;
   }
 }
+
+
+/* =========================
+   MODAL PRECIOS LAURA OBLIGATORIO
+========================= */
+
+.modal-precios-obligatorio{
+  z-index:999999 !important;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(15,23,42,.78);
+}
+
+.modal-precios-obligatorio-box{
+  width:min(1080px,96vw);
+  max-width:1080px;
+}
+
+.modal-precios-obligatorio-msg{
+  margin-bottom:8px;
+}
+
+.precios-laura-obligatorio-count{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#fff7ed,#ffedd5);
+  color:#9a3412;
+  font-weight:800;
+  border:1px solid #fdba74;
+  margin-bottom:14px;
+}
+
+.precios-laura-obligatorio-lista{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  max-height:min(65vh,620px);
+  overflow:auto;
+  padding-right:4px;
+}
+
+.precio-laura-obligatorio-item{
+  display:grid;
+  grid-template-columns:84px 1fr minmax(150px,180px);
+  gap:14px;
+  align-items:center;
+  padding:14px;
+  border-radius:18px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-xs);
+}
+
+.precio-laura-obligatorio-foto-wrap{
+  width:84px;
+  height:84px;
+}
+
+.precio-laura-obligatorio-foto{
+  width:84px;
+  height:84px;
+  object-fit:cover;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:#fff;
+  display:block;
+}
+
+.precio-laura-obligatorio-foto-vacia{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-weight:800;
+  font-size:12px;
+  background:linear-gradient(180deg,#fff,#f8fafc);
+}
+
+.precio-laura-obligatorio-info{
+  min-width:0;
+}
+
+.precio-laura-obligatorio-nombre{
+  font-size:18px;
+  font-weight:900;
+  color:#0f172a;
+  margin-bottom:6px;
+  word-break:break-word;
+}
+
+.precio-laura-obligatorio-bea{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#ecfdf5,#dcfce7);
+  color:#166534;
+  border:1px solid #86efac;
+  font-weight:800;
+}
+
+.precio-laura-obligatorio-input-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.precio-laura-obligatorio-input-wrap label{
+  font-size:13px;
+  font-weight:800;
+  color:#475569;
+}
+
+.precio-laura-obligatorio-input{
+  min-height:50px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-size:16px;
+  font-weight:800;
+  text-align:center;
+}
+
+.precio-laura-obligatorio-input-error{
+  border-color:#ef4444 !important;
+  box-shadow:0 0 0 4px rgba(239,68,68,.14) !important;
+  background:#fff5f5 !important;
+}
+
+.precios-laura-obligatorio-actions{
+  justify-content:center;
+  margin-top:16px;
+}
+
+body.bloqueo-precios-laura-activo{
+  overflow:hidden;
+}
+
+@media (max-width:780px){
+  .modal-precios-obligatorio{
+    padding:10px;
+  }
+
+  .modal-precios-obligatorio-box{
+    width:min(100%,96vw);
+    padding:16px;
+  }
+
+  .precio-laura-obligatorio-item{
+    grid-template-columns:1fr;
+    text-align:center;
+    justify-items:center;
+  }
+
+  .precio-laura-obligatorio-input-wrap{
+    width:100%;
+  }
+}
