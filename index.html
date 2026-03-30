@@ -146,6 +146,8 @@
           <div id="stockVisible">📳 Stock: 0</div>
         </div>
 
+        <button id="btnToggleOcultosIndex" onclick="toggleMostrarOcultosIndex()" style="display:none" title="Ver productos ocultos solo del index">🙈 Ocultos: OFF</button>
+
         <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
         <button onclick="abrirCatalogo()" class="catalogo-btn">📉 Abrir catálogo</button>
         <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
@@ -454,6 +456,7 @@ let ultimoQRTexto = '';
 let ultimoQRNombre = '';
 let ultimaQRImagen = '';
 let productoModalActualId = null;
+let mostrarOcultosIndex = false;
 
 const EMAILJS_CONFIG = {
   service: 'service_65ryfan',
@@ -476,6 +479,32 @@ function avisarAppUsuario(email = '') {
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
   return params.get(name);
+}
+
+function productoOcultoEnIndex(producto) {
+  return !!producto?.ocultoIndex;
+}
+
+window.toggleMostrarOcultosIndex = () => {
+  if (userRole !== 'admin') return;
+  mostrarOcultosIndex = !mostrarOcultosIndex;
+  actualizarBotonOcultosIndex();
+  programarRender();
+};
+
+function actualizarBotonOcultosIndex() {
+  const btn = document.getElementById('btnToggleOcultosIndex');
+  if (!btn) return;
+
+  if (userRole === 'admin') {
+    btn.style.display = 'inline-flex';
+    btn.textContent = mostrarOcultosIndex ? '👁️ Ocultos: ON' : '🙈 Ocultos: OFF';
+    btn.title = mostrarOcultosIndex
+      ? 'Ahora ves también los productos ocultos del index'
+      : 'Pulsa para ver los productos ocultos del index';
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 function construirProductoPublico(producto) {
@@ -1496,6 +1525,9 @@ window.renderTablaSolo = () => {
 
   for (const [id, p] of productosOrdenados) {
     const nombreLc = (p?.nombre || '').toLowerCase();
+    const ocultoIndex = productoOcultoEnIndex(p);
+
+    if (ocultoIndex && !(userRole === 'admin' && mostrarOcultosIndex)) continue;
     if (!nombreLc.includes(filtro)) continue;
 
     productosVisiblesCount++;
@@ -1513,12 +1545,17 @@ window.renderTablaSolo = () => {
       filaClass += ' en-reposicion';
     }
 
+    if (ocultoIndex) {
+      filaClass += ' oculto-index-row';
+    }
+
     html += `
 <tr class="${filaClass}">
 <td>
   <button class="producto-link" onclick="abrirFichaProducto('${id}')">
     ${p.nombre || ''}
   </button>
+  ${ocultoIndex ? '<div class="oculto-index-badge">🙈 Oculto en index</div>' : ''}
 </td>
 
 <td>
@@ -1608,8 +1645,9 @@ window.renderTablaSolo = () => {
 
 <td class="col-acciones">
   ${userRole === 'admin' ? `
-    <button class="icon-btn" onclick="editar('${id}')">✏️</button>
-    <button class="red icon-btn" onclick="borrar('${id}')">🗑️</button>
+    <button class="icon-btn" onclick="editar('${id}')" title="Editar producto">✏️</button>
+    <button class="icon-btn" onclick="toggleOcultoIndex('${id}')" title="${ocultoIndex ? 'Mostrar otra vez en index' : 'Ocultar solo del index'}">${ocultoIndex ? '👁️' : '🙈'}</button>
+    <button class="red icon-btn" onclick="borrar('${id}')" title="Borrar producto">🗑️</button>
   ` : ''}
 </td>
 </tr>`;
@@ -1920,6 +1958,8 @@ function updateUI() {
   const resetBtn = document.getElementById('resetBtn');
   const precioGlobalBtn = document.getElementById('precioGlobalBtn');
   const thAcciones = document.getElementById('thAcciones');
+
+  actualizarBotonOcultosIndex();
 
   if (userRole === 'admin') {
     if (thAcciones) thAcciones.style.display = '';
@@ -2426,7 +2466,8 @@ window.guardar = async () => {
       vBea: editId ? Number(productos[editId]?.vBea || 0) : 0,
       vLaura: editId ? Number(productos[editId]?.vLaura || 0) : 0,
       reservasDetalle: editId ? (Array.isArray(productos[editId]?.reservasDetalle) ? productos[editId].reservasDetalle : []) : [],
-      emailAgotadoEnviado: editId ? !!productos[editId]?.emailAgotadoEnviado : false
+      emailAgotadoEnviado: editId ? !!productos[editId]?.emailAgotadoEnviado : false,
+      ocultoIndex: editId ? !!productos[editId]?.ocultoIndex : false
     };
 
     if (editId) {
@@ -2528,6 +2569,40 @@ window.borrar = (id) => {
       showToast('✅ Borrado', 'success');
     }
   });
+};
+
+window.toggleOcultoIndex = async (id) => {
+  if (userRole !== 'admin') return showToast('✖ Solo ADMIN puede ocultar productos del index', 'error');
+
+  const p = productos[id];
+  if (!p) return showToast('✖ Producto no encontrado', 'error');
+
+  const nuevoEstado = !productoOcultoEnIndex(p);
+
+  await update(ref(db, 'productos/' + id), { ocultoIndex: nuevoEstado });
+  productos[id].ocultoIndex = nuevoEstado;
+
+  await guardarLog(
+    nuevoEstado ? 'oculto-index-activado' : 'oculto-index-desactivado',
+    id,
+    p.nombre,
+    0,
+    currentUser.email,
+    nuevoEstado ? 'Oculto solo en index' : 'Visible otra vez en index'
+  );
+
+  if (!nuevoEstado && userRole === 'admin' && !mostrarOcultosIndex) {
+    mostrarOcultosIndex = false;
+  }
+
+  refrescarFichaProductoSiAbierta();
+  programarRender();
+  showToast(
+    nuevoEstado
+      ? `🙈 ${p.nombre} oculto solo del index`
+      : `👁️ ${p.nombre} vuelve a mostrarse en el index`,
+    'success'
+  );
 };
 
 window.resetear = () => {
