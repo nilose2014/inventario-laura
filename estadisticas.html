@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📊 Estadísticas Inventario Laura - Panel Completo</title>
+<link rel="icon" type="image/png" href="favicon.png">
 <style>
 body{font-family:Arial,Helvetica,sans-serif;background:#f0f2f5;padding:20px;max-width:1400px;margin:0 auto;color:#1f2937}
 .card{background:white;padding:20px;border-radius:14px;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
@@ -385,7 +386,7 @@ canvas{width:100% !important;max-height:380px !important}
       <div class="tabla-container">
         <table class="mini-table">
           <thead>
-            <tr><th>Periodo</th><th>Ventas</th><th>Ingresos Laura</th></tr>
+            <tr><th>Periodo</th><th>Ventas</th><th>Ingresos Bea</th><th>Ingresos Laura</th><th>Diferencia (L-B)</th></tr>
           </thead>
           <tbody id="tablaPeriodos"></tbody>
         </table>
@@ -847,10 +848,13 @@ function renderChartsYPeriodos(){
 function getNetosEnPeriodo(desde, hasta){
   const hist = calcularHistorialDesdeLogs(desde, hasta);
   const ventas = Object.values(hist.ventasPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
+  const ingresosBea = Object.values(hist.porProducto || {}).reduce((acc, p) => acc + Number(p?.beaTotal || 0), 0);
   const ingresosLaura = Object.values(hist.ingresosPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
   return {
     ventas: Math.max(0, ventas),
-    ingresosLaura: Math.max(0, ingresosLaura)
+    ingresosBea: Math.max(0, ingresosBea),
+    ingresosLaura: Math.max(0, ingresosLaura),
+    diferencia: Math.max(0, ingresosLaura) - Math.max(0, ingresosBea)
   };
 }
 
@@ -884,27 +888,46 @@ function dibujarChart(canvasId, type, labels, data, label, kind){
 function renderPeriodos(desdeFiltro, hastaFiltro){
   const tbody = document.getElementById('tablaPeriodos');
   const hoy = new Date();
+  hoy.setHours(12,0,0,0);
+
+  const ayer = new Date(hoy);
+  ayer.setDate(hoy.getDate() - 1);
+
+  const anteayer = new Date(hoy);
+  anteayer.setDate(hoy.getDate() - 2);
+
   const inicioSemana = new Date(hoy);
   const day = (inicioSemana.getDay() + 6) % 7;
   inicioSemana.setDate(inicioSemana.getDate() - day);
+
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  inicioMes.setHours(12,0,0,0);
 
   const periodos = [
     { nombre: 'Hoy', desde: ymd(hoy), hasta: ymd(hoy) },
+    { nombre: 'Ayer', desde: ymd(ayer), hasta: ymd(ayer) },
+    { nombre: 'Anteayer', desde: ymd(anteayer), hasta: ymd(anteayer) },
     { nombre: 'Esta semana', desde: ymd(inicioSemana), hasta: ymd(hoy) },
     { nombre: 'Este mes', desde: ymd(inicioMes), hasta: ymd(hoy) }
   ].map(p => ({
     ...p,
     desde: desdeFiltro && desdeFiltro > p.desde ? desdeFiltro : p.desde,
     hasta: hastaFiltro && hastaFiltro < p.hasta ? hastaFiltro : p.hasta
-  }));
+  })).filter(p => !p.desde || !p.hasta || p.desde <= p.hasta);
 
   const rows = periodos.map(periodo => {
     const neto = getNetosEnPeriodo(periodo.desde, periodo.hasta);
-    return `<tr><td>${periodo.nombre}</td><td>${neto.ventas}</td><td>${formatEuro(neto.ingresosLaura)}</td></tr>`;
+    const diferenciaClass = neto.diferencia >= 0 ? 'style="color:#15803d;font-weight:bold"' : 'style="color:#b91c1c;font-weight:bold"';
+    return `<tr>
+      <td>${periodo.nombre}</td>
+      <td>${neto.ventas}</td>
+      <td>${formatEuro(neto.ingresosBea)}</td>
+      <td>${formatEuro(neto.ingresosLaura)}</td>
+      <td ${diferenciaClass}>${formatEuro(neto.diferencia)}</td>
+    </tr>`;
   }).join('');
 
-  tbody.innerHTML = rows || '<tr><td colspan="3" class="empty">Sin movimientos</td></tr>';
+  tbody.innerHTML = rows || '<tr><td colspan="5" class="empty">Sin movimientos</td></tr>';
 }
 
 window.volver = () => window.location.href = 'index.html';
