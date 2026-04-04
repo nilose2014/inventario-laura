@@ -1042,16 +1042,24 @@ function dibujarChartMeses(resumenMeses){
 
   const labels = resumenMeses.map(m => m.nombre);
   const dataLaura = resumenMeses.map(m => Number(m.ingresosLaura.toFixed(2)));
+  const dataBea = resumenMeses.map(m => Number(m.ingresosBea.toFixed(2)));
 
   mesesChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: 'Ingresos Laura € por mes',
-        data: dataLaura,
-        borderWidth: 1
-      }]
+      datasets: [
+        {
+          label: 'Laura €',
+          data: dataLaura,
+          borderWidth: 1
+        },
+        {
+          label: 'Bea €',
+          data: dataBea,
+          borderWidth: 1
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -1093,9 +1101,15 @@ function renderResumenMensual(){
     crecimientoHtml = `Crecimiento mensual: <span class="${clase}">${signo}${crecimiento.toFixed(1)}%</span> (${mesPrevio.nombre} → ${mesActual.nombre})`;
   }
 
+  const añoActual = new Date().getFullYear();
+  const mesesAño = resumenMeses.filter(m => m.clave.startsWith(String(añoActual)));
+  const totalAñoLaura = mesesAño.reduce((acc,m)=>acc+m.ingresosLaura,0);
+  const totalAñoBea = mesesAño.reduce((acc,m)=>acc+m.ingresosBea,0);
+
   wrap.innerHTML = `
     <div>🏆 Mejor mes automático: <strong>${mejorMes.nombre}</strong> con <strong>${formatEuro(mejorMes.ingresosLaura)}</strong> de Laura.</div>
     <div style="margin-top:6px">${crecimientoHtml}</div>
+    <div style="margin-top:6px">📅 Año en curso (${añoActual}): Laura ${formatEuro(totalAñoLaura)} · Bea ${formatEuro(totalAñoBea)}</div>
   `;
 }
 
