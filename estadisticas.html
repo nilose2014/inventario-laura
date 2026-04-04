@@ -360,6 +360,13 @@ canvas{width:100% !important;max-height:380px !important}
       </div>
       <div id="resumenMeses" style="margin-top:14px;font-size:14px;color:#475569;font-weight:bold"></div>
     </div>
+
+    <div class="card">
+      <h2>📈 Beneficio por mes (Laura - Bea)</h2>
+      <div class="chart-wrap">
+        <canvas id="chartBeneficioMeses"></canvas>
+      </div>
+    </div>
   </div>
 
   <div>
@@ -403,6 +410,18 @@ canvas{width:100% !important;max-height:380px !important}
         </table>
       </div>
     </div>
+
+    <div class="card">
+      <h2>🏅 Ranking de meses</h2>
+      <div class="tabla-container">
+        <table class="mini-table">
+          <thead>
+            <tr><th>#</th><th>Mes</th><th>Laura</th><th>Bea</th><th>Beneficio</th><th>Ventas</th></tr>
+          </thead>
+          <tbody id="tablaRankingMeses"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -434,6 +453,7 @@ let totalVendidosGlobalRef = 0;
 let ventasChart = null;
 let ingresosChart = null;
 let mesesChart = null;
+let beneficioMesesChart = null;
 let historialGlobal = null;
 
 function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
@@ -525,6 +545,7 @@ window.renderTodo = () => {
   renderAlertas(filasFiltradas);
   renderChartsYPeriodos();
   renderResumenMensual();
+  renderRankingMeses();
 };
 
 window.aplicarFiltros = () => renderTodo();
@@ -865,6 +886,7 @@ function renderChartsYPeriodos(){
 
   const resumenMeses = calcularResumenMensual(desde, hasta);
   dibujarChartMeses(resumenMeses);
+  dibujarChartBeneficioMeses(resumenMeses);
 
   renderPeriodos(desde, hasta);
 }
@@ -1070,6 +1092,63 @@ function dibujarChartMeses(resumenMeses){
   });
 }
 
+
+function dibujarChartBeneficioMeses(resumenMeses){
+  const ctx = document.getElementById('chartBeneficioMeses');
+  if (!ctx) return;
+  if (beneficioMesesChart) beneficioMesesChart.destroy();
+
+  const labels = resumenMeses.map(m => m.nombre);
+  const dataBeneficio = resumenMeses.map(m => Number(m.diferencia.toFixed(2)));
+
+  beneficioMesesChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Beneficio € (Laura - Bea)',
+        data: dataBeneficio,
+        borderWidth: 2,
+        fill: false,
+        tension: 0.25
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function renderRankingMeses(){
+  const desde = document.getElementById('logFechaDesde').value;
+  const hasta = document.getElementById('logFechaHasta').value;
+  const resumenMeses = calcularResumenMensual(desde, hasta);
+  const tbody = document.getElementById('tablaRankingMeses');
+  if (!tbody) return;
+
+  const ranking = [...resumenMeses].sort((a,b) => b.diferencia - a.diferencia);
+
+  if (!ranking.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin meses con movimientos</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = ranking.map((m, i) => {
+    const clase = m.diferencia > 0 ? 'money-positive' : (m.diferencia < 0 ? 'money-negative' : 'money-neutral');
+    return `<tr>
+      <td>${i + 1}</td>
+      <td style="text-align:left">${m.nombre}</td>
+      <td>${formatEuro(m.ingresosLaura)}</td>
+      <td>${formatEuro(m.ingresosBea)}</td>
+      <td><span class="${clase}">${formatEuro(m.diferencia)}</span></td>
+      <td>${m.ventas}</td>
+    </tr>`;
+  }).join('');
+}
+
 function renderResumenMensual(){
   const desde = document.getElementById('logFechaDesde').value;
   const hasta = document.getElementById('logFechaHasta').value;
@@ -1087,6 +1166,7 @@ function renderResumenMensual(){
   const mesPrevio = resumenMeses.length > 1 ? resumenMeses[resumenMeses.length - 2] : null;
 
   let crecimientoHtml = 'Crecimiento mensual: sin mes previo para comparar.';
+  let alertaHtml = '📊 Alerta mensual: sin mes previo para comparar.';
   if (mesPrevio) {
     const base = Number(mesPrevio.ingresosLaura || 0);
     const actual = Number(mesActual.ingresosLaura || 0);
@@ -1099,17 +1179,27 @@ function renderResumenMensual(){
     const clase = crecimiento > 0 ? 'money-positive' : (crecimiento < 0 ? 'money-negative' : 'money-neutral');
     const signo = crecimiento > 0 ? '+' : '';
     crecimientoHtml = `Crecimiento mensual: <span class="${clase}">${signo}${crecimiento.toFixed(1)}%</span> (${mesPrevio.nombre} → ${mesActual.nombre})`;
+
+    if (actual < base) {
+      alertaHtml = `🚨 Alerta mensual: <span class="money-negative">${mesActual.nombre}</span> va peor que <strong>${mesPrevio.nombre}</strong>.`;
+    } else if (actual > base) {
+      alertaHtml = `✅ Alerta mensual: <span class="money-positive">${mesActual.nombre}</span> mejora frente a <strong>${mesPrevio.nombre}</strong>.`;
+    } else {
+      alertaHtml = `➖ Alerta mensual: ${mesActual.nombre} está igual que ${mesPrevio.nombre}.`;
+    }
   }
 
   const añoActual = new Date().getFullYear();
   const mesesAño = resumenMeses.filter(m => m.clave.startsWith(String(añoActual)));
   const totalAñoLaura = mesesAño.reduce((acc,m)=>acc+m.ingresosLaura,0);
   const totalAñoBea = mesesAño.reduce((acc,m)=>acc+m.ingresosBea,0);
+  const totalAñoBeneficio = totalAñoLaura - totalAñoBea;
 
   wrap.innerHTML = `
     <div>🏆 Mejor mes automático: <strong>${mejorMes.nombre}</strong> con <strong>${formatEuro(mejorMes.ingresosLaura)}</strong> de Laura.</div>
     <div style="margin-top:6px">${crecimientoHtml}</div>
-    <div style="margin-top:6px">📅 Año en curso (${añoActual}): Laura ${formatEuro(totalAñoLaura)} · Bea ${formatEuro(totalAñoBea)}</div>
+    <div style="margin-top:6px">${alertaHtml}</div>
+    <div style="margin-top:6px">📅 Año en curso (${añoActual}): Laura ${formatEuro(totalAñoLaura)} · Bea ${formatEuro(totalAñoBea)} · Beneficio <span class="${totalAñoBeneficio > 0 ? 'money-positive' : (totalAñoBeneficio < 0 ? 'money-negative' : 'money-neutral')}">${formatEuro(totalAñoBeneficio)}</span></div>
   `;
 }
 
