@@ -398,6 +398,60 @@ canvas{width:100% !important;max-height:390px !important}
   .section-grid{grid-template-columns:1fr}
   canvas{max-height:260px !important}
 }
+
+.ranking-toolbar{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.ranking-toolbar-left{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.ranking-toolbar-right{
+  font-size:13px;
+  color:var(--text-soft, #475569);
+  font-weight:800;
+}
+#buscarRanking{
+  min-width:260px;
+  max-width:360px;
+}
+.ranking-pager{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.ranking-page-info{
+  font-size:13px;
+  font-weight:800;
+  color:var(--text-soft, #475569);
+  background:#f8fbff;
+  border:1px solid var(--border, #dbe7f5);
+  padding:10px 12px;
+  border-radius:12px;
+}
+@media (max-width:700px){
+  .ranking-toolbar{
+    align-items:stretch;
+  }
+  .ranking-toolbar-left,.ranking-toolbar-right,.ranking-pager{
+    width:100%;
+  }
+  #buscarRanking{
+    min-width:100%;
+    max-width:100%;
+  }
+}
+
 </style>
 
 </head>
@@ -496,6 +550,15 @@ canvas{width:100% !important;max-height:390px !important}
   <div>
     <div class="card">
       <h2>🏆 Ranking completo de productos</h2>
+
+      <div class="ranking-toolbar">
+        <div class="ranking-toolbar-left">
+          <input id="buscarRanking" type="text" placeholder="🔍 Buscar en el ranking..." oninput="filtrarRankingEnVivo()">
+          <button class="secondary" onclick="toggleVerTodosRanking()" id="btnVerTodosRanking">Ver todos</button>
+        </div>
+        <div class="ranking-toolbar-right" id="rankingResumenInfo">Mostrando 0 de 0 productos</div>
+      </div>
+
       <div class="tabla-container">
         <table>
           <thead>
@@ -516,6 +579,12 @@ canvas{width:100% !important;max-height:390px !important}
           </thead>
           <tbody id="tablaEstadisticas"></tbody>
         </table>
+      </div>
+
+      <div class="ranking-pager">
+        <button class="secondary" onclick="irPaginaRanking(-1)" id="btnRankingPrev">⬅ Anterior</button>
+        <div class="ranking-page-info" id="rankingPageInfo">Página 1 de 1</div>
+        <button onclick="irPaginaRanking(1)" id="btnRankingNext">Siguiente ➡</button>
       </div>
     </div>
 
@@ -635,6 +704,9 @@ let ingresosChart = null;
 let mesesChart = null;
 let beneficioMesesChart = null;
 let historialGlobal = null;
+let rankingMostrarTodos = false;
+let rankingPagina = 1;
+const rankingPorPagina = 15;
 
 function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
 function ymd(date){
@@ -970,15 +1042,81 @@ function renderKPIs(rows){
   document.getElementById('kpiStockActual').textContent = stockActual;
 }
 
+
+window.filtrarRankingEnVivo = () => {
+  rankingPagina = 1;
+  renderTablaPrincipal(filasFiltradas);
+};
+
+window.toggleVerTodosRanking = () => {
+  rankingMostrarTodos = !rankingMostrarTodos;
+  rankingPagina = 1;
+  const btn = document.getElementById('btnVerTodosRanking');
+  if (btn) btn.textContent = rankingMostrarTodos ? 'Ver menos' : 'Ver todos';
+  renderTablaPrincipal(filasFiltradas);
+};
+
+window.irPaginaRanking = (direccion) => {
+  const texto = normalizarNombre(document.getElementById('buscarRanking')?.value || '');
+  const base = (filasFiltradas || []).filter(p => !texto || normalizarNombre(p.nombre).includes(texto));
+  const totalPaginas = Math.max(1, Math.ceil(base.length / rankingPorPagina));
+  rankingPagina = Math.min(totalPaginas, Math.max(1, rankingPagina + Number(direccion || 0)));
+  renderTablaPrincipal(filasFiltradas);
+};
+
 function renderTablaPrincipal(rows){
   const tabla = document.getElementById('tablaEstadisticas');
-  if (!rows.length) {
-    tabla.innerHTML = '<tr><td colspan="12" class="empty">❌ No hay datos con esos filtros</td></tr>';
+  const buscarRanking = normalizarNombre(document.getElementById('buscarRanking')?.value || '');
+  const resumenInfo = document.getElementById('rankingResumenInfo');
+  const pageInfo = document.getElementById('rankingPageInfo');
+  const prevBtn = document.getElementById('btnRankingPrev');
+  const nextBtn = document.getElementById('btnRankingNext');
+
+  let ranking = [...rows];
+  if (buscarRanking) {
+    ranking = ranking.filter(p => normalizarNombre(p.nombre).includes(buscarRanking));
+  }
+
+  const totalProductos = ranking.length;
+  const totalPaginas = rankingMostrarTodos ? Math.max(1, Math.ceil(totalProductos / rankingPorPagina)) : 1;
+  if (rankingPagina > totalPaginas) rankingPagina = totalPaginas;
+  if (rankingPagina < 1) rankingPagina = 1;
+
+  let rankingPintar = ranking;
+  if (!rankingMostrarTodos) {
+    rankingPintar = ranking.slice(0, rankingPorPagina);
+  } else {
+    const inicio = (rankingPagina - 1) * rankingPorPagina;
+    const fin = inicio + rankingPorPagina;
+    rankingPintar = ranking.slice(inicio, fin);
+  }
+
+  if (resumenInfo) {
+    const cantidadMostrada = rankingPintar.length;
+    resumenInfo.textContent = `Mostrando ${cantidadMostrada} de ${totalProductos} productos`;
+  }
+
+  if (pageInfo) {
+    pageInfo.textContent = rankingMostrarTodos
+      ? `Página ${rankingPagina} de ${totalPaginas}`
+      : `Vista rápida · Top ${Math.min(rankingPorPagina, totalProductos)}`;
+  }
+
+  if (prevBtn) prevBtn.style.display = rankingMostrarTodos ? 'inline-flex' : 'none';
+  if (nextBtn) nextBtn.style.display = rankingMostrarTodos ? 'inline-flex' : 'none';
+  if (prevBtn) prevBtn.disabled = rankingPagina <= 1;
+  if (nextBtn) nextBtn.disabled = rankingPagina >= totalPaginas;
+
+  if (!rankingPintar.length) {
+    tabla.innerHTML = '<tr><td colspan="12" class="empty">❌ No hay productos con ese filtro</td></tr>';
     return;
   }
 
-  tabla.innerHTML = rows.map((p, i) => {
-    const clasePos = i === 0 ? 'pos1' : i === 1 ? 'pos2' : i === 2 ? 'pos3' : '';
+  const startIndex = rankingMostrarTodos ? (rankingPagina - 1) * rankingPorPagina : 0;
+
+  tabla.innerHTML = rankingPintar.map((p, i) => {
+    const posicionReal = startIndex + i;
+    const clasePos = posicionReal === 0 ? 'pos1' : posicionReal === 1 ? 'pos2' : posicionReal === 2 ? 'pos3' : '';
     let estado = '<span class="badge green">OK</span>';
     if (p.stock === 0) estado = '<span class="badge red">AGOTADO</span>';
     else if (p.stock <= 5) estado = '<span class="badge yellow">STOCK BAJO</span>';
@@ -986,7 +1124,7 @@ function renderTablaPrincipal(rows){
 
     return `
       <tr class="${clasePos}">
-        <td style="font-weight:bold">${i + 1}</td>
+        <td style="font-weight:bold">${posicionReal + 1}</td>
         <td>${renderMiniFoto(p.imagen, false)}</td>
         <td style="text-align:left;font-weight:bold">${p.nombre}</td>
         <td>${p.stock}</td>
@@ -995,7 +1133,7 @@ function renderTablaPrincipal(rows){
         <td style="font-size:17px;color:#28a745;font-weight:bold">${p.vendidos}</td>
         <td style="color:#28a745;font-weight:bold">${formatEuro(p.beaTotal)}</td>
         <td style="color:#007bff;font-weight:bold">${formatEuro(p.lauraTotal)}</td>
-        <td style="color:#ffc107;font-weight:bold">${p.porcentaje.toFixed(1)}%</td>
+        <td style="color:#f59e0b;font-weight:bold">${p.porcentaje.toFixed(1)}%</td>
         <td>${estado}</td>
         <td><button class="edit-btn" onclick="irEditarProducto('${p.id}')">✏️ Modificar</button></td>
       </tr>
