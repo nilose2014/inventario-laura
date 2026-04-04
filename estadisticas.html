@@ -428,7 +428,14 @@ let ingresosChart = null;
 let historialGlobal = null;
 
 function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
-function ymd(date){ return new Date(date).toISOString().split('T')[0]; }
+function ymd(date){
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}-${m}-${day}`;
+}
 function esFechaDentro(fechaYmd, desde, hasta){
   if (desde && fechaYmd < desde) return false;
   if (hasta && fechaYmd > hasta) return false;
@@ -923,7 +930,7 @@ function renderPeriodos(desdeFiltro, hastaFiltro){
     { nombre: 'Último trimestre', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hasta: makeDate(hoy) },
     { nombre: 'Últimos 6 meses', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1), hasta: makeDate(hoy) },
     { nombre: 'Últimos 9 meses', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 8, 1), hasta: makeDate(hoy) },
-    { nombre: 'Último año', desde: new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate()), hasta: makeDate(hoy) }
+    { nombre: 'Último año', desde: makeDate(new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate())), hasta: makeDate(hoy) }
   ];
 
   const periodos = periodosBase.map(p => {
