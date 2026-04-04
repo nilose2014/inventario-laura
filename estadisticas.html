@@ -434,7 +434,6 @@ function ymd(date){
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-}-${m}-${day}`;
 }
 function esFechaDentro(fechaYmd, desde, hasta){
   if (desde && fechaYmd < desde) return false;
