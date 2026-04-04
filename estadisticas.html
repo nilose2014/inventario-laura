@@ -352,6 +352,14 @@ canvas{width:100% !important;max-height:380px !important}
         <canvas id="chartIngresosPorDia"></canvas>
       </div>
     </div>
+
+    <div class="card">
+      <h2>🗓️ Evolución mensual</h2>
+      <div class="chart-wrap">
+        <canvas id="chartMeses"></canvas>
+      </div>
+      <div id="resumenMeses" style="margin-top:14px;font-size:14px;color:#475569;font-weight:bold"></div>
+    </div>
   </div>
 
   <div>
@@ -425,6 +433,7 @@ let filasFiltradas = [];
 let totalVendidosGlobalRef = 0;
 let ventasChart = null;
 let ingresosChart = null;
+let mesesChart = null;
 let historialGlobal = null;
 
 function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
@@ -515,6 +524,7 @@ window.renderTodo = () => {
   renderTopReservados(filasFiltradas);
   renderAlertas(filasFiltradas);
   renderChartsYPeriodos();
+  renderResumenMensual();
 };
 
 window.aplicarFiltros = () => renderTodo();
@@ -853,6 +863,9 @@ function renderChartsYPeriodos(){
   dibujarChart('chartVentasPorDia', 'bar', etiquetas, datosVentas, 'Unidades vendidas netas', 'ventas');
   dibujarChart('chartIngresosPorDia', 'line', etiquetas, datosIngresos, 'Ingresos Laura € netos', 'ingresos');
 
+  const resumenMeses = calcularResumenMensual(desde, hasta);
+  dibujarChartMeses(resumenMeses);
+
   renderPeriodos(desde, hasta);
 }
 
@@ -902,54 +915,39 @@ function renderPeriodos(desdeFiltro, hastaFiltro){
   const hoy = new Date();
   hoy.setHours(0,0,0,0);
 
+  const formatFecha = (d) => d.toLocaleDateString('es-ES');
+  const formatMes = (d) => d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
   const makeDate = (base) => {
     const d = new Date(base);
     d.setHours(0,0,0,0);
     return d;
   };
+
   const addDays = (base, days) => {
     const d = makeDate(base);
     d.setDate(d.getDate() + days);
     return d;
   };
-  const startOfMonth = (base) => new Date(base.getFullYear(), base.getMonth(), 1);
-  const endOfMonth = (year, month) => new Date(year, month + 1, 0);
-  const inicioSemana = makeDate(hoy);
-  const day = (inicioSemana.getDay() + 6) % 7;
-  inicioSemana.setDate(inicioSemana.getDate() - day);
 
   const periodosBase = [
-    { nombre: 'Hoy', desde: makeDate(hoy), hasta: makeDate(hoy) },
-    { nombre: 'Ayer', desde: addDays(hoy, -1), hasta: addDays(hoy, -1) },
-    { nombre: 'Anteayer', desde: addDays(hoy, -2), hasta: addDays(hoy, -2) },
-    { nombre: 'Esta semana', desde: inicioSemana, hasta: makeDate(hoy) },
-    { nombre: 'Este mes', desde: startOfMonth(hoy), hasta: makeDate(hoy) },
-    { nombre: 'Mes pasado', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1), hasta: endOfMonth(hoy.getFullYear(), hoy.getMonth() - 1) },
-    { nombre: 'Mes anterior', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hasta: endOfMonth(hoy.getFullYear(), hoy.getMonth() - 2) },
-    { nombre: 'Último trimestre', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hasta: makeDate(hoy) },
-    { nombre: 'Últimos 6 meses', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1), hasta: makeDate(hoy) },
-    { nombre: 'Últimos 9 meses', desde: new Date(hoy.getFullYear(), hoy.getMonth() - 8, 1), hasta: makeDate(hoy) },
-    { nombre: 'Último año', desde: makeDate(new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate())), hasta: makeDate(hoy) }
+    { desde: makeDate(hoy), hasta: makeDate(hoy), label: "Hoy" },
+    { desde: addDays(hoy, -1), hasta: addDays(hoy, -1), label: "Ayer" },
+    { desde: addDays(hoy, -2), hasta: addDays(hoy, -2), label: "Anteayer" },
+    { desde: new Date(hoy.getFullYear(), hoy.getMonth(), 1), hasta: makeDate(hoy), label: formatMes(hoy) },
+    { desde: new Date(hoy.getFullYear(), hoy.getMonth()-1, 1), hasta: new Date(hoy.getFullYear(), hoy.getMonth(), 0), label: formatMes(new Date(hoy.getFullYear(), hoy.getMonth()-1, 1)) },
+    { desde: new Date(hoy.getFullYear(), hoy.getMonth()-2, 1), hasta: new Date(hoy.getFullYear(), hoy.getMonth()-1, 0), label: formatMes(new Date(hoy.getFullYear(), hoy.getMonth()-2, 1)) }
   ];
 
-  const periodos = periodosBase.map(p => {
-    const desdeBase = ymd(p.desde);
-    const hastaBase = ymd(p.hasta);
-    const desde = desdeFiltro && desdeFiltro > desdeBase ? desdeFiltro : desdeBase;
-    const hasta = hastaFiltro && hastaFiltro < hastaBase ? hastaFiltro : hastaBase;
-    return { ...p, desde, hasta };
-  });
+  const rows = periodosBase.map(p => {
+    const desde = ymd(p.desde);
+    const hasta = ymd(p.hasta);
 
-  const rows = periodos.map(periodo => {
-    if (periodo.desde > periodo.hasta) {
-      return `<tr><td>${periodo.nombre}</td><td>0</td><td>${formatEuro(0)}</td><td>${formatEuro(0)}</td><td><span class="money-neutral">${formatEuro(0)}</span></td></tr>`;
-    }
-
-    const neto = getNetosEnPeriodo(periodo.desde, periodo.hasta);
+    const neto = getNetosEnPeriodo(desde, hasta);
     const diffClass = neto.diferencia > 0 ? 'money-positive' : (neto.diferencia < 0 ? 'money-negative' : 'money-neutral');
 
     return `<tr>
-      <td>${periodo.nombre}</td>
+      <td><strong>${p.label}</strong><br><small>${formatFecha(p.desde)} → ${formatFecha(p.hasta)}</small></td>
       <td>${neto.ventas}</td>
       <td>${formatEuro(neto.ingresosBea)}</td>
       <td>${formatEuro(neto.ingresosLaura)}</td>
@@ -958,6 +956,147 @@ function renderPeriodos(desdeFiltro, hastaFiltro){
   }).join('');
 
   tbody.innerHTML = rows || '<tr><td colspan="5" class="empty">Sin movimientos</td></tr>';
+}
+
+
+function getClaveMes(fechaYmd){
+  const [y, m] = String(fechaYmd).split('-');
+  return `${y}-${m}`;
+}
+
+function nombreMesDesdeClave(clave){
+  const [y, m] = clave.split('-').map(Number);
+  const d = new Date(y, m - 1, 1);
+  return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+}
+
+function calcularResumenMensual(desde = '', hasta = ''){
+  const hist = calcularHistorialDesdeLogs(desde, hasta);
+  const mesesMap = {};
+
+  Object.entries(hist.ventasPorDia || {}).forEach(([fecha, ventas]) => {
+    const mes = getClaveMes(fecha);
+    if (!mesesMap[mes]) mesesMap[mes] = { ventas: 0, ingresosLaura: 0, ingresosBea: 0 };
+    mesesMap[mes].ventas += Number(ventas || 0);
+  });
+
+  Object.entries(hist.ingresosPorDia || {}).forEach(([fecha, ingresos]) => {
+    const mes = getClaveMes(fecha);
+    if (!mesesMap[mes]) mesesMap[mes] = { ventas: 0, ingresosLaura: 0, ingresosBea: 0 };
+    mesesMap[mes].ingresosLaura += Number(ingresos || 0);
+  });
+
+  Object.values(hist.porProducto || {}).forEach(p => {
+    // no se usa directamente por mes porque porProducto es agregado del rango
+  });
+
+  const entriesLogs = Object.values(logs || {}).filter(log => {
+    if (!log || !log.timestamp) return false;
+    const fecha = ymd(log.timestamp);
+    return esFechaDentro(fecha, desde, hasta);
+  });
+
+  const lastKnownPrices = {};
+  for (const log of entriesLogs.sort((a,b)=>Number(a.timestamp||0)-Number(b.timestamp||0))) {
+    const productoId = log.productoId || '';
+    const detalles = String(log.detalles || '');
+    const beaMatch = detalles.match(/Bea:€([0-9]+(?:\.[0-9]+)?)/);
+    const lauraMatch = detalles.match(/Laura:€([0-9]+(?:\.[0-9]+)?)/);
+    if (beaMatch || lauraMatch) {
+      lastKnownPrices[productoId] = {
+        bea: beaMatch ? Number(beaMatch[1]) : Number(lastKnownPrices[productoId]?.bea || 0),
+        laura: lauraMatch ? Number(lauraMatch[1]) : Number(lastKnownPrices[productoId]?.laura || 0)
+      };
+    }
+    const fecha = ymd(log.timestamp);
+    const mes = getClaveMes(fecha);
+    if (!mesesMap[mes]) mesesMap[mes] = { ventas: 0, ingresosLaura: 0, ingresosBea: 0 };
+
+    if (log.tipo === 'venta' || log.tipo === 'eliminacion-venta') {
+      const cantidad = Number(log.cantidad || 0);
+      const signo = log.tipo === 'venta' ? 1 : -1;
+      const productoActual = productos[productoId] || {};
+      const beaUnit = Number(lastKnownPrices[productoId]?.bea || productoActual.bea || 0);
+      mesesMap[mes].ingresosBea += beaUnit * cantidad * signo;
+    }
+  }
+
+  const lista = Object.entries(mesesMap)
+    .map(([clave, datos]) => ({
+      clave,
+      nombre: nombreMesDesdeClave(clave),
+      ventas: Math.max(0, Number(datos.ventas || 0)),
+      ingresosBea: Math.max(0, Number(datos.ingresosBea || 0)),
+      ingresosLaura: Math.max(0, Number(datos.ingresosLaura || 0)),
+      diferencia: Number(datos.ingresosLaura || 0) - Number(datos.ingresosBea || 0)
+    }))
+    .sort((a,b) => a.clave.localeCompare(b.clave));
+
+  return lista;
+}
+
+function dibujarChartMeses(resumenMeses){
+  const ctx = document.getElementById('chartMeses');
+  if (!ctx) return;
+  if (mesesChart) mesesChart.destroy();
+
+  const labels = resumenMeses.map(m => m.nombre);
+  const dataLaura = resumenMeses.map(m => Number(m.ingresosLaura.toFixed(2)));
+
+  mesesChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Ingresos Laura € por mes',
+        data: dataLaura,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function renderResumenMensual(){
+  const desde = document.getElementById('logFechaDesde').value;
+  const hasta = document.getElementById('logFechaHasta').value;
+  const resumenMeses = calcularResumenMensual(desde, hasta);
+  const wrap = document.getElementById('resumenMeses');
+  if (!wrap) return;
+
+  if (!resumenMeses.length) {
+    wrap.innerHTML = 'Sin meses con movimientos en el rango actual.';
+    return;
+  }
+
+  const mejorMes = [...resumenMeses].sort((a,b) => b.ingresosLaura - a.ingresosLaura)[0];
+  const mesActual = resumenMeses[resumenMeses.length - 1];
+  const mesPrevio = resumenMeses.length > 1 ? resumenMeses[resumenMeses.length - 2] : null;
+
+  let crecimientoHtml = 'Crecimiento mensual: sin mes previo para comparar.';
+  if (mesPrevio) {
+    const base = Number(mesPrevio.ingresosLaura || 0);
+    const actual = Number(mesActual.ingresosLaura || 0);
+    let crecimiento = 0;
+    if (base === 0) {
+      crecimiento = actual > 0 ? 100 : 0;
+    } else {
+      crecimiento = ((actual - base) / base) * 100;
+    }
+    const clase = crecimiento > 0 ? 'money-positive' : (crecimiento < 0 ? 'money-negative' : 'money-neutral');
+    const signo = crecimiento > 0 ? '+' : '';
+    crecimientoHtml = `Crecimiento mensual: <span class="${clase}">${signo}${crecimiento.toFixed(1)}%</span> (${mesPrevio.nombre} → ${mesActual.nombre})`;
+  }
+
+  wrap.innerHTML = `
+    <div>🏆 Mejor mes automático: <strong>${mejorMes.nombre}</strong> con <strong>${formatEuro(mejorMes.ingresosLaura)}</strong> de Laura.</div>
+    <div style="margin-top:6px">${crecimientoHtml}</div>
+  `;
 }
 
 window.volver = () => window.location.href = 'index.html';
