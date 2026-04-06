@@ -70,7 +70,7 @@ code{background:#eff6ff; padding:2px 6px; border-radius:8px}
   <h2>Qué hace</h2>
   <p>Lee <code>logs/</code>, calcula ventas e ingresos, y escribe en:</p>
   <p><code>estadisticas_historicas/dias/YYYY-MM-DD</code><br><code>estadisticas_historicas/meses/YYYY-MM</code></p>
-  <p><strong>No borra logs.</strong> Solo migra.</p>
+  <p><strong>No borra logs.</strong> Solo migra. Esta versión escribe directamente en <code>estadisticas_historicas</code> para evitar el error de permisos al hacer update en la raíz.</p>
   <p><small>Permite reconstruir ventas normales, ventas desde reserva y correcciones de venta usando <code>totalBea</code>, <code>totalLaura</code>, precios del log o, si faltan, precios actuales del producto.</small></p>
 </div>
 
@@ -100,7 +100,7 @@ code{background:#eff6ff; padding:2px 6px; border-radius:8px}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -262,19 +262,10 @@ window.ejecutarMigracion = async () => {
 
     const data = await calcularMigracion();
 
-    const updates = {};
-    Object.entries(data.dias).forEach(([clave, item]) => {
-      updates[`estadisticas_historicas/dias/${clave}/ventas`] = item.ventas;
-      updates[`estadisticas_historicas/dias/${clave}/ingresosBea`] = item.ingresosBea;
-      updates[`estadisticas_historicas/dias/${clave}/ingresosLaura`] = item.ingresosLaura;
+    await set(ref(db, 'estadisticas_historicas'), {
+      dias: data.dias,
+      meses: data.meses
     });
-    Object.entries(data.meses).forEach(([clave, item]) => {
-      updates[`estadisticas_historicas/meses/${clave}/ventas`] = item.ventas;
-      updates[`estadisticas_historicas/meses/${clave}/ingresosBea`] = item.ingresosBea;
-      updates[`estadisticas_historicas/meses/${clave}/ingresosLaura`] = item.ingresosLaura;
-    });
-
-    await update(ref(db), updates);
 
     setResumen(data.resumen);
     salidaEl.textContent = JSON.stringify({
