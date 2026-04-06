@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migración completa de logs a estadísticas</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+:root{
+  --bg:#eef4ff; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:#dbe7f5;
+  --blue:#2563eb; --green:#16a34a; --red:#dc2626; --amber:#f59e0b;
+  --shadow:0 18px 40px rgba(15,23,42,.10); --radius:24px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#f8fbff 0%, var(--bg) 100%);padding:24px;max-width:1120px;margin-inline:auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:18px}
+.hero{background:linear-gradient(135deg,#1d4ed8 0%, #2563eb 45%, #4f46e5 100%);color:#fff}
+h1,h2{margin-top:0}
+p{line-height:1.55}
+button{border:none;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#4f46e5);margin-right:8px}
+button.green{background:linear-gradient(135deg,#22c55e,#16a34a)}
+button.secondary{background:linear-gradient(135deg,#64748b,#475569)}
+button:disabled{opacity:.6;cursor:not-allowed}
+#status{padding:14px 16px;border-radius:16px;font-weight:800;margin-top:12px;display:inline-block;background:#e2e8f0;color:#334155}
+.ok{background:#dcfce7 !important;color:#166534 !important}
+.err{background:#fee2e2 !important;color:#991b1b !important}
+.warn{background:#fef3c7 !important;color:#92400e !important}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.kpi{border:1px solid var(--border);background:#fff;border-radius:18px;padding:16px}
+.kpi .label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800}
+.kpi .value{font-size:28px;font-weight:900;margin-top:6px}
+pre{white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#e2e8f0;padding:16px;border-radius:16px;overflow:auto;font-size:13px}
+code{background:#eff6ff;padding:2px 6px;border-radius:8px}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="card hero">
+  <h1>🛠️ Migración completa de logs</h1>
+  <p>Reconstruye las estadísticas antiguas y además rellena los acumulados por producto para que <strong>la página de estadísticas deje de salir a 0</strong>.</p>
+  <div id="status">Esperando…</div>
+</div>
+
+<div class="card">
+  <h2>Qué corrige</h2>
+  <p>La página de estadísticas usa dos capas:</p>
+  <p>1. <code>estadisticas_historicas</code> para días y meses.<br>2. <code>productos/{id}/vendidos</code>, <code>vBea</code> y <code>vLaura</code> para ranking, KPIs y producto destacado.</p>
+  <p>Si migras solo los meses, los periodos salen bien pero el ranking y los totales de productos se quedan a 0. Esta versión migra <strong>las dos cosas</strong>.</p>
+</div>
+
+<div class="card">
+  <h2>Acciones</h2>
+  <button id="btnPreview" onclick="previewMigracion()">🔎 Previsualizar</button>
+  <button class="green" id="btnMigrar" onclick="ejecutarMigracion()">🚀 Ejecutar migración completa</button>
+  <button class="secondary" onclick="window.location.href='index.html'">⬅ Volver</button>
+</div>
+
+<div class="card">
+  <h2>Resumen</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="label">Logs útiles</div><div class="value" id="kLogs">0</div></div>
+    <div class="kpi"><div class="label">Días</div><div class="value" id="kDias">0</div></div>
+    <div class="kpi"><div class="label">Meses</div><div class="value" id="kMeses">0</div></div>
+    <div class="kpi"><div class="label">Productos afectados</div><div class="value" id="kProductos">0</div></div>
+    <div class="kpi"><div class="label">Ventas netas</div><div class="value" id="kVentas">0</div></div>
+    <div class="kpi"><div class="label">Laura neto</div><div class="value" id="kLaura">€0.00</div></div>
+    <div class="kpi"><div class="label">Bea neto</div><div class="value" id="kBea">€0.00</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Detalle</h2>
+  <pre id="salida">Sin ejecutar todavía.</pre>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
+  authDomain: "inventario-laura.firebaseapp.com",
+  databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "inventario-laura",
+  storageBucket: "inventario-laura.firebasestorage.app",
+  messagingSenderId: "778807935660",
+  appId: "1:778807935660:web:947e223465f9347b17d509"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+const statusEl = document.getElementById('status');
+const salidaEl = document.getElementById('salida');
+
+function formatEuro(n){ return '€' + Number(n || 0).toFixed(2); }
+function ymd(date){
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function claveMesDesdeDia(fechaYmd){ return String(fechaYmd).slice(0,7); }
+function setStatus(text, cls=''){ statusEl.textContent = text; statusEl.className = cls || ''; }
+function setResumen(res){
+  document.getElementById('kLogs').textContent = res.logs;
+  document.getElementById('kDias').textContent = res.dias;
+  document.getElementById('kMeses').textContent = res.meses;
+  document.getElementById('kProductos').textContent = res.productos;
+  document.getElementById('kVentas').textContent = res.ventas;
+  document.getElementById('kLaura').textContent = formatEuro(res.laura);
+  document.getElementById('kBea').textContent = formatEuro(res.bea);
+}
+function extraerPreciosDeLog(log, productoActual, lastKnown){
+  const detalles = String(log.detalles || '');
+  const beaMatch = detalles.match(/Bea:?€?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  const lauraMatch = detalles.match(/Laura:?€?\s*([0-9]+(?:\.[0-9]+)?)/i);
+
+  let bea = Number(lastKnown?.bea || 0);
+  let laura = Number(lastKnown?.laura || 0);
+
+  if (beaMatch) bea = Number(beaMatch[1]);
+  else if (!bea) bea = Number(productoActual?.bea || 0);
+
+  if (lauraMatch) laura = Number(lauraMatch[1]);
+  else if (!laura) laura = Number(productoActual?.laura || 0);
+
+  return { bea, laura };
+}
+async function calcularMigracion(){
+  const [logsSnap, productosSnap] = await Promise.all([
+    get(ref(db, 'logs')),
+    get(ref(db, 'productos'))
+  ]);
+
+  const logs = logsSnap.val() || {};
+  const productos = productosSnap.val() || {};
+
+  const entries = Object.entries(logs).map(([key, log]) => ({ key, ...(log || {}) }));
+  entries.sort((a,b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+
+  const dias = {};
+  const meses = {};
+  const productosAcum = {};
+  const lastKnownPrices = {};
+  let logsLeidos = 0;
+
+  for (const log of entries) {
+    if (!log || !log.timestamp || !log.tipo) continue;
+
+    const tipo = String(log.tipo || '');
+    if (!['venta','venta-desde-reserva','eliminacion-venta'].includes(tipo)) continue;
+
+    logsLeidos++;
+
+    const productoId = log.productoId || '';
+    const productoActual = productos[productoId] || {};
+    const fecha = ymd(log.timestamp);
+    const claveMes = claveMesDesdeDia(fecha);
+    const cantidad = Number(log.cantidad || 0);
+
+    const precios = extraerPreciosDeLog(log, productoActual, lastKnownPrices[productoId]);
+    lastKnownPrices[productoId] = precios;
+
+    let totalBea = Number(log.totalBea);
+    let totalLaura = Number(log.totalLaura);
+
+    if (!Number.isFinite(totalBea)) totalBea = Number(precios.bea || 0) * cantidad;
+    if (!Number.isFinite(totalLaura)) totalLaura = Number(precios.laura || 0) * cantidad;
+
+    const signo = tipo === 'eliminacion-venta' ? -1 : 1;
+
+    dias[fecha] = dias[fecha] || { ventas:0, ingresosBea:0, ingresosLaura:0 };
+    meses[claveMes] = meses[claveMes] || { ventas:0, ingresosBea:0, ingresosLaura:0 };
+    productosAcum[productoId] = productosAcum[productoId] || {
+      vendidos: 0,
+      vBea: 0,
+      vLaura: 0
+    };
+
+    dias[fecha].ventas += signo * cantidad;
+    dias[fecha].ingresosBea += signo * totalBea;
+    dias[fecha].ingresosLaura += signo * totalLaura;
+
+    meses[claveMes].ventas += signo * cantidad;
+    meses[claveMes].ingresosBea += signo * totalBea;
+    meses[claveMes].ingresosLaura += signo * totalLaura;
+
+    productosAcum[productoId].vendidos += signo * cantidad;
+    productosAcum[productoId].vBea += signo * totalBea;
+    productosAcum[productoId].vLaura += signo * totalLaura;
+  }
+
+  const limpiar = obj => {
+    Object.values(obj).forEach(item => {
+      if ('ventas' in item) item.ventas = Math.max(0, Number(item.ventas || 0));
+      if ('vendidos' in item) item.vendidos = Math.max(0, Number(item.vendidos || 0));
+      if ('ingresosBea' in item) item.ingresosBea = Number(Number(item.ingresosBea || 0).toFixed(2));
+      if ('ingresosLaura' in item) item.ingresosLaura = Number(Number(item.ingresosLaura || 0).toFixed(2));
+      if ('vBea' in item) item.vBea = Number(Number(item.vBea || 0).toFixed(2));
+      if ('vLaura' in item) item.vLaura = Number(Number(item.vLaura || 0).toFixed(2));
+    });
+  };
+  limpiar(dias);
+  limpiar(meses);
+  limpiar(productosAcum);
+
+  const resumen = {
+    logs: logsLeidos,
+    dias: Object.keys(dias).length,
+    meses: Object.keys(meses).length,
+    productos: Object.keys(productosAcum).filter(id => productosAcum[id].vendidos > 0 || productosAcum[id].vBea > 0 || productosAcum[id].vLaura > 0).length,
+    ventas: Object.values(dias).reduce((a,b)=>a+Number(b.ventas||0),0),
+    bea: Object.values(dias).reduce((a,b)=>a+Number(b.ingresosBea||0),0),
+    laura: Object.values(dias).reduce((a,b)=>a+Number(b.ingresosLaura||0),0)
+  };
+
+  return { dias, meses, productosAcum, resumen };
+}
+
+window.previewMigracion = async () => {
+  try{
+    setStatus('Calculando previsualización…','warn');
+    const data = await calcularMigracion();
+    setResumen(data.resumen);
+    salidaEl.textContent = JSON.stringify({
+      resumen: data.resumen,
+      ejemploDias: Object.fromEntries(Object.entries(data.dias).slice(0, 10)),
+      ejemploMeses: data.meses,
+      ejemploProductos: Object.fromEntries(Object.entries(data.productosAcum).slice(0, 10))
+    }, null, 2);
+    setStatus('Previsualización lista','ok');
+  }catch(err){
+    console.error(err);
+    setStatus('Error en previsualización','err');
+    salidaEl.textContent = String(err?.stack || err);
+  }
+};
+
+window.ejecutarMigracion = async () => {
+  try{
+    if (!confirm('Se escribirán estadísticas históricas y acumulados de producto a partir de los logs antiguos. ¿Continuar?')) return;
+    document.getElementById('btnMigrar').disabled = true;
+    document.getElementById('btnPreview').disabled = true;
+    setStatus('Migrando datos…','warn');
+
+    const data = await calcularMigracion();
+
+    const updates = {
+      'estadisticas_historicas/dias': data.dias,
+      'estadisticas_historicas/meses': data.meses
+    };
+
+    Object.entries(data.productosAcum).forEach(([id, item]) => {
+      updates[`productos/${id}/vendidos`] = item.vendidos;
+      updates[`productos/${id}/vBea`] = item.vBea;
+      updates[`productos/${id}/vLaura`] = item.vLaura;
+    });
+
+    await update(ref(db), updates);
+
+    setResumen(data.resumen);
+    salidaEl.textContent = JSON.stringify({
+      migrado: true,
+      resumen: data.resumen,
+      meses: data.meses,
+      productosActualizados: Object.keys(data.productosAcum).length
+    }, null, 2);
+    setStatus('Migración completada','ok');
+  }catch(err){
+    console.error(err);
+    setStatus('Error en migración','err');
+    salidaEl.textContent = String(err?.stack || err);
+  }finally{
+    document.getElementById('btnMigrar').disabled = false;
+    document.getElementById('btnPreview').disabled = false;
+  }
+};
+
+onAuthStateChanged(auth, (user) => {
+  if (!user || user.email !== 'nilose2014@gmail.com') {
+    setStatus('Solo el ADMIN puede usar esta página','err');
+    document.getElementById('btnPreview').disabled = true;
+    document.getElementById('btnMigrar').disabled = true;
+    salidaEl.textContent = 'Acceso restringido.';
+    return;
+  }
+  setStatus(`Admin conectado: ${user.email}`,'ok');
+});
+</script>
+</body>
+</html>
