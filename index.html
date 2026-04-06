@@ -491,6 +491,7 @@ const storage = getStorage(app);
 const productosRef = ref(db, "productos");
 const logsRef = ref(db, "logs");
 const backupRef = ref(db, "backup/ultimo");
+const statsRef = ref(db, "estadisticas_historicas");
 
 let productos = {};
 let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
@@ -512,12 +513,70 @@ let ultimoQRTexto = '';
 let ultimoQRNombre = '';
 let ultimaQRImagen = '';
 let productoModalActualId = null;
+let estadisticasHistoricas = { dias:{}, meses:{} };
 
 const EMAILJS_CONFIG = {
   service: 'service_65ryfan',
   template: 'template_06j67bo',
   publicKey: 'q6b-zVGH0aBXeREzv'
 };
+
+function normalizarHistoricas(data){
+  return {
+    dias: data?.dias || {},
+    meses: data?.meses || {}
+  };
+}
+
+function claveDiaFecha(fecha = Date.now()){
+  const d = new Date(fecha);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function claveMesFecha(fecha = Date.now()){
+  const d = new Date(fecha);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,'0');
+  return `${y}-${m}`;
+}
+
+async function aplicarDeltaEstadisticaHistorica(fecha, cantidad, totalBea, totalLaura){
+  const claveDia = claveDiaFecha(fecha);
+  const claveMes = claveMesFecha(fecha);
+  const actual = normalizarHistoricas(estadisticasHistoricas);
+  const diaActual = actual.dias?.[claveDia] || { ventas:0, ingresosBea:0, ingresosLaura:0 };
+  const mesActual = actual.meses?.[claveMes] || { ventas:0, ingresosBea:0, ingresosLaura:0 };
+
+  const nuevoDia = {
+    ventas: Math.max(0, Number(diaActual.ventas || 0) + Number(cantidad || 0)),
+    ingresosBea: Number((Number(diaActual.ingresosBea || 0) + Number(totalBea || 0)).toFixed(2)),
+    ingresosLaura: Number((Number(diaActual.ingresosLaura || 0) + Number(totalLaura || 0)).toFixed(2))
+  };
+
+  const nuevoMes = {
+    ventas: Math.max(0, Number(mesActual.ventas || 0) + Number(cantidad || 0)),
+    ingresosBea: Number((Number(mesActual.ingresosBea || 0) + Number(totalBea || 0)).toFixed(2)),
+    ingresosLaura: Number((Number(mesActual.ingresosLaura || 0) + Number(totalLaura || 0)).toFixed(2))
+  };
+
+  await update(ref(db), {
+    [`estadisticas_historicas/dias/${claveDia}/ventas`]: nuevoDia.ventas,
+    [`estadisticas_historicas/dias/${claveDia}/ingresosBea`]: nuevoDia.ingresosBea,
+    [`estadisticas_historicas/dias/${claveDia}/ingresosLaura`]: nuevoDia.ingresosLaura,
+    [`estadisticas_historicas/meses/${claveMes}/ventas`]: nuevoMes.ventas,
+    [`estadisticas_historicas/meses/${claveMes}/ingresosBea`]: nuevoMes.ingresosBea,
+    [`estadisticas_historicas/meses/${claveMes}/ingresosLaura`]: nuevoMes.ingresosLaura
+  });
+
+  estadisticasHistoricas.dias = estadisticasHistoricas.dias || {};
+  estadisticasHistoricas.meses = estadisticasHistoricas.meses || {};
+  estadisticasHistoricas.dias[claveDia] = nuevoDia;
+  estadisticasHistoricas.meses[claveMes] = nuevoMes;
+}
+
 function avisarAppUsuario(email = '') {
   try {
     if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function') {
@@ -1810,6 +1869,10 @@ window.eliminarUnaVenta = async (id) => {
 
       await syncProductoPublico(id, productos[id]);
 
+      const totalBeaEliminado = Number(p.bea || 0);
+      const totalLauraEliminado = Number(p.laura || 0);
+      await aplicarDeltaEstadisticaHistorica(Date.now(), -1, -totalBeaEliminado, -totalLauraEliminado);
+
       await guardarLog(
         'eliminacion-venta',
         id,
@@ -1820,8 +1883,8 @@ window.eliminarUnaVenta = async (id) => {
         {
           precioBea: Number(p.bea || 0),
           precioLaura: Number(p.laura || 0),
-          totalBea: Number(p.bea || 0),
-          totalLaura: Number(p.laura || 0)
+          totalBea: totalBeaEliminado,
+          totalLaura: totalLauraEliminado
         }
       );
 
@@ -1837,6 +1900,7 @@ window.hacerBackup = async () => {
       productos,
       totalesGlobales,
       logs: true,
+      estadisticas_historicas: estadisticasHistoricas,
       fecha: new Date().toISOString(),
       usuario: currentUser.email,
       timestamp: Date.now()
@@ -1888,6 +1952,10 @@ window.restaurarBackup = async (event) => {
           publicos[id] = construirProductoPublico(producto);
         });
         await set(ref(db,'productos_publicos'), publicos);
+
+        if (backupData.estadisticas_historicas) {
+          await set(ref(db,'estadisticas_historicas'), normalizarHistoricas(backupData.estadisticas_historicas));
+        }
 
         await guardarLog('backup-restaurado', null, 'BACKUP', 1, currentUser.email);
         showToast('✅ Restauración completada. Recargando...', 'success');
@@ -2110,6 +2178,10 @@ function updateUI() {
 function loadData() {
   if (dataListenerIniciado) return;
   dataListenerIniciado = true;
+
+  onValue(statsRef, (snap) => {
+    estadisticasHistoricas = normalizarHistoricas(snap.val() || {});
+  });
 
   onValue(productosRef, async (snap) => {
     productos = snap.val() || {};
@@ -2580,13 +2652,23 @@ window.venderReserva = async (id) => {
       productos[id].vLaura = nuevoVLaura;
       productos[id].reservasDetalle = reservas;
 
+      const totalBeaReserva = Number(p.bea || 0) * cantidad;
+      const totalLauraReserva = Number(p.laura || 0) * cantidad;
+      await aplicarDeltaEstadisticaHistorica(Date.now(), cantidad, totalBeaReserva, totalLauraReserva);
+
       await guardarLog(
         'venta-desde-reserva',
         id,
         p.nombre,
         cantidad,
         currentUser.email,
-        `Reserva entregada a ${reserva.nombre} | Tel:${reserva.telefono || '-'} | Adelanto:€${Number(reserva.adelanto || 0).toFixed(2)}`
+        `Reserva entregada a ${reserva.nombre} | Tel:${reserva.telefono || '-'} | Adelanto:€${Number(reserva.adelanto || 0).toFixed(2)}`,
+        {
+          precioBea: Number(p.bea || 0),
+          precioLaura: Number(p.laura || 0),
+          totalBea: totalBeaReserva,
+          totalLaura: totalLauraReserva
+        }
       );
 
       showToast(`✅ Reserva de ${reserva.nombre} marcada como vendida`, 'success');
@@ -2621,6 +2703,10 @@ window.vender = async (id, cant) => {
 
   await syncProductoPublico(id, productos[id]);
 
+  const totalBeaVenta = Number(p.bea || 0) * cant;
+  const totalLauraVenta = Number(p.laura || 0) * cant;
+  await aplicarDeltaEstadisticaHistorica(Date.now(), cant, totalBeaVenta, totalLauraVenta);
+
   await guardarLog(
     'venta',
     id,
@@ -2631,8 +2717,8 @@ window.vender = async (id, cant) => {
     {
       precioBea: Number(p.bea || 0),
       precioLaura: Number(p.laura || 0),
-      totalBea: Number(p.bea || 0) * cant,
-      totalLaura: Number(p.laura || 0) * cant
+      totalBea: totalBeaVenta,
+      totalLaura: totalLauraVenta
     }
   );
 
