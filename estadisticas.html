@@ -693,10 +693,10 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const productosRef = ref(db, "productos");
-const logsRef = ref(db, "logs");
+const statsRef = ref(db, "estadisticas_historicas");
 
 let productos = {};
-let logs = {};
+let estadisticasHistoricas = { dias:{}, meses:{} };
 let filasFiltradas = [];
 let totalVendidosGlobalRef = 0;
 let ventasChart = null;
@@ -722,6 +722,21 @@ function esFechaDentro(fechaYmd, desde, hasta){
   return true;
 }
 function normalizarNombre(s){ return String(s || '').toLowerCase().trim(); }
+function normalizarHistoricas(data){
+  return {
+    dias: data?.dias || {},
+    meses: data?.meses || {}
+  };
+}
+function getClaveMes(fechaYmd){
+  const [y, m] = String(fechaYmd).split('-');
+  return `${y}-${m}`;
+}
+function nombreMesDesdeClave(clave){
+  const [y, m] = clave.split('-').map(Number);
+  const d = new Date(y, m - 1, 1);
+  return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+}
 
 function renderMiniFoto(url, small = false){
   if (!url) {
@@ -774,13 +789,13 @@ function cargarDatos(){
     status.textContent = '❌ Error cargando productos: ' + error.message;
   });
 
-  onValue(logsRef, snap => {
-    logs = snap.val() || {};
+  onValue(statsRef, snap => {
+    estadisticasHistoricas = normalizarHistoricas(snap.val() || {});
     renderTodo();
   }, error => {
     const status = document.getElementById('status');
     status.className = 'error';
-    status.textContent = '❌ Error cargando logs: ' + error.message;
+    status.textContent = '❌ Error cargando estadísticas históricas: ' + error.message;
   });
 }
 
@@ -811,102 +826,36 @@ window.limpiarFiltros = () => {
 };
 
 function construirFilas(){
-  historialGlobal = calcularHistorialDesdeLogs();
-
   return Object.entries(productos).map(([id, p]) => {
     const stock = Number(p.stock || 0);
     const proximo = Number(p.proximo || 0);
     const reservados = Number(p.reservados || 0);
-    const hist = historialGlobal.porProducto[id] || { vendidos: 0, beaTotal: 0, lauraTotal: 0 };
 
     return {
       id,
-      nombre: p.nombre || hist.nombre || '',
+      nombre: p.nombre || '',
       imagen: p.imagen || '',
       stock,
       proximo,
       reservados,
-      vendidos: Math.max(0, Number(hist.vendidos || 0)),
-      beaTotal: Math.max(0, Number(hist.beaTotal || 0)),
-      lauraTotal: Math.max(0, Number(hist.lauraTotal || 0)),
+      vendidos: Math.max(0, Number(p.vendidos || 0)),
+      beaTotal: Math.max(0, Number(p.vBea || 0)),
+      lauraTotal: Math.max(0, Number(p.vLaura || 0)),
       porcentaje: 0
     };
   });
 }
 
 function calcularHistorialDesdeLogs(desde = '', hasta = ''){
-  const entries = Object.entries(logs || {}).map(([key, log]) => ({ key, ...(log || {}) }));
-  entries.sort((a,b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
-
+  const dias = estadisticasHistoricas?.dias || {};
   const porProducto = {};
   const ventasPorDia = {};
   const ingresosPorDia = {};
-  const lastKnownPrices = {};
 
-  for (const log of entries) {
-    if (!log || !log.tipo || !log.timestamp) continue;
-
-    const productoId = log.productoId || '';
-    const productoNombre = log.productoNombre || '';
-    const fecha = ymd(log.timestamp);
-    const cantidad = Number(log.cantidad || 0);
-    const detalles = String(log.detalles || '');
-
-    if (!porProducto[productoId]) {
-      porProducto[productoId] = {
-        nombre: productoNombre,
-        vendidos: 0,
-        beaTotal: 0,
-        lauraTotal: 0
-      };
-    }
-
-    const beaMatch = detalles.match(/Bea:?€?\s*([0-9]+(?:\.[0-9]+)?)/i);
-    const lauraMatch = detalles.match(/Laura:?€?\s*([0-9]+(?:\.[0-9]+)?)/i);
-
-    if (beaMatch || lauraMatch) {
-      lastKnownPrices[productoId] = {
-        bea: beaMatch ? Number(beaMatch[1]) : Number(lastKnownPrices[productoId]?.bea || 0),
-        laura: lauraMatch ? Number(lauraMatch[1]) : Number(lastKnownPrices[productoId]?.laura || 0)
-      };
-    }
-
-    const dentroRango = esFechaDentro(fecha, desde, hasta);
-    if (!dentroRango) continue;
-
-    const productoActual = productos[productoId] || {};
-    const beaUnit = Number(lastKnownPrices[productoId]?.bea || productoActual.bea || 0);
-    const lauraUnit = Number(lastKnownPrices[productoId]?.laura || productoActual.laura || 0);
-
-    let totalBea = Number(log.totalBea);
-    let totalLaura = Number(log.totalLaura);
-
-    if (!Number.isFinite(totalBea)) totalBea = beaUnit * cantidad;
-    if (!Number.isFinite(totalLaura)) totalLaura = lauraUnit * cantidad;
-
-    if (log.tipo === 'venta' || log.tipo === 'venta-desde-reserva') {
-      porProducto[productoId].vendidos += cantidad;
-      porProducto[productoId].beaTotal += totalBea;
-      porProducto[productoId].lauraTotal += totalLaura;
-
-      ventasPorDia[fecha] = Number(ventasPorDia[fecha] || 0) + cantidad;
-      ingresosPorDia[fecha] = Number(ingresosPorDia[fecha] || 0) + totalLaura;
-    }
-
-    if (log.tipo === 'eliminacion-venta') {
-      porProducto[productoId].vendidos -= cantidad;
-      porProducto[productoId].beaTotal -= totalBea;
-      porProducto[productoId].lauraTotal -= totalLaura;
-
-      ventasPorDia[fecha] = Number(ventasPorDia[fecha] || 0) - cantidad;
-      ingresosPorDia[fecha] = Number(ingresosPorDia[fecha] || 0) - totalLaura;
-    }
-  }
-
-  Object.values(porProducto).forEach(p => {
-    p.vendidos = Math.max(0, Number(p.vendidos || 0));
-    p.beaTotal = Number(p.beaTotal || 0);
-    p.lauraTotal = Number(p.lauraTotal || 0);
+  Object.entries(dias).forEach(([fecha, item]) => {
+    if (!esFechaDentro(fecha, desde, hasta)) return;
+    ventasPorDia[fecha] = Number(item?.ventas || 0);
+    ingresosPorDia[fecha] = Number(item?.ingresosLaura || 0);
   });
 
   return { porProducto, ventasPorDia, ingresosPorDia };
@@ -959,7 +908,7 @@ function filtrarYOrdenar(data){
 function renderResumenFechas(){
   const desde = document.getElementById('logFechaDesde').value;
   const hasta = document.getElementById('logFechaHasta').value;
-  document.getElementById('resumenFechas').textContent = `Rango de logs usado para gráficos y periodos: ${desde || 'sin inicio'} → ${hasta || 'sin fin'}`;
+  document.getElementById('resumenFechas').textContent = `Rango de estadísticas históricas usado para gráficos y periodos: ${desde || 'sin inicio'} → ${hasta || 'sin fin'}`;
 }
 
 function renderProductoDestacado(rows){
@@ -1212,16 +1161,23 @@ function renderChartsYPeriodos(){
 }
 
 function getNetosEnPeriodo(desde, hasta){
-  const hist = calcularHistorialDesdeLogs(desde, hasta);
-  const ventas = Object.values(hist.ventasPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
-  const ingresosLaura = Object.values(hist.ingresosPorDia).reduce((acc, n) => acc + Number(n || 0), 0);
-  const ingresosBea = Object.values(hist.porProducto || {}).reduce((acc, p) => acc + Number(p?.beaTotal || 0), 0);
-  const diferencia = ingresosLaura - ingresosBea;
+  const dias = estadisticasHistoricas?.dias || {};
+  let ventas = 0;
+  let ingresosBea = 0;
+  let ingresosLaura = 0;
+
+  Object.entries(dias).forEach(([fecha, item]) => {
+    if (!esFechaDentro(fecha, desde, hasta)) return;
+    ventas += Number(item?.ventas || 0);
+    ingresosBea += Number(item?.ingresosBea || 0);
+    ingresosLaura += Number(item?.ingresosLaura || 0);
+  });
+
   return {
     ventas: Math.max(0, ventas),
-    ingresosBea: Math.max(0, ingresosBea),
-    ingresosLaura: Math.max(0, ingresosLaura),
-    diferencia
+    ingresosBea: Number(ingresosBea.toFixed(2)),
+    ingresosLaura: Number(ingresosLaura.toFixed(2)),
+    diferencia: Number((ingresosLaura - ingresosBea).toFixed(2))
   };
 }
 
@@ -1313,6 +1269,7 @@ function nombreMesDesdeClave(clave){
 }
 
 function calcularResumenMensual(desde = '', hasta = ''){
+  const meses = estadisticasHistoricas?.meses || {};
   const desdeBase = desde ? new Date(desde + 'T00:00:00') : new Date(new Date().getFullYear(), 0, 1);
   const hastaBase = hasta ? new Date(hasta + 'T00:00:00') : new Date();
   desdeBase.setHours(0,0,0,0);
@@ -1324,55 +1281,13 @@ function calcularResumenMensual(desde = '', hasta = ''){
 
   while (cursor <= ultimoMes) {
     const clave = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2,'0')}`;
-    mesesMap[clave] = { ventas: 0, ingresosLaura: 0, ingresosBea: 0 };
+    const item = meses[clave] || {};
+    mesesMap[clave] = {
+      ventas: Number(item?.ventas || 0),
+      ingresosBea: Number(item?.ingresosBea || 0),
+      ingresosLaura: Number(item?.ingresosLaura || 0)
+    };
     cursor.setMonth(cursor.getMonth() + 1);
-  }
-
-  const entriesLogs = Object.values(logs || {}).filter(log => {
-    if (!log || !log.timestamp) return false;
-    const fecha = ymd(log.timestamp);
-    return esFechaDentro(fecha, desde, hasta);
-  }).sort((a,b)=>Number(a.timestamp||0)-Number(b.timestamp||0));
-
-  const lastKnownPrices = {};
-
-  for (const log of entriesLogs) {
-    const productoId = log.productoId || '';
-    const fecha = ymd(log.timestamp);
-    const mes = getClaveMes(fecha);
-    if (!mesesMap[mes]) mesesMap[mes] = { ventas: 0, ingresosLaura: 0, ingresosBea: 0 };
-
-    const detalles = String(log.detalles || '');
-    const beaMatch = detalles.match(/Bea:?€?\s*([0-9]+(?:\.[0-9]+)?)/i);
-    const lauraMatch = detalles.match(/Laura:?€?\s*([0-9]+(?:\.[0-9]+)?)/i);
-    if (beaMatch || lauraMatch) {
-      lastKnownPrices[productoId] = {
-        bea: beaMatch ? Number(beaMatch[1]) : Number(lastKnownPrices[productoId]?.bea || 0),
-        laura: lauraMatch ? Number(lauraMatch[1]) : Number(lastKnownPrices[productoId]?.laura || 0)
-      };
-    }
-
-    const cantidad = Number(log.cantidad || 0);
-    const productoActual = productos[productoId] || {};
-    const beaUnit = Number(lastKnownPrices[productoId]?.bea || productoActual.bea || 0);
-    const lauraUnit = Number(lastKnownPrices[productoId]?.laura || productoActual.laura || 0);
-
-    let totalBea = Number(log.totalBea);
-    let totalLaura = Number(log.totalLaura);
-    if (!Number.isFinite(totalBea)) totalBea = beaUnit * cantidad;
-    if (!Number.isFinite(totalLaura)) totalLaura = lauraUnit * cantidad;
-
-    if (log.tipo === 'venta' || log.tipo === 'venta-desde-reserva') {
-      mesesMap[mes].ventas += cantidad;
-      mesesMap[mes].ingresosLaura += totalLaura;
-      mesesMap[mes].ingresosBea += totalBea;
-    }
-
-    if (log.tipo === 'eliminacion-venta') {
-      mesesMap[mes].ventas -= cantidad;
-      mesesMap[mes].ingresosLaura -= totalLaura;
-      mesesMap[mes].ingresosBea -= totalBea;
-    }
   }
 
   return Object.entries(mesesMap)
