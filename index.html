@@ -147,6 +147,7 @@
         </div>
 
         <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
+        <button onclick="abrirStock()" class="stock-btn">📦 Stock</button>
         <button onclick="abrirCatalogo()" class="catalogo-btn">📉 Abrir catálogo</button>
         <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
         <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
@@ -278,6 +279,7 @@
       <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📳 Ver estadísticas</button>
       <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
       <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
+      <button onclick="abrirStock()" class="stock-btn">📦 Stock</button>
       <button onclick="abrirCatalogo()" class="catalogo-btn">📉 Abrir catálogo</button>
       <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
       <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
@@ -705,6 +707,13 @@ window.abrirScannerMovil = () => {
     console.error(error);
     showToast('✖ Error abriendo el scanner', 'error');
   }
+};
+
+window.abrirStock = () => {
+  if (!currentUser || !['admin', 'user'].includes(userRole)) {
+    return showToast('✖ Debes iniciar sesión para ver Stock', 'error');
+  }
+  window.open('stock.html', '_blank');
 };
 
 window.abrirCatalogo = () => {
