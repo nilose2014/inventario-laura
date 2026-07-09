@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rotos y faltantes - Admin</title>
+  <title>Rotos y perdidos - Admin</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
     :root{
@@ -32,7 +32,7 @@
   <header class="header">
     <div class="header-left">
       <img src="logo.png" class="logo" alt="3d">
-      <div><h1>🛠️ Rotos y faltantes</h1><p>Panel solo administrador · no modifica stock ni ventas.</p></div>
+      <div><h1>🛠️ Rotos y perdidos</h1><p>Panel solo administrador · no modifica stock ni ventas.</p></div>
     </div>
     <div class="toolbar-actions">
       <a href="rotos.html" class="btn-link" target="_blank">👁️ Ver página pública</a>
@@ -42,7 +42,7 @@
 
   <div class="card login-card" id="loginDiv">
     <h2>🔐 Acceso administrador</h2>
-    <p>Solo el administrador puede editar rotos y faltantes.</p>
+    <p>Solo el administrador puede editar rotos y perdidos.</p>
     <div style="display:grid;gap:12px;margin-top:14px">
       <div><label for="userEmail">Email</label><input id="userEmail" type="email" placeholder="Email administrador" autocomplete="username"></div>
       <div><label for="userPass">Contraseña</label><input id="userPass" type="password" placeholder="Contraseña" autocomplete="current-password"></div>
@@ -58,6 +58,8 @@
         <input id="buscar" placeholder="Buscar producto..." oninput="renderTabla()" style="max-width:360px">
         <div class="counters">
           <div class="pill" id="totalProductos">0 productos</div>
+          <div class="pill amber" id="totalRotos">Rotos: 0</div>
+          <div class="pill amber" id="totalPerdidos">Perdidos: 0</div>
           <div class="pill amber" id="totalUnidades">0 unidades</div>
           <div class="pill red" id="totalImporte">Total: €0.00</div>
         </div>
@@ -68,14 +70,14 @@
           <button class="gray" onclick="logout()">🔐 Salir</button>
         </div>
       </div>
-      <div class="small">Rotos + faltantes se multiplican por el precio Bea. Ejemplo: 1 roto + 3 faltantes a 10€ = 40€.</div>
+      <div class="small">Rotos + faltantes se multiplican por el precio Bea. Ejemplo: 1 roto + 3 perdidos a 10€ = 40€.</div>
     </section>
 
     <section class="card">
-      <h2 class="print-title">Rotos y faltantes</h2>
+      <h2 class="print-title">Rotos y perdidos</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Imagen</th><th>Producto</th><th>Precio Bea</th><th>Rotos</th><th>Faltantes</th><th>Unidades</th><th>Total</th></tr></thead>
+          <thead><tr><th>Imagen</th><th>Producto</th><th>Precio Bea</th><th>Rotos</th><th>Perdidos</th><th>Unidades</th><th>Total</th></tr></thead>
           <tbody id="tabla"></tbody>
         </table>
       </div>
@@ -141,10 +143,12 @@
       const tbody = document.getElementById('tabla');
       const empty = document.getElementById('empty');
       const lista = listaProductos();
+      let totalRotos = 0;
+      let totalPerdidos = 0;
       let totalUnidades = 0;
       let totalImporte = 0;
       document.getElementById('totalProductos').textContent = `${lista.length} producto${lista.length===1?'':'s'}`;
-      if (!lista.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); actualizarTotales(0,0); return; }
+      if (!lista.length) { tbody.innerHTML=''; empty.classList.remove('hidden'); actualizarTotales(0,0,0,0); return; }
       empty.classList.add('hidden');
       tbody.innerHTML = lista.map(p => {
         const datos = cantidades[p.id] || {};
@@ -152,6 +156,8 @@
         const faltantes = normalizarCantidad(datos.faltantes);
         const unidades = rotos + faltantes;
         const total = unidades * p.bea;
+        totalRotos += rotos;
+        totalPerdidos += faltantes;
         totalUnidades += unidades;
         totalImporte += total;
         const img = p.imagen ? `<img class="foto" src="${escaparHtml(p.imagen)}" alt="${escaparHtml(p.nombre)}" loading="lazy" referrerpolicy="no-referrer">` : `<div class="no-foto">Sin foto</div>`;
@@ -165,10 +171,12 @@
           <td class="money total-row">${eur(total)}</td>
         </tr>`;
       }).join('');
-      actualizarTotales(totalUnidades, totalImporte);
+      actualizarTotales(totalRotos, totalPerdidos, totalUnidades, totalImporte);
     };
 
-    function actualizarTotales(unidades, importe){
+    function actualizarTotales(rotos, perdidos, unidades, importe){
+      document.getElementById('totalRotos').textContent = `Rotos: ${rotos}`;
+      document.getElementById('totalPerdidos').textContent = `Perdidos: ${perdidos}`;
       document.getElementById('totalUnidades').textContent = `${unidades} unidad${unidades===1?'':'es'}`;
       document.getElementById('totalImporte').textContent = `Total: ${eur(importe)}`;
     }
@@ -191,15 +199,17 @@
     };
 
     function recalcularTotalesPantalla(){
-      let unidades = 0, importe = 0;
+      let rotos = 0, perdidos = 0, unidades = 0, importe = 0;
       document.querySelectorAll('#tabla tr').forEach(tr => {
         const r = normalizarCantidad(tr.querySelector('.input-roto')?.value);
         const f = normalizarCantidad(tr.querySelector('.input-faltante')?.value);
         const bea = Number(tr.dataset.bea || 0);
+        rotos += r;
+        perdidos += f;
         unidades += r + f;
         importe += (r + f) * bea;
       });
-      actualizarTotales(unidades, importe);
+      actualizarTotales(rotos, perdidos, unidades, importe);
     }
 
     window.guardarTodo = async () => {
@@ -233,7 +243,7 @@
     };
 
     window.ponerTodoACero = async () => {
-      if (!confirm('¿Poner todos los rotos y faltantes a 0?')) return;
+      if (!confirm('¿Poner todos los rotos y perdidos a 0?')) return;
       cantidades = {};
       renderTabla();
       await guardarTodo();
@@ -258,7 +268,7 @@
       if (!user) { adminApp.classList.add('hidden'); loginDiv.classList.remove('hidden'); return; }
       if (user.email !== ADMIN_EMAIL) { setStatus('error','✖ Solo ADMIN puede ver esta página.'); signOut(auth).catch(()=>{}); return; }
       loginDiv.classList.add('hidden'); adminApp.classList.remove('hidden');
-      setStatus('admin', `👑 ADMIN: ${escaparHtml(user.email)} · Panel de rotos y faltantes activado.`);
+      setStatus('admin', `👑 ADMIN: ${escaparHtml(user.email)} · Panel de rotos y perdidos activado.`);
       iniciarListeners();
     });
 

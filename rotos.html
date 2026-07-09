@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rotos y faltantes</title>
+  <title>Rotos y perdidos</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
     :root{--bg:#eef3ff;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#dbe4f0;--blue:#2563eb;--blue2:#4f46e5;--red:#dc2626;--amber:#f59e0b;--shadow:0 14px 32px rgba(15,23,42,.10)}
@@ -19,7 +19,7 @@
 <body>
   <div class="shell">
     <header class="header">
-      <div class="header-left"><img src="logo.png" class="logo" alt="3d"><div><h1>🛠️ Rotos y faltantes</h1><p>Consulta pública · solo lectura.</p></div></div>
+      <div class="header-left"><img src="logo.png" class="logo" alt="3d"><div><h1>🛠️ Rotos y perdidos</h1><p>Consulta pública · solo lectura.</p></div></div>
       <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
     </header>
 
@@ -28,6 +28,8 @@
         <input id="buscar" placeholder="Buscar producto..." oninput="renderTabla()">
         <div class="counters">
           <div class="pill" id="totalProductos">0 productos</div>
+          <div class="pill amber" id="totalRotos">Rotos: 0</div>
+          <div class="pill amber" id="totalPerdidos">Perdidos: 0</div>
           <div class="pill amber" id="totalUnidades">0 unidades</div>
           <div class="pill red" id="totalImporte">Total: €0.00</div>
         </div>
@@ -36,10 +38,10 @@
     </section>
 
     <section class="card">
-      <h2 class="print-title">Rotos y faltantes</h2>
+      <h2 class="print-title">Rotos y perdidos</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Imagen</th><th>Producto</th><th>Precio Bea</th><th>Rotos</th><th>Faltantes</th><th>Unidades</th><th>Total</th></tr></thead>
+          <thead><tr><th>Imagen</th><th>Producto</th><th>Precio Bea</th><th>Rotos</th><th>Perdidos</th><th>Unidades</th><th>Total</th></tr></thead>
           <tbody id="tabla"></tbody>
         </table>
       </div>
@@ -80,29 +82,35 @@
       const lista = listaFiltrada();
       const tbody = document.getElementById('tabla');
       const empty = document.getElementById('empty');
-      let totalUnidades = 0, totalImporte = 0, ultima = 0;
+      let totalRotos = 0, totalPerdidos = 0, totalUnidades = 0, totalImporte = 0, ultima = 0;
       if (!lista.length) {
         tbody.innerHTML = '';
         empty.style.display = 'block';
-        empty.textContent = 'No hay productos con rotos o faltantes.';
-        actualizarTotales(0,0,0,0);
+        empty.textContent = 'No hay productos con rotos o perdidos.';
+        actualizarTotales(0,0,0,0,0,0);
         return;
       }
       empty.style.display = 'none';
       tbody.innerHTML = lista.map(p => {
-        const unidades = Number(p.rotos || 0) + Number(p.faltantes || 0);
+        const rotos = Number(p.rotos || 0);
+        const perdidos = Number(p.faltantes || 0);
+        const unidades = rotos + perdidos;
         const total = unidades * Number(p.bea || 0);
+        totalRotos += rotos;
+        totalPerdidos += perdidos;
         totalUnidades += unidades;
         totalImporte += total;
         ultima = Math.max(ultima, Number(p.updatedAt || 0));
         const img = p.imagen ? `<img class="foto" src="${escaparHtml(p.imagen)}" alt="${escaparHtml(p.nombre)}" loading="lazy" referrerpolicy="no-referrer">` : `<div class="no-foto">Sin foto</div>`;
-        return `<tr><td>${img}</td><td>${escaparHtml(p.nombre)}</td><td class="money">${eur(p.bea)}</td><td>${p.rotos}</td><td>${p.faltantes}</td><td>${unidades}</td><td class="money total-row">${eur(total)}</td></tr>`;
+        return `<tr><td>${img}</td><td>${escaparHtml(p.nombre)}</td><td class="money">${eur(p.bea)}</td><td>${rotos}</td><td>${perdidos}</td><td>${unidades}</td><td class="money total-row">${eur(total)}</td></tr>`;
       }).join('');
-      actualizarTotales(lista.length, totalUnidades, totalImporte, ultima);
+      actualizarTotales(lista.length, totalRotos, totalPerdidos, totalUnidades, totalImporte, ultima);
     };
 
-    function actualizarTotales(productos, unidades, importe, ultima){
+    function actualizarTotales(productos, rotos, perdidos, unidades, importe, ultima){
       document.getElementById('totalProductos').textContent = `${productos} producto${productos===1?'':'s'}`;
+      document.getElementById('totalRotos').textContent = `Rotos: ${rotos}`;
+      document.getElementById('totalPerdidos').textContent = `Perdidos: ${perdidos}`;
       document.getElementById('totalUnidades').textContent = `${unidades} unidad${unidades===1?'':'es'}`;
       document.getElementById('totalImporte').textContent = `Total: ${eur(importe)}`;
       document.getElementById('fechaActualizacion').textContent = ultima ? `Última actualización: ${new Date(ultima).toLocaleString('es-ES')}` : 'Sin datos actualizados todavía.';
