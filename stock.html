@@ -275,55 +275,6 @@
       font-weight:900;
     }
 
-
-
-    /* ===== BOTÓN IMPRIMIR SIEMPRE VISIBLE ===== */
-    .print-fixed-btn{
-      position:fixed;
-      right:18px;
-      bottom:18px;
-      z-index:99999;
-      padding:16px 20px;
-      border-radius:999px;
-      background:linear-gradient(135deg,#22c55e,#16a34a);
-      color:#fff;
-      font-size:17px;
-      font-weight:1000;
-      box-shadow:0 18px 35px rgba(22,163,74,.35);
-    }
-
-    .print-only{display:none}
-
-    @media print{
-      body{
-        background:#fff !important;
-        padding:10mm !important;
-        color:#000 !important;
-      }
-      .print-fixed-btn,
-      .stock-header,
-      .login-card,
-      #status,
-      .stock-toolbar input,
-      .stock-toolbar button{
-        display:none !important;
-      }
-      .print-only{display:block !important}
-      .stock-shell{max-width:none !important;margin:0 !important}
-      .card{box-shadow:none !important;border:none !important;padding:0 !important;margin:0 0 8mm 0 !important;background:#fff !important}
-      .table-wrap{overflow:visible !important;border:1px solid #000 !important;border-radius:0 !important}
-      table{min-width:0 !important;width:100% !important;border-collapse:collapse !important}
-      th,td{border:1px solid #000 !important;padding:6px 8px !important;color:#000 !important;background:#fff !important}
-      th{font-size:11pt !important;text-transform:none !important;position:static !important}
-      td{font-size:10.5pt !important}
-      .stock-number{width:30mm !important;text-align:center !important;color:#000 !important}
-      .stock-counters{margin-bottom:6mm !important}
-      .counter-pill{box-shadow:none !important;border:1px solid #000 !important;color:#000 !important;background:#fff !important}
-      .print-title{text-align:center;margin-bottom:8mm;border-bottom:2px solid #000;padding-bottom:4mm}
-      .print-title h1{margin:0 0 2mm 0;font-size:22pt;color:#000 !important}
-      .print-title p{margin:0;font-size:10pt;color:#333 !important}
-    }
-
     @media (max-width:700px){
       body{padding:14px}
       .stock-header{padding:18px}
@@ -336,10 +287,62 @@
       .counter-pill{flex:1;text-align:center}
       th,td{padding:12px 10px}
     }
+  
+
+    /* === IMPRIMIR STOCK - BOTON FORZADO === */
+    #botonImprimirStockFijo{
+      position:fixed !important;
+      right:16px !important;
+      bottom:16px !important;
+      z-index:2147483647 !important;
+      display:block !important;
+      visibility:visible !important;
+      opacity:1 !important;
+      width:auto !important;
+      height:auto !important;
+      padding:16px 22px !important;
+      border:0 !important;
+      border-radius:999px !important;
+      background:#16a34a !important;
+      color:#ffffff !important;
+      font-size:18px !important;
+      font-weight:900 !important;
+      line-height:1 !important;
+      box-shadow:0 12px 28px rgba(0,0,0,.35) !important;
+      cursor:pointer !important;
+      text-decoration:none !important;
+      transform:none !important;
+    }
+
+    @media print{
+      #botonImprimirStockFijo,
+      .stock-header,
+      .login-card,
+      #status,
+      .stock-toolbar,
+      button,
+      .btn-link{
+        display:none !important;
+      }
+      body{
+        background:#fff !important;
+        padding:10mm !important;
+        color:#000 !important;
+      }
+      .stock-shell{max-width:none !important;margin:0 !important}
+      #stockApp{display:block !important}
+      .card{box-shadow:none !important;border:none !important;padding:0 !important;margin:0 !important;background:#fff !important}
+      .table-wrap{overflow:visible !important;border:1px solid #000 !important;border-radius:0 !important}
+      table{width:100% !important;min-width:0 !important;border-collapse:collapse !important}
+      th,td{border:1px solid #000 !important;padding:7px 9px !important;color:#000 !important;background:#fff !important}
+      th{position:static !important;text-transform:none !important;font-size:12pt !important}
+      td{font-size:11pt !important}
+      .stock-number{width:35mm !important;text-align:center !important;color:#000 !important}
+    }
+
   </style>
 </head>
 <body>
-  <button type="button" class="print-fixed-btn" onclick="imprimirStock()">🖨️ Imprimir</button>
   <div class="stock-shell">
     <header class="stock-header">
       <div class="stock-header-left">
@@ -378,10 +381,6 @@
     </div>
 
     <main id="stockApp" class="hidden">
-      <div class="print-only print-title">
-        <h1>📦 Stock - 3d</h1>
-        <p id="fechaImpresion">Listado de stock</p>
-      </div>
       <div id="status" class="error">Cargando...</div>
 
       <section class="card">
@@ -392,7 +391,6 @@
             <div class="counter-pill green" id="totalStock">Stock total: 0</div>
           </div>
           <button onclick="renderStock()">🔄 Actualizar</button>
-          <button type="button" class="green" onclick="imprimirStock()">🖨️ Imprimir</button>
         </div>
       </section>
 
@@ -536,20 +534,6 @@
       }).join('');
     };
 
-    window.imprimirStock = () => {
-      const fecha = new Date().toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      const fechaImpresion = document.getElementById('fechaImpresion');
-      if (fechaImpresion) fechaImpresion.textContent = `Listado generado el ${fecha}`;
-      try { renderStock(); } catch(e) {}
-      window.print();
-    };
-
     window.login = () => {
       const email = document.getElementById('userEmail').value.trim();
       const pass = document.getElementById('userPass').value;
@@ -594,5 +578,36 @@
       actualizarAcceso();
     });
   </script>
+
+
+  <script>
+    // Botón de imprimir creado por JavaScript con estilos en línea para que se vea siempre.
+    (function(){
+      function crearBotonImprimirStock(){
+        var viejo = document.getElementById('botonImprimirStockFijo');
+        if (viejo) viejo.remove();
+
+        var btn = document.createElement('button');
+        btn.id = 'botonImprimirStockFijo';
+        btn.type = 'button';
+        btn.textContent = '🖨️ Imprimir';
+        btn.setAttribute('aria-label', 'Imprimir stock');
+        btn.style.cssText = 'position:fixed!important;right:16px!important;bottom:16px!important;z-index:2147483647!important;display:block!important;visibility:visible!important;opacity:1!important;padding:16px 22px!important;border:0!important;border-radius:999px!important;background:#16a34a!important;color:#fff!important;font-size:18px!important;font-weight:900!important;line-height:1!important;box-shadow:0 12px 28px rgba(0,0,0,.35)!important;cursor:pointer!important;';
+        btn.onclick = function(){
+          try { if (typeof window.renderStock === 'function') window.renderStock(); } catch(e) {}
+          window.print();
+        };
+        document.body.appendChild(btn);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', crearBotonImprimirStock);
+      } else {
+        crearBotonImprimirStock();
+      }
+      setTimeout(crearBotonImprimirStock, 1000);
+    })();
+  </script>
+
 </body>
 </html>
