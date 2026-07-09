@@ -278,31 +278,15 @@
 
 
     .print-only{display:none}
+    .header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
     @media print{
-      @page{size:A4 portrait;margin:12mm}
-
-      *{
-        box-shadow:none !important;
-        text-shadow:none !important;
-        filter:none !important;
-      }
-
-      html,body{
-        width:100%;
-        margin:0 !important;
-        padding:0 !important;
+      body{
         background:#fff !important;
-        color:#000 !important;
-        font-family:Arial,Helvetica,sans-serif !important;
-      }
-
-      .stock-shell{
+        padding:10mm !important;
         max-width:none !important;
-        width:100% !important;
-        margin:0 !important;
+        color:#000 !important;
       }
-
       .stock-header,
       .login-card,
       #status,
@@ -312,96 +296,22 @@
       .no-print{
         display:none !important;
       }
-
-      .print-only{
-        display:block !important;
-      }
-
-      .print-title{
-        text-align:center;
-        margin:0 0 8mm 0;
-        padding-bottom:4mm;
-        border-bottom:2px solid #000;
-      }
-
-      .print-title h1{
-        margin:0 0 3mm 0;
-        font-size:22pt;
-        color:#000 !important;
-      }
-
-      .print-title p{
-        margin:0;
-        font-size:10pt;
-        color:#333 !important;
-      }
-
-      .card{
-        border:none !important;
-        background:#fff !important;
-        padding:0 !important;
-        margin:0 0 6mm 0 !important;
-      }
-
-      .stock-toolbar{
-        display:block !important;
-      }
-
-      .stock-counters{
-        display:flex !important;
-        justify-content:center;
-        gap:6mm;
-        margin-bottom:6mm;
-      }
-
-      .counter-pill{
-        border:1px solid #000 !important;
-        background:#fff !important;
-        color:#000 !important;
-        padding:4mm 6mm;
-        font-size:11pt;
-      }
-
-      .table-wrap{
-        overflow:visible !important;
-        border:1px solid #000 !important;
-        border-radius:0 !important;
-      }
-
-      table{
-        width:100% !important;
-        min-width:0 !important;
-        border-collapse:collapse !important;
-        font-size:11pt;
-      }
-
-      th,td{
-        border:1px solid #000 !important;
-        padding:6px 8px !important;
-        color:#000 !important;
-        background:#fff !important;
-      }
-
-      th{
-        position:static !important;
-        font-size:10pt;
-        text-transform:uppercase;
-      }
-
-      tr{
-        page-break-inside:avoid;
-      }
-
-      .stock-number{
-        width:28mm !important;
-        text-align:center !important;
-        font-size:12pt !important;
-        color:#000 !important;
-      }
-
-      .empty-state{
-        color:#000 !important;
-      }
+      .print-only{display:block !important}
+      .stock-shell{max-width:none !important;margin:0 !important}
+      .card{box-shadow:none !important;border:none !important;background:#fff !important;padding:0 !important;margin:0 0 8mm 0 !important}
+      .stock-toolbar{display:block !important}
+      .stock-counters{display:flex !important;gap:6mm !important;margin-bottom:6mm !important}
+      .counter-pill{box-shadow:none !important;border:1px solid #000 !important;background:#fff !important;color:#000 !important}
+      .table-wrap{overflow:visible !important;border:1px solid #000 !important;border-radius:0 !important}
+      table{min-width:0 !important;width:100% !important;border-collapse:collapse !important}
+      th,td{border:1px solid #000 !important;padding:6px 8px !important;color:#000 !important;background:#fff !important}
+      th{position:static !important;text-transform:none !important;font-size:12pt !important}
+      td{font-size:11pt !important;font-weight:700 !important}
+      .stock-number{text-align:center !important;width:90px !important;color:#000 !important}
+      .empty-state{display:none !important}
+      .print-title{text-align:center;margin-bottom:8mm;border-bottom:2px solid #000;padding-bottom:4mm}
+      .print-title h1{margin:0 0 2mm 0;font-size:22pt;color:#000 !important}
+      .print-title p{margin:0;font-size:10pt;color:#333 !important}
     }
 
     @media (max-width:700px){
@@ -428,7 +338,10 @@
           <p>Vista rápida con solo nombre del producto y stock.</p>
         </div>
       </div>
-      <a href="index.html" class="btn-link">⬅️ Volver</a>
+      <div class="header-actions no-print">
+        <button type="button" class="green" onclick="imprimirStock()">🖨️ Imprimir</button>
+        <a href="index.html" class="btn-link">⬅️ Volver</a>
+      </div>
     </header>
 
     <div class="card login-card" id="loginDiv">
@@ -471,7 +384,7 @@
             <div class="counter-pill green" id="totalStock">Stock total: 0</div>
           </div>
           <button onclick="renderStock()">🔄 Actualizar</button>
-          <button class="green" onclick="imprimirStock()">🖨️ Imprimir</button>
+          <button type="button" class="green" onclick="imprimirStock()">🖨️ Imprimir</button>
         </div>
       </section>
 
@@ -625,7 +538,7 @@
       });
       const fechaImpresion = document.getElementById('fechaImpresion');
       if (fechaImpresion) fechaImpresion.textContent = `Listado generado el ${fecha}`;
-      renderStock();
+      try { renderStock(); } catch(e) {}
       window.print();
     };
 
