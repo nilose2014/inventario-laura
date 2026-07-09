@@ -275,6 +275,135 @@
       font-weight:900;
     }
 
+
+
+    .print-only{display:none}
+
+    @media print{
+      @page{size:A4 portrait;margin:12mm}
+
+      *{
+        box-shadow:none !important;
+        text-shadow:none !important;
+        filter:none !important;
+      }
+
+      html,body{
+        width:100%;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+        color:#000 !important;
+        font-family:Arial,Helvetica,sans-serif !important;
+      }
+
+      .stock-shell{
+        max-width:none !important;
+        width:100% !important;
+        margin:0 !important;
+      }
+
+      .stock-header,
+      .login-card,
+      #status,
+      #buscarStock,
+      button,
+      .btn-link,
+      .no-print{
+        display:none !important;
+      }
+
+      .print-only{
+        display:block !important;
+      }
+
+      .print-title{
+        text-align:center;
+        margin:0 0 8mm 0;
+        padding-bottom:4mm;
+        border-bottom:2px solid #000;
+      }
+
+      .print-title h1{
+        margin:0 0 3mm 0;
+        font-size:22pt;
+        color:#000 !important;
+      }
+
+      .print-title p{
+        margin:0;
+        font-size:10pt;
+        color:#333 !important;
+      }
+
+      .card{
+        border:none !important;
+        background:#fff !important;
+        padding:0 !important;
+        margin:0 0 6mm 0 !important;
+      }
+
+      .stock-toolbar{
+        display:block !important;
+      }
+
+      .stock-counters{
+        display:flex !important;
+        justify-content:center;
+        gap:6mm;
+        margin-bottom:6mm;
+      }
+
+      .counter-pill{
+        border:1px solid #000 !important;
+        background:#fff !important;
+        color:#000 !important;
+        padding:4mm 6mm;
+        font-size:11pt;
+      }
+
+      .table-wrap{
+        overflow:visible !important;
+        border:1px solid #000 !important;
+        border-radius:0 !important;
+      }
+
+      table{
+        width:100% !important;
+        min-width:0 !important;
+        border-collapse:collapse !important;
+        font-size:11pt;
+      }
+
+      th,td{
+        border:1px solid #000 !important;
+        padding:6px 8px !important;
+        color:#000 !important;
+        background:#fff !important;
+      }
+
+      th{
+        position:static !important;
+        font-size:10pt;
+        text-transform:uppercase;
+      }
+
+      tr{
+        page-break-inside:avoid;
+      }
+
+      .stock-number{
+        width:28mm !important;
+        text-align:center !important;
+        font-size:12pt !important;
+        color:#000 !important;
+      }
+
+      .empty-state{
+        color:#000 !important;
+      }
+    }
+
     @media (max-width:700px){
       body{padding:14px}
       .stock-header{padding:18px}
@@ -328,6 +457,10 @@
     </div>
 
     <main id="stockApp" class="hidden">
+      <div class="print-only print-title">
+        <h1>📦 Stock - 3d</h1>
+        <p id="fechaImpresion">Listado de stock</p>
+      </div>
       <div id="status" class="error">Cargando...</div>
 
       <section class="card">
@@ -338,6 +471,7 @@
             <div class="counter-pill green" id="totalStock">Stock total: 0</div>
           </div>
           <button onclick="renderStock()">🔄 Actualizar</button>
+          <button class="green" onclick="imprimirStock()">🖨️ Imprimir</button>
         </div>
       </section>
 
@@ -479,6 +613,20 @@
           </tr>
         `;
       }).join('');
+    };
+
+    window.imprimirStock = () => {
+      const fecha = new Date().toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const fechaImpresion = document.getElementById('fechaImpresion');
+      if (fechaImpresion) fechaImpresion.textContent = `Listado generado el ${fecha}`;
+      renderStock();
+      window.print();
     };
 
     window.login = () => {
