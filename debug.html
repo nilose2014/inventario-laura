@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>🔒 DEBUG ADMIN - Inventario Emilia Online</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; max-width: 1400px; margin: 0 auto; line-height: 1.6; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .debug-panel { background: #fff3cd !important; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; max-height: 400px; overflow: auto; white-space: pre-wrap; margin: 10px 0; }
+        .log-btn { background: #dc3545 !important; color: white !important; font-weight: bold !important; padding: 10px 15px !important; font-size: 14px !important; }
+        .status { padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; }
+        .admin { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .success { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .login-card { background: #e2e3e5; border: 2px solid #6c757d; text-align: center; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold; margin: 2px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .red { background: #dc3545; }
+        .red:hover { background: #c82333; }
+        .logs-table { width: 100%; border-collapse: collapse; font-size: 12px !important; margin-top: 15px; }
+        .logs-table th, .logs-table td { border: 1px solid #ddd; padding: 6px !important; text-align: center; }
+        .logs-table th { background: #dc3545; color: white; font-size: 12px !important; }
+        .log-venta { background: #d4edda !important; }
+        .log-reserva { background: #e8f4fd !important; }
+        .log-cancelacion { background: #fff3cd !important; }
+        .log-eliminacion { background: #f8d7da !important; }
+        .filtros-logs { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+        #logFechaDesde, #logFechaHasta { width: 140px; padding: 6px; border: 1px solid #ddd; border-radius: 5px; }
+        #logBuscar { width: 200px; padding: 8px; }
+        .log-count { background: #007bff; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; display: inline-block; }
+        #debugConsole { background: #000; color: #0f0; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow: auto; white-space: pre-wrap; margin-top: 10px; }
+        .admin-only { display: none; }
+        #emailTestPanel { display: none; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN OBLIGATORIO -->
+    <div id="loginPanel" class="card login-card">
+        <h2>🔐 ACCESO ADMINISTRADOR REQUERIDO</h2>
+        <p><strong>SOLO ADMINISTRADOR puede usar Debug</strong></p>
+        <input id="adminEmail" type="email" placeholder="Email administrador" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
+        <br>
+        <input id="adminPass" type="password" placeholder="Contraseña" style="width: 250px; padding: 10px; margin: 10px; border-radius: 5px; border: 2px solid #ffc107;">
+        <br>
+        <button onclick="loginAdmin()" style="padding: 12px 30px; font-size: 16px; background: #28a745;">🚀 ENTRAR COMO ADMIN</button>
+        <div id="loginStatus"></div>
+    </div>
+
+    <!-- CONTENIDO ADMIN SOLO -->
+    <div id="adminPanel" class="admin-only">
+        <div class="card">
+            <h2>🔍 DIAGNÓSTICO COMPLETO - Inventario Emilia Online</h2>
+            <div id="status" class="status error">Cargando...</div>
+            
+            <button onclick="testFirebase()">🧪 Test Firebase</button>
+            <button onclick="testEmailJS()">📧 Test EmailJS</button>
+            <button onclick="testLogs()">📋 Ver LOGS Completos</button>
+            <button onclick="testBackup()">💾 Test Backup</button>
+            <button onclick="clearConsole()" class="red">🗑️ Limpiar Consola</button>
+            <button onclick="downloadDebug()" class="red">💾 Descargar Debug</button>
+            <button onclick="logoutAdmin()" class="red">🚪 SALIR</button>
+        </div>
+
+        <div class="card">
+            <h3>📊 Consola de Errores</h3>
+            <div id="debugConsole">Esperando errores...</div>
+        </div>
+
+        <div class="card" id="firebasePanel" style="display: none;">
+            <h3>🔥 Estado Firebase</h3>
+            <div id="firebaseStatus" class="debug-panel">Testeando...</div>
+        </div>
+
+        <div class="card" id="emailTestPanel">
+            <h3>📧 Resultado Test EmailJS</h3>
+            <div id="emailTestStatus" class="debug-panel">Esperando test...</div>
+        </div>
+
+        <div class="card" id="logsPanel" style="display: none;">
+            <h3>📋 Historial Completo de LOGS</h3>
+            <div class="filtros-logs">
+                <input id="logBuscar" placeholder="Buscar producto/usuario..." onkeyup="filtrarLogs()">
+                <input type="date" id="logFechaDesde" onchange="cargarLogs()">
+                <input type="date" id="logFechaHasta" onchange="cargarLogs()">
+                <button onclick="cargarLogs()">Recargar</button>
+                <button class="red" onclick="document.getElementById('logsPanel').style.display='none'">Cerrar</button>
+            </div>
+            <div id="logCount"></div>
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cant.</th><th>Usuario</th><th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaLogs"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ✅ EmailJS CARGA MÚLTIPLE PARA EVITAR PROBLEMAS -->
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-browser@4.0.0/dist/email.min.js"></script>
+    <script src="https://cdn.emailjs.com/sdk/2.3.2/email.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4",
+            authDomain: "inventario-laura.firebaseapp.com",
+            databaseURL: "https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "inventario-laura",
+            storageBucket: "inventario-laura.firebasestorage.app",
+            messagingSenderId: "778807935660",
+            appId: "1778807935660web947e223465f9347b17d509"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+        const ADMIN_EMAIL = "nilose2014@gmail.com";
+        const EMAILJS_CONFIG = { service: 'service65ryfan', template: 'template06j67bo', publicKey: 'q6b-zVGH0aBXeREzv' };
+
+        let todosLogs = [];
+        let debugInfo = [];
+        let isAdmin = false;
+
+        // 🔹 NUEVO REF PARA BACKUP
+        const productosRef = ref(db, 'productos');
+
+        function logDebug(mensaje, tipo = 'INFO') {
+            const timestamp = new Date().toLocaleString('es-ES');
+            const log = `[${timestamp}] [${tipo}] ${mensaje}`;
+            debugInfo.push(log);
+            console.log(log);
+            actualizarDebugConsole();
+        }
+
+        function actualizarDebugConsole() {
+            document.getElementById('debugConsole').textContent = debugInfo.slice(-50).join('\n');
+            document.getElementById('debugConsole').scrollTop = document.getElementById('debugConsole').scrollHeight;
+        }
+
+        // CAPTURA ERRORES
+        window.onerror = (msg, url, lineNo) => logDebug(`ERROR: ${msg} en ${url}:${lineNo}`, 'ERROR');
+        window.addEventListener('unhandledrejection', (e) => logDebug(`PROMISE ERROR: ${e.reason}`, 'ERROR'));
+
+        // 🔹 FUNCIÓN PARA VERIFICAR Y CARGAR EmailJS
+        function verificarEmailJS() {
+            return new Promise((resolve) => {
+                let intentos = 0;
+                const maxIntentos = 10;
+
+                const checkInterval = setInterval(() => {
+                    intentos++;
+                    
+                    // Verificar múltiples versiones de EmailJS
+                    if (window.emailjs || window.EmailJS || emailjs) {
+                        clearInterval(checkInterval);
+                        resolve(true);
+                        return;
+                    }
+
+                    if (intentos >= maxIntentos) {
+                        clearInterval(checkInterval);
+                        resolve(false);
+                    }
+                }, 300); // Chequea cada 300ms
+            });
+        }
+
+        // LOGIN SOLO ADMIN
+        window.loginAdmin = async () => {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            
+            if (email !== ADMIN_EMAIL) {
+                document.getElementById('loginStatus').innerHTML = '<span style="color: red;">❌ ACCESO DENEGADO</span>';
+                return;
+            }
+
+            try {
+                document.getElementById('loginStatus').innerHTML = '🔄 Iniciando...';
+                await signInWithEmailAndPassword(auth, email, pass);
+                logDebug('✅ ADMIN LOGUEADO CORRECTAMENTE');
+                document.getElementById('loginPanel').style.display = 'none';
+                document.getElementById('adminPanel').classList.remove('admin-only');
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').innerHTML = '✅ ADMINISTRADOR AUTORIZADO';
+            } catch (error) {
+                logDebug(`❌ LOGIN FALLÓ: ${error.message}`, 'ERROR');
+                document.getElementById('loginStatus').innerHTML = `<span style="color: red;">❌ Contraseña incorrecta</span>`;
+            }
+        };
+
+        window.logoutAdmin = async () => {
+            await signOut(auth);
+            location.reload();
+        };
+
+        // TESTS
+        window.testFirebase = async () => {
+            logDebug('🧪 Test Firebase ADMIN...');
+            document.getElementById('firebasePanel').style.display = 'block';
+            document.getElementById('firebaseStatus').textContent = 'Conectando...\n';
+
+            try {
+                const testRef = ref(db, 'logs/admin-test');
+                await set(testRef, { admin: true, time: Date.now() });
+                await remove(testRef);
+                document.getElementById('firebaseStatus').textContent += '✅ Reglas ADMIN OK\n';
+            } catch (e) {
+                document.getElementById('firebaseStatus').textContent += `❌ Reglas: ${e.message}\n`;
+            }
+
+            onValue(ref(db, 'logs'), (snap) => {
+                document.getElementById('firebaseStatus').textContent += `✅ Logs: ${snap.size || 0} registros\n`;
+            });
+        };
+
+        // 🔹 FUNCIÓN TEST EMAILJS CORREGIDA Y ROBUSTA
+        window.testEmailJS = async () => {
+            logDebug('📧 Test EmailJS COMPLETO iniciado...');
+            document.getElementById('emailTestPanel').style.display = 'block';
+            const statusPanel = document.getElementById('emailTestStatus');
+            statusPanel.textContent = '🔄 Verificando EmailJS...\n';
+
+            try {
+                // 1. Esperar y verificar EmailJS (múltiples versiones)
+                const emailjsDisponible = await verificarEmailJS();
+                if (!emailjsDisponible) {
+                    statusPanel.textContent += '❌ EmailJS NO disponible después de 3s\n';
+                    statusPanel.textContent += '💡 Scripts cargados pero objeto no accesible\n';
+                    logDebug('❌ EmailJS NO disponible tras espera', 'ERROR');
+                    
+                    // Intentar carga dinámica como fallback
+                    statusPanel.textContent += '🔄 Intentando carga dinámica...\n';
+                    await cargarEmailJSDinamico(statusPanel);
+                    return;
+                }
+
+                statusPanel.textContent += '✅ EmailJS SDK detectado\n';
+
+                // 2. Obtener referencia al objeto EmailJS
+                let emailjsObj = window.emailjs || window.EmailJS || emailjs;
+                statusPanel.textContent += `📦 EmailJS versión detectada: ${typeof emailjsObj}\n`;
+
+                // 3. Inicializar
+                if (emailjsObj.init) {
+                    emailjsObj.init(EMAILJS_CONFIG.publicKey);
+                    statusPanel.textContent += '✅ EmailJS inicializado\n';
+                }
+
+                // 4. Test real de envío
+                const testParams = {
+                    to_email: ADMIN_EMAIL,
+                    to_name: 'Admin Emilia',
+                    subject: '🧪 TEST DEBUG ADMIN - EmailJS OK',
+                    message: `Test EmailJS ejecutado el ${new Date().toLocaleString('es-ES')}\n\n✅ EmailJS funciona correctamente.\nAdmin: ${ADMIN_EMAIL}\nDebug Panel: OK`,
+                    timestamp: new Date().toISOString()
+                };
+
+                statusPanel.textContent += '🔄 Enviando email de prueba...\n';
+                
+                let result;
+                if (emailjsObj.send) {
+                    result = await emailjsObj.send(EMAILJS_CONFIG.service, EMAILJS_CONFIG.template, testParams);
+                } else {
+                    throw new Error('Método send() no disponible');
+                }
+
+                statusPanel.textContent += `✅ EMAIL ENVIADO CORRECTAMENTE!\n`;
+                statusPanel.textContent += `📧 ID: ${result}\n`;
+                statusPanel.textContent += `📨 Destinatario: ${ADMIN_EMAIL}\n`;
+                statusPanel.textContent += `⏰ ${new Date().toLocaleString('es-ES')}\n`;
+
+                logDebug(`✅ EmailJS TEST OK - ID: ${result}`);
+                statusPanel.style.background = '#d4edda';
+                statusPanel.style.borderColor = '#28a745';
+
+            } catch (error) {
+                statusPanel.textContent += `❌ ERROR EmailJS: ${error.message || error.text}\n`;
+                statusPanel.textContent += `📋 Detalles: ${JSON.stringify(error, null, 2)}\n`;
+                logDebug(`❌ EmailJS ERROR: ${error.message || error.text}`, 'ERROR');
+                statusPanel.style.background = '#f8d7da';
+                statusPanel.style.borderColor = '#dc3545';
+            }
+        };
+
+        // 🔹 FALLBACK: CARGA DINÁMICA EmailJS
+        async function cargarEmailJSDinamico(statusPanel) {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+                script.onload = () => {
+                    statusPanel.textContent += '✅ EmailJS cargado dinámicamente\n';
+                    logDebug('✅ EmailJS cargado vía fallback dinámico');
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    statusPanel.textContent += '❌ Fallback dinámico falló\n';
+                    logDebug('❌ Fallback EmailJS falló', 'ERROR');
+                    resolve(false);
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        window.testLogs = () => {
+            document.getElementById('logsPanel').style.display = 'block';
+            cargarLogs();
+        };
+
+        // 🔹 NUEVA FUNCIÓN TEST BACKUP
+        window.testBackup = async () => {
+            logDebug('💾 Test Backup iniciado...');
+            try {
+                const snapshot = await new Promise((resolve, reject) => {
+                    onValue(productosRef, resolve, { onlyOnce: true });
+                });
+
+                let total = 0;
+                snapshot.forEach(() => total++);
+
+                logDebug(`✅ Backup OK — ${total} productos encontrados`);
+                alert(`✅ Test Backup correcto\nProductos encontrados: ${total}`);
+            } catch (error) {
+                logDebug(`❌ Backup ERROR: ${error.message}`, 'ERROR');
+                alert('❌ Error en Test Backup');
+            }
+        };
+
+        window.cargarLogs = () => {
+            const desde = document.getElementById('logFechaDesde').value;
+            const hasta = document.getElementById('logFechaHasta').value;
+            
+            onValue(ref(db, 'logs'), (snap) => {
+                todosLogs = [];
+                snap.forEach((child) => {
+                    const log = child.val();
+                    const fecha = new Date(log.timestamp);
+                    const fechaStr = fecha.toISOString().split('T')[0];
+                    
+                    if ((!desde || fechaStr >= desde) && (!hasta || fechaStr <= hasta)) {
+                        todosLogs.push({...log, key: child.key});
+                    }
+                });
+                todosLogs.sort((a,b) => b.timestamp - a.timestamp);
+                renderLogs(todosLogs);
+            });
+        };
+
+        window.filtrarLogs = () => {
+            const filtro = document.getElementById('logBuscar').value.toLowerCase();
+            const filtrados = todosLogs.filter(log => 
+                log.productoNombre?.toLowerCase().includes(filtro) ||
+                log.usuario?.toLowerCase().includes(filtro)
+            );
+            renderLogs(filtrados);
+        };
+
+        window.renderLogs = (logs) => {
+            const tabla = document.getElementById('tablaLogs');
+            tabla.innerHTML = '';
+            logs.forEach(log => {
+                const claseFila = log.tipo === 'venta' ? 'log-venta' :
+                                log.tipo === 'reserva' ? 'log-reserva' :
+                                log.tipo === 'cancelacion-reserva' ? 'log-cancelacion' :
+                                log.tipo === 'eliminacion-venta' ? 'log-eliminacion' : '';
+                
+                tabla.innerHTML += `
+                    <tr class="${claseFila}">
+                        <td>${log.fecha}</td>
+                        <td>${log.tipo?.replace(/-/g, ' ').toUpperCase()}</td>
+                        <td style="text-align:left">${log.productoNombre}</td>
+                        <td>${log.cantidad}</td>
+                        <td>${log.usuario}</td>
+                        <td style="text-align:left; font-size:11px">${log.detalles}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('logCount').innerHTML = `<span class="log-count">${logs.length} movimientos</span>`;
+        };
+
+        window.clearConsole = () => {
+            debugInfo = [];
+            actualizarDebugConsole();
+            logDebug('🗑️ Consola limpiada');
+        };
+
+        window.downloadDebug = () => {
+            const data = {
+                timestamp: new Date().toISOString(),
+                admin: "AUTORIZADO",
+                debugLogs: debugInfo,
+                navegador: navigator.userAgent
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `debug-admin-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        };
+
+        // INICIALIZACIÓN
+        window.onload = () => {
+            logDebug('🚀 DEBUG ADMIN CARGADO');
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPass').value = '';
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') loginAdmin();
+            });
+            
+            // Verificar EmailJS al cargar
+            setTimeout(() => {
+                verificarEmailJS().then(disponible => {
+                    if (disponible) {
+                        logDebug('✅ EmailJS disponible al inicio');
+                    } else {
+                        logDebug('⚠️ EmailJS NO disponible al inicio - se intentará en test', 'WARN');
+                    }
+                });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
