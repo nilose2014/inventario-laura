@@ -6,6 +6,15 @@
   <title>Inventario Emilia Online - ORDENABLE + BACKUP + PROXIMO STOCK + LOGS</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="styles.css">
+
+<style id="adminOnlyFixStyles">
+  body:not(.es-admin) .nav-admin-only,
+  body:not(.es-admin) #btnGestionOcultosTop,
+  body:not(.es-admin) #ocultosIndexSection,
+  body:not(.es-admin) #btnResetStockTotal {
+    display: none !important;
+  }
+</style>
 </head>
 <body>
 
@@ -276,6 +285,7 @@
       </div>
 
       <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🧹 Reset completo</button>
+      <button class="red nav-admin-only" onclick="resetearTodoStock()" id="btnResetStockTotal" style="display:none" title="Pone el stock real de todos los productos a 0">📦 Resetear todo el stock a 0</button>
       <button onclick="modificarPrecioEmiliaGlobal()" id="precioGlobalBtn">💷 Precio Emilia global</button>
       <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📳 Ver estadísticas</button>
       <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
@@ -2327,6 +2337,12 @@ function updateUI() {
   const esSoloUser = userRole !== 'admin';
   document.body.classList.toggle('solo-user', esSoloUser);
   document.body.classList.toggle('nav-user-limitado', esSoloUser);
+  document.body.classList.toggle('es-admin', userRole === 'admin');
+
+  // Los controles de ocultos y de reseteo de stock son exclusivamente del ADMIN.
+  document.querySelectorAll('.nav-admin-only').forEach((elemento) => {
+    elemento.style.display = userRole === 'admin' ? '' : 'none';
+  });
 
   const status = document.getElementById('status');
   const guardarBtn = document.getElementById('guardarBtn');
@@ -3157,6 +3173,66 @@ window.resetear = () => {
       await guardarLog('reset-completo', null, 'RESET GENERAL', 0, currentUser.email);
       await update(ref(db), updates);
       showToast('✅ RESET COMPLETO', 'success');
+    }
+  });
+};
+
+
+window.resetearTodoStock = () => {
+  if (userRole !== 'admin') {
+    return showToast('✖ Solo ADMIN puede resetear todo el stock', 'error');
+  }
+
+  const cantidadProductos = Object.keys(productos || {}).length;
+  if (!cantidadProductos) {
+    return showToast('No hay productos para resetear', 'info');
+  }
+
+  openConfirm({
+    title: '⚠️ Resetear todo el stock',
+    message: `Se pondrá a 0 el stock REAL de los ${cantidadProductos} productos. El stock próximo, ventas, reservas, precios y novedades no se modificarán.`,
+    confirmText: 'Continuar',
+    danger: true,
+    onConfirm: async () => {
+      const segundaConfirmacion = confirm(
+        'ÚLTIMA CONFIRMACIÓN\n\n¿Seguro que quieres poner TODO el stock real a 0?\n\nEsta acción no se puede deshacer automáticamente.'
+      );
+      if (!segundaConfirmacion) {
+        showToast('Reset de stock cancelado', 'info');
+        return;
+      }
+
+      const updates = {};
+      Object.entries(productos || {}).forEach(([id, producto]) => {
+        updates[`productos/${id}/stock`] = 0;
+        updates[`productos_publicos/${id}/stock`] = 0;
+        producto.stock = 0;
+      });
+
+      try {
+        await update(ref(db), updates);
+        renderTablaSolo();
+        actualizarPanelOcultosIndex();
+
+        try {
+          await guardarLog(
+            'reset-stock-total',
+            null,
+            'RESET TODO EL STOCK',
+            cantidadProductos,
+            currentUser?.email || 'ADMIN',
+            `Stock real de ${cantidadProductos} productos puesto a 0`
+          );
+        } catch (logError) {
+          console.warn('El stock se reseteó, pero no se pudo guardar el log:', logError);
+        }
+
+        showToast(`✅ Stock real de ${cantidadProductos} productos puesto a 0`, 'success', 5000);
+      } catch (error) {
+        console.error('Error reseteando todo el stock:', error);
+        showToast(`✖ No se pudo resetear el stock: ${error?.message || 'error de Firebase'}`, 'error', 6000);
+        loadData();
+      }
     }
   });
 };
