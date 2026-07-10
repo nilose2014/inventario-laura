@@ -493,6 +493,7 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const productosRef = ref(db, "productos");
+const productosPublicosRef = ref(db, "productos_publicos");
 const logsRef = ref(db, "logs");
 const backupRef = ref(db, "backup/ultimo");
 const novedadesRef = ref(db, "novedades");
@@ -542,11 +543,26 @@ function getQueryParam(name) {
 }
 
 function construirProductoPublico(producto) {
+  const historialPublico = {};
+  Object.entries(producto?.historialNovedades || {}).forEach(([clave, datoOriginal]) => {
+    const dato = datoOriginal || {};
+    historialPublico[clave] = {
+      productoId: dato.productoId || '',
+      productoNombre: dato.productoNombre || producto?.nombre || 'Producto',
+      imagen: dato.imagen || producto?.imagen || '',
+      cantidadAnadida: Number(dato.cantidadAnadida ?? dato.cantidad ?? 0),
+      stockAnterior: Number(dato.stockAnterior || 0),
+      stockTotal: Number(dato.stockTotal || 0),
+      timestamp: Number(dato.timestamp || 0),
+      fechaDia: dato.fechaDia || fechaNovedadLocal(dato.timestamp)
+    };
+  });
   return {
     nombre: producto?.nombre || '',
     laura: Number(producto?.laura || 0),
     stock: Number(producto?.stock || 0),
-    imagen: producto?.imagen || ''
+    imagen: producto?.imagen || '',
+    historialNovedades: historialPublico
   };
 }
 
@@ -558,10 +574,7 @@ async function syncProductoPublico(id, producto) {
 async function syncTodosProductosPublicosDesdeProductos(productosObj) {
   const updates = {};
   Object.entries(productosObj || {}).forEach(([id, producto]) => {
-    updates['productos_publicos/' + id + '/nombre'] = producto?.nombre || '';
-    updates['productos_publicos/' + id + '/laura'] = Number(producto?.laura || 0);
-    updates['productos_publicos/' + id + '/stock'] = Number(producto?.stock || 0);
-    updates['productos_publicos/' + id + '/imagen'] = producto?.imagen || '';
+    updates['productos_publicos/' + id] = construirProductoPublico(producto);
   });
   await update(ref(db), updates);
 }
@@ -782,9 +795,9 @@ window.abrirNovedades = () => {
   }
 
   if (!unsubscribeNovedades) {
-    // Leemos el historial desde /productos, accesible tanto en la web como
-    // dentro de la WebView de la app. No dependemos de permisos sobre /logs.
-    unsubscribeNovedades = onValue(productosRef, snap => {
+    // Leemos el historial desde /productos_publicos, que la web y la app pueden consultar.
+    // Solo contiene datos visibles del producto; no incluye correo ni información privada.
+    unsubscribeNovedades = onValue(productosPublicosRef, snap => {
       novedadesCargadas = [];
       snap.forEach(productoSnap => {
         const producto = productoSnap.val() || {};
@@ -808,7 +821,7 @@ window.abrirNovedades = () => {
       novedadesCargadas.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
       renderNovedadesInternas();
     }, error => {
-      console.error('Error cargando novedades desde productos:', error);
+      console.error('Error cargando novedades desde productos públicos:', error);
       const contenedor = document.getElementById('novedadesContenidoInterno');
       if (contenedor) contenedor.innerHTML = `<div class="novedades-vacio-interno">✖ No se pudieron cargar las novedades.<br><small>${escaparNovedad(error?.message || error || '')}</small></div>`;
       showToast('✖ No se pudieron cargar las novedades', 'error');
