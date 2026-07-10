@@ -712,10 +712,23 @@ window.abrirScannerMovil = () => {
   }
 };
 
-window.abrirNovedades = () => {
+window.abrirNovedades = async () => {
   if (!currentUser || !['admin', 'user'].includes(userRole)) {
     return showToast('✖ Debes iniciar sesión para ver Novedades', 'error');
   }
+
+  try {
+    // En algunas WebView Firebase Auth tarda en restaurar la sesión al cambiar
+    // de página. Guardamos temporalmente el token de la sesión activa para que
+    // novedades.html pueda cargar sin pedir de nuevo email y contraseña.
+    const token = await currentUser.getIdToken();
+    sessionStorage.setItem('novedadesAuthToken', token);
+    sessionStorage.setItem('novedadesAuthEmail', currentUser.email || '');
+    sessionStorage.setItem('novedadesAuthCreado', String(Date.now()));
+  } catch (error) {
+    console.warn('No se pudo preparar la sesión de Novedades:', error);
+  }
+
   window.location.href = 'novedades.html';
 };
 
