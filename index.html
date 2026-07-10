@@ -769,9 +769,6 @@ function renderNovedadesInternas() {
 }
 
 window.abrirNovedades = () => {
-  if (!currentUser || !['admin', 'user'].includes(userRole)) {
-    return showToast('✖ Debes iniciar sesión para ver Novedades', 'error');
-  }
   const pantalla = document.getElementById('pantallaNovedadesInterna');
   pantalla.classList.remove('hidden');
   document.body.classList.add('viendo-novedades');
@@ -2265,6 +2262,13 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     checkUserRole();
+
+    if (window.location.hash === '#novedades') {
+      setTimeout(() => {
+        window.abrirNovedades();
+        try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
+      }, 150);
+    }
   } else {
     currentUser = null;
     loginLogHecho = false;
