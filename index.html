@@ -782,25 +782,33 @@ window.abrirNovedades = () => {
   }
 
   if (!unsubscribeNovedades) {
-    unsubscribeNovedades = onValue(logsRef, snap => {
+    // Leemos el historial desde /productos, accesible tanto en la web como
+    // dentro de la WebView de la app. No dependemos de permisos sobre /logs.
+    unsubscribeNovedades = onValue(productosRef, snap => {
       novedadesCargadas = [];
-      snap.forEach(x => {
-        const dato = x.val() || {};
-        if (dato.tipo === 'stock-anadido') {
+      snap.forEach(productoSnap => {
+        const producto = productoSnap.val() || {};
+        const historial = producto.historialNovedades || {};
+        Object.entries(historial).forEach(([novedadId, datoOriginal]) => {
+          const dato = datoOriginal || {};
           novedadesCargadas.push({
-            id: x.key,
+            id: `${productoSnap.key}_${novedadId}`,
+            productoId: dato.productoId || productoSnap.key,
+            productoNombre: dato.productoNombre || producto.nombre || 'Producto',
+            imagen: dato.imagen || producto.imagen || '',
             ...dato,
             cantidadAnadida: Number(dato.cantidadAnadida ?? dato.cantidad ?? 0),
             stockAnterior: Number(dato.stockAnterior ?? 0),
             stockTotal: Number(dato.stockTotal ?? 0),
+            timestamp: Number(dato.timestamp || 0),
             fechaDia: dato.fechaDia || fechaNovedadLocal(dato.timestamp)
           });
-        }
+        });
       });
       novedadesCargadas.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
       renderNovedadesInternas();
     }, error => {
-      console.error('Error cargando novedades:', error);
+      console.error('Error cargando novedades desde productos:', error);
       const contenedor = document.getElementById('novedadesContenidoInterno');
       if (contenedor) contenedor.innerHTML = `<div class="novedades-vacio-interno">✖ No se pudieron cargar las novedades.<br><small>${escaparNovedad(error?.message || error || '')}</small></div>`;
       showToast('✖ No se pudieron cargar las novedades', 'error');
@@ -1648,17 +1656,33 @@ window.anadirProximoStock = async (id) => {
   const ahora = Date.now();
 
   try {
-    // Primero actualizamos el producto. Así un error al guardar el historial
-    // nunca bloquea la incorporación del stock real.
+    // Guardamos la novedad dentro del propio producto. La app ya tiene permiso
+    // para leer productos, mientras que /logs puede estar restringido al ADMIN.
+    const novedadKey = push(ref(db, `productos/${id}/historialNovedades`)).key;
+    const novedadData = {
+      productoId: id,
+      productoNombre: p.nombre || 'Producto',
+      imagen: p.imagen || '',
+      cantidadAnadida: cantidad,
+      stockAnterior,
+      stockTotal: nuevoStock,
+      timestamp: ahora,
+      fechaDia: new Date(ahora).toLocaleDateString('sv-SE'),
+      usuario: currentUser?.email || ''
+    };
+
     await update(ref(db, `productos/${id}`), {
       stock: nuevoStock,
       proximo: 0,
-      emailAgotadoEnviado: false
+      emailAgotadoEnviado: false,
+      [`historialNovedades/${novedadKey}`]: novedadData
     });
 
     productos[id].stock = nuevoStock;
     productos[id].proximo = 0;
     productos[id].emailAgotadoEnviado = false;
+    productos[id].historialNovedades = productos[id].historialNovedades || {};
+    productos[id].historialNovedades[novedadKey] = novedadData;
 
     if (inputProx) {
       inputProx.value = '0';
