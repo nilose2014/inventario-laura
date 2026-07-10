@@ -90,10 +90,29 @@ function cargarFirebase() {
   });
 }
 
+function leerSesionTransferida() {
+  try {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const token = params.get('token') || '';
+    const emailSesion = params.get('email') || 'app';
+    const creado = Number(params.get('creado') || 0);
+
+    // Borramos el token de la dirección inmediatamente.
+    if (window.location.hash) {
+      history.replaceState(null, document.title, window.location.pathname + window.location.search);
+    }
+
+    return { token, emailSesion, creado };
+  } catch (error) {
+    console.error('No se pudo leer la sesión transferida:', error);
+    return { token: '', emailSesion: 'app', creado: 0 };
+  }
+}
+
+const sesionTransferida = leerSesionTransferida();
+
 async function cargarConTokenTemporal() {
-  const token = sessionStorage.getItem('novedadesAuthToken') || '';
-  const emailSesion = sessionStorage.getItem('novedadesAuthEmail') || 'app';
-  const creado = Number(sessionStorage.getItem('novedadesAuthCreado') || 0);
+  const { token, emailSesion, creado } = sesionTransferida;
   const tokenReciente = token && creado && (Date.now() - creado < 55 * 60 * 1000);
 
   if (!tokenReciente) {
@@ -111,10 +130,7 @@ async function cargarConTokenTemporal() {
     mostrarApp(emailSesion);
     render();
   } catch (error) {
-    console.error('No se pudo recuperar la sesión temporal:', error);
-    sessionStorage.removeItem('novedadesAuthToken');
-    sessionStorage.removeItem('novedadesAuthEmail');
-    sessionStorage.removeItem('novedadesAuthCreado');
+    console.error('No se pudo usar la sesión transferida:', error);
     mostrarLogin();
   }
 }
