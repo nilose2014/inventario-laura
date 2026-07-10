@@ -774,9 +774,21 @@ window.abrirNovedades = () => {
   document.body.classList.add('viendo-novedades');
 
   if (!unsubscribeNovedades) {
-    unsubscribeNovedades = onValue(novedadesRef, snap => {
+    unsubscribeNovedades = onValue(logsRef, snap => {
       novedadesCargadas = [];
-      snap.forEach(x => novedadesCargadas.push({ id:x.key, ...x.val() }));
+      snap.forEach(x => {
+        const dato = x.val() || {};
+        if (dato.tipo === 'stock-anadido') {
+          novedadesCargadas.push({
+            id: x.key,
+            ...dato,
+            cantidadAnadida: Number(dato.cantidadAnadida ?? dato.cantidad ?? 0),
+            stockAnterior: Number(dato.stockAnterior ?? 0),
+            stockTotal: Number(dato.stockTotal ?? 0),
+            fechaDia: dato.fechaDia || fechaNovedadLocal(dato.timestamp)
+          });
+        }
+      });
       novedadesCargadas.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
       renderNovedadesInternas();
     }, error => {
@@ -1766,46 +1778,71 @@ window.programarRender = () => {
 
 window.anadirProximoStock = async (id) => {
   if (userRole !== 'admin') return showToast('✖ Solo ADMIN puede añadir stock próximo', 'error');
+
   const p = productos[id];
+  if (!p) return showToast('✖ No se encontró el producto', 'error');
+
   const inputProx = document.querySelector(`input[data-producto="${id}"]`);
-  const cantidad = Number(inputProx?.value) || 0;
+  const cantidad = Math.max(0, Number(inputProx?.value) || 0);
   if (cantidad <= 0) return showToast('✖ Cantidad inválida', 'error');
 
   const stockAnterior = Number(p.stock || 0);
   const nuevoStock = stockAnterior + cantidad;
   const ahora = Date.now();
-  const novedadNuevaRef = push(novedadesRef);
 
-  const cambios = {};
-  cambios[`productos/${id}/stock`] = nuevoStock;
-  cambios[`productos/${id}/proximo`] = 0;
-  cambios[`productos/${id}/emailAgotadoEnviado`] = false;
-  cambios[`novedades/${novedadNuevaRef.key}`] = {
-    productoId: id,
-    productoNombre: p.nombre || '',
-    imagen: p.imagen || '',
-    cantidadAnadida: cantidad,
-    stockAnterior,
-    stockTotal: nuevoStock,
-    timestamp: ahora,
-    fecha: new Date(ahora).toLocaleString('es-ES'),
-    fechaDia: new Date(ahora).toLocaleDateString('sv-SE'),
-    usuario: currentUser?.email || ''
-  };
+  try {
+    // Primero actualizamos el producto. Así un error al guardar el historial
+    // nunca bloquea la incorporación del stock real.
+    await update(ref(db, `productos/${id}`), {
+      stock: nuevoStock,
+      proximo: 0,
+      emailAgotadoEnviado: false
+    });
 
-  await update(ref(db), cambios);
-  productos[id].stock = nuevoStock;
-  productos[id].proximo = 0;
-  productos[id].emailAgotadoEnviado = false;
-  await syncProductoPublico(id, productos[id]);
+    productos[id].stock = nuevoStock;
+    productos[id].proximo = 0;
+    productos[id].emailAgotadoEnviado = false;
 
-  if (inputProx) {
-    inputProx.value = '0';
-    inputProx.classList.remove('tiene-valor');
+    if (inputProx) {
+      inputProx.value = '0';
+      inputProx.classList.remove('tiene-valor');
+    }
+
+    programarRender();
+
+    // Novedades usa el nodo de logs, que ya está autorizado en Firebase.
+    // Guardamos todos los datos necesarios para foto, cantidades y fechas.
+    try {
+      await guardarLog(
+        'stock-anadido',
+        id,
+        p.nombre,
+        cantidad,
+        currentUser?.email || '',
+        `Stock anterior: ${stockAnterior} · Stock total: ${nuevoStock}`,
+        {
+          imagen: p.imagen || '',
+          cantidadAnadida: cantidad,
+          stockAnterior,
+          stockTotal: nuevoStock,
+          fechaDia: new Date(ahora).toLocaleDateString('sv-SE')
+        }
+      );
+    } catch (logError) {
+      console.error('Stock actualizado, pero no se pudo guardar la novedad:', logError);
+    }
+
+    try {
+      await syncProductoPublico(id, productos[id]);
+    } catch (syncError) {
+      console.error('Stock actualizado, pero falló la sincronización pública:', syncError);
+    }
+
+    showToast(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`, 'success');
+  } catch (error) {
+    console.error('Error añadiendo stock próximo:', error);
+    showToast(`✖ No se pudo añadir el stock: ${error?.message || 'error de Firebase'}`, 'error', 5000);
   }
-
-  await guardarLog('stock-anadido', id, p.nombre, cantidad, currentUser.email, `Stock real: ${nuevoStock}`);
-  showToast(`✅ Añadidas ${cantidad} unidades. Nuevo stock: ${nuevoStock}`, 'success');
 };
 
 window.modificarProximoStock = (id) => {
