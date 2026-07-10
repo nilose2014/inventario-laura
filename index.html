@@ -770,8 +770,16 @@ function renderNovedadesInternas() {
 
 window.abrirNovedades = () => {
   const pantalla = document.getElementById('pantallaNovedadesInterna');
+  if (!pantalla) {
+    showToast('✖ No se encontró la pantalla de Novedades', 'error');
+    return;
+  }
   pantalla.classList.remove('hidden');
   document.body.classList.add('viendo-novedades');
+  const contenedor = document.getElementById('novedadesContenidoInterno');
+  if (contenedor && !novedadesCargadas.length) {
+    contenedor.innerHTML = '<div class="novedades-vacio-interno">Cargando novedades…</div>';
+  }
 
   if (!unsubscribeNovedades) {
     unsubscribeNovedades = onValue(logsRef, snap => {
@@ -793,6 +801,8 @@ window.abrirNovedades = () => {
       renderNovedadesInternas();
     }, error => {
       console.error('Error cargando novedades:', error);
+      const contenedor = document.getElementById('novedadesContenidoInterno');
+      if (contenedor) contenedor.innerHTML = `<div class="novedades-vacio-interno">✖ No se pudieron cargar las novedades.<br><small>${escaparNovedad(error?.message || error || '')}</small></div>`;
       showToast('✖ No se pudieron cargar las novedades', 'error');
     });
   } else {
@@ -1067,57 +1077,6 @@ td:last-child, th:last-child{
     </table>
   </div>
 
-<style>
-#pantallaNovedadesInterna{position:fixed;inset:0;z-index:99990;background:#eef4f8;overflow:auto;padding:16px}
-#pantallaNovedadesInterna.hidden{display:none!important}
-.novedades-cabecera-interna{max-width:1150px;margin:0 auto 14px;background:white;border-radius:18px;padding:16px;box-shadow:0 5px 20px #0002}
-.novedades-titulo-interno{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.novedades-titulo-interno h1{margin:0;font-size:clamp(1.45rem,4vw,2.1rem)}
-.novedades-filtros-internos{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:14px}
-.novedades-filtros-internos label{display:flex;flex-direction:column;font-weight:700;gap:4px}
-.novedades-filtros-internos input{padding:9px;border:1px solid #bbb;border-radius:10px}
-.novedades-resumen-interno{margin-left:auto;font-weight:800;padding:9px 12px;background:#e5f6eb;border-radius:12px}
-#novedadesContenidoInterno{max-width:1150px;margin:auto}
-.novedad-fecha-grupo{background:white;border-radius:18px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 16px #0001}
-.novedad-fecha-titulo{padding:14px 16px;font-weight:900;font-size:1.1rem;background:#dcecf7;text-transform:capitalize}
-.novedades-grid-interna{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:14px}
-.novedad-producto-interno{display:grid;grid-template-columns:92px 1fr;gap:12px;border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff}
-.novedad-foto-interna{width:92px;height:92px;object-fit:cover;border-radius:12px;background:#eee}
-.novedad-sin-foto{display:grid;place-items:center;font-size:2rem}
-.novedad-nombre-interno{font-weight:900;font-size:1.08rem;margin-bottom:7px}
-.novedad-dato-interno{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed #ddd;padding:4px 0}
-.novedad-anadido{color:#16813b;font-size:1.15rem}
-.novedad-hora-interna{text-align:right;color:#666;font-size:.87rem;margin-top:5px}
-.novedades-vacio-interno{background:white;border-radius:16px;padding:40px;text-align:center;font-weight:700}
-@media(max-width:600px){#pantallaNovedadesInterna{padding:8px}.novedades-resumen-interno{width:100%;margin-left:0}.novedades-filtros-internos button{flex:1}.novedad-producto-interno{grid-template-columns:76px 1fr}.novedad-foto-interna{width:76px;height:76px}}
-@media print{
- body *{visibility:hidden!important}
- #pantallaNovedadesInterna,#pantallaNovedadesInterna *{visibility:visible!important}
- #pantallaNovedadesInterna{position:absolute;inset:0;padding:0;background:white;overflow:visible}
- .novedades-no-imprimir{display:none!important}
- .novedades-cabecera-interna{box-shadow:none;padding:0;margin-bottom:10px}
- .novedad-fecha-grupo{box-shadow:none;break-inside:avoid}
-}
-</style>
-<div id="pantallaNovedadesInterna" class="hidden">
-  <section class="novedades-cabecera-interna">
-    <div class="novedades-titulo-interno">
-      <h1>✨ Novedades de stock</h1>
-      <button class="novedades-no-imprimir" onclick="cerrarNovedadesInternas()">← Volver al inventario</button>
-    </div>
-    <div class="novedades-filtros-internos novedades-no-imprimir">
-      <label>Desde<input id="novedadesDesdeInterno" type="date" onchange="filtrarNovedadesInternas()"></label>
-      <label>Hasta<input id="novedadesHastaInterno" type="date" onchange="filtrarNovedadesInternas()"></label>
-      <button onclick="novedadesHoyInternas()">Hoy</button>
-      <button onclick="novedadesUltimosInternas(7)">7 días</button>
-      <button onclick="limpiarNovedadesInternas()">Todas</button>
-      <button onclick="imprimirNovedadesInternas()">🖨️ Imprimir</button>
-      <div id="novedadesResumenInterno" class="novedades-resumen-interno">0 productos · 0 unidades</div>
-    </div>
-  </section>
-  <div id="novedadesContenidoInterno"></div>
-</div>
-
 </body>
 </html>`;
 
@@ -1267,57 +1226,6 @@ body{
       ${tarjetasHTMLDesktop}
     </section>
   </div>
-
-<style>
-#pantallaNovedadesInterna{position:fixed;inset:0;z-index:99990;background:#eef4f8;overflow:auto;padding:16px}
-#pantallaNovedadesInterna.hidden{display:none!important}
-.novedades-cabecera-interna{max-width:1150px;margin:0 auto 14px;background:white;border-radius:18px;padding:16px;box-shadow:0 5px 20px #0002}
-.novedades-titulo-interno{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.novedades-titulo-interno h1{margin:0;font-size:clamp(1.45rem,4vw,2.1rem)}
-.novedades-filtros-internos{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:14px}
-.novedades-filtros-internos label{display:flex;flex-direction:column;font-weight:700;gap:4px}
-.novedades-filtros-internos input{padding:9px;border:1px solid #bbb;border-radius:10px}
-.novedades-resumen-interno{margin-left:auto;font-weight:800;padding:9px 12px;background:#e5f6eb;border-radius:12px}
-#novedadesContenidoInterno{max-width:1150px;margin:auto}
-.novedad-fecha-grupo{background:white;border-radius:18px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 16px #0001}
-.novedad-fecha-titulo{padding:14px 16px;font-weight:900;font-size:1.1rem;background:#dcecf7;text-transform:capitalize}
-.novedades-grid-interna{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:14px}
-.novedad-producto-interno{display:grid;grid-template-columns:92px 1fr;gap:12px;border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff}
-.novedad-foto-interna{width:92px;height:92px;object-fit:cover;border-radius:12px;background:#eee}
-.novedad-sin-foto{display:grid;place-items:center;font-size:2rem}
-.novedad-nombre-interno{font-weight:900;font-size:1.08rem;margin-bottom:7px}
-.novedad-dato-interno{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed #ddd;padding:4px 0}
-.novedad-anadido{color:#16813b;font-size:1.15rem}
-.novedad-hora-interna{text-align:right;color:#666;font-size:.87rem;margin-top:5px}
-.novedades-vacio-interno{background:white;border-radius:16px;padding:40px;text-align:center;font-weight:700}
-@media(max-width:600px){#pantallaNovedadesInterna{padding:8px}.novedades-resumen-interno{width:100%;margin-left:0}.novedades-filtros-internos button{flex:1}.novedad-producto-interno{grid-template-columns:76px 1fr}.novedad-foto-interna{width:76px;height:76px}}
-@media print{
- body *{visibility:hidden!important}
- #pantallaNovedadesInterna,#pantallaNovedadesInterna *{visibility:visible!important}
- #pantallaNovedadesInterna{position:absolute;inset:0;padding:0;background:white;overflow:visible}
- .novedades-no-imprimir{display:none!important}
- .novedades-cabecera-interna{box-shadow:none;padding:0;margin-bottom:10px}
- .novedad-fecha-grupo{box-shadow:none;break-inside:avoid}
-}
-</style>
-<div id="pantallaNovedadesInterna" class="hidden">
-  <section class="novedades-cabecera-interna">
-    <div class="novedades-titulo-interno">
-      <h1>✨ Novedades de stock</h1>
-      <button class="novedades-no-imprimir" onclick="cerrarNovedadesInternas()">← Volver al inventario</button>
-    </div>
-    <div class="novedades-filtros-internos novedades-no-imprimir">
-      <label>Desde<input id="novedadesDesdeInterno" type="date" onchange="filtrarNovedadesInternas()"></label>
-      <label>Hasta<input id="novedadesHastaInterno" type="date" onchange="filtrarNovedadesInternas()"></label>
-      <button onclick="novedadesHoyInternas()">Hoy</button>
-      <button onclick="novedadesUltimosInternas(7)">7 días</button>
-      <button onclick="limpiarNovedadesInternas()">Todas</button>
-      <button onclick="imprimirNovedadesInternas()">🖨️ Imprimir</button>
-      <div id="novedadesResumenInterno" class="novedades-resumen-interno">0 productos · 0 unidades</div>
-    </div>
-  </section>
-  <div id="novedadesContenidoInterno"></div>
-</div>
 
 </body>
 </html>`;
@@ -1588,57 +1496,6 @@ window.imprimirQRActual = () => {
         window.onload = () => { window.print(); };
       <\/script>
     
-<style>
-#pantallaNovedadesInterna{position:fixed;inset:0;z-index:99990;background:#eef4f8;overflow:auto;padding:16px}
-#pantallaNovedadesInterna.hidden{display:none!important}
-.novedades-cabecera-interna{max-width:1150px;margin:0 auto 14px;background:white;border-radius:18px;padding:16px;box-shadow:0 5px 20px #0002}
-.novedades-titulo-interno{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.novedades-titulo-interno h1{margin:0;font-size:clamp(1.45rem,4vw,2.1rem)}
-.novedades-filtros-internos{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:14px}
-.novedades-filtros-internos label{display:flex;flex-direction:column;font-weight:700;gap:4px}
-.novedades-filtros-internos input{padding:9px;border:1px solid #bbb;border-radius:10px}
-.novedades-resumen-interno{margin-left:auto;font-weight:800;padding:9px 12px;background:#e5f6eb;border-radius:12px}
-#novedadesContenidoInterno{max-width:1150px;margin:auto}
-.novedad-fecha-grupo{background:white;border-radius:18px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 16px #0001}
-.novedad-fecha-titulo{padding:14px 16px;font-weight:900;font-size:1.1rem;background:#dcecf7;text-transform:capitalize}
-.novedades-grid-interna{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:14px}
-.novedad-producto-interno{display:grid;grid-template-columns:92px 1fr;gap:12px;border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff}
-.novedad-foto-interna{width:92px;height:92px;object-fit:cover;border-radius:12px;background:#eee}
-.novedad-sin-foto{display:grid;place-items:center;font-size:2rem}
-.novedad-nombre-interno{font-weight:900;font-size:1.08rem;margin-bottom:7px}
-.novedad-dato-interno{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed #ddd;padding:4px 0}
-.novedad-anadido{color:#16813b;font-size:1.15rem}
-.novedad-hora-interna{text-align:right;color:#666;font-size:.87rem;margin-top:5px}
-.novedades-vacio-interno{background:white;border-radius:16px;padding:40px;text-align:center;font-weight:700}
-@media(max-width:600px){#pantallaNovedadesInterna{padding:8px}.novedades-resumen-interno{width:100%;margin-left:0}.novedades-filtros-internos button{flex:1}.novedad-producto-interno{grid-template-columns:76px 1fr}.novedad-foto-interna{width:76px;height:76px}}
-@media print{
- body *{visibility:hidden!important}
- #pantallaNovedadesInterna,#pantallaNovedadesInterna *{visibility:visible!important}
- #pantallaNovedadesInterna{position:absolute;inset:0;padding:0;background:white;overflow:visible}
- .novedades-no-imprimir{display:none!important}
- .novedades-cabecera-interna{box-shadow:none;padding:0;margin-bottom:10px}
- .novedad-fecha-grupo{box-shadow:none;break-inside:avoid}
-}
-</style>
-<div id="pantallaNovedadesInterna" class="hidden">
-  <section class="novedades-cabecera-interna">
-    <div class="novedades-titulo-interno">
-      <h1>✨ Novedades de stock</h1>
-      <button class="novedades-no-imprimir" onclick="cerrarNovedadesInternas()">← Volver al inventario</button>
-    </div>
-    <div class="novedades-filtros-internos novedades-no-imprimir">
-      <label>Desde<input id="novedadesDesdeInterno" type="date" onchange="filtrarNovedadesInternas()"></label>
-      <label>Hasta<input id="novedadesHastaInterno" type="date" onchange="filtrarNovedadesInternas()"></label>
-      <button onclick="novedadesHoyInternas()">Hoy</button>
-      <button onclick="novedadesUltimosInternas(7)">7 días</button>
-      <button onclick="limpiarNovedadesInternas()">Todas</button>
-      <button onclick="imprimirNovedadesInternas()">🖨️ Imprimir</button>
-      <div id="novedadesResumenInterno" class="novedades-resumen-interno">0 productos · 0 unidades</div>
-    </div>
-  </section>
-  <div id="novedadesContenidoInterno"></div>
-</div>
-
 </body>
     </html>
   `);
