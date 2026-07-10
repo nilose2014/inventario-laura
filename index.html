@@ -781,6 +781,36 @@ function renderNovedadesInternas() {
     </section>`).join('') : '<div class="novedades-vacio-interno">No hay novedades en las fechas seleccionadas.</div>';
 }
 
+function cargarNovedadesDesdeProductosCargados() {
+  novedadesCargadas = [];
+  Object.entries(productos || {}).forEach(([productoId, productoOriginal]) => {
+    const producto = productoOriginal || {};
+    const historial = producto.historialNovedades || {};
+    Object.entries(historial).forEach(([novedadId, datoOriginal]) => {
+      const dato = datoOriginal || {};
+      novedadesCargadas.push({
+        id: `${productoId}_${novedadId}`,
+        productoId,
+        novedadId,
+        productoNombre: dato.productoNombre || producto.nombre || 'Producto',
+        imagen: dato.imagen || producto.imagen || '',
+        cantidadAnadida: Number(dato.cantidadAnadida ?? dato.cantidad ?? 0),
+        stockAnterior: Number(dato.stockAnterior || 0),
+        stockTotal: Number(dato.stockTotal || 0),
+        timestamp: Number(dato.timestamp || 0),
+        fechaDia: dato.fechaDia || fechaNovedadLocal(dato.timestamp)
+      });
+    });
+  });
+  novedadesCargadas.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+  renderNovedadesInternas();
+}
+
+function actualizarBotonBorrarNovedades() {
+  const boton = document.getElementById('btnBorrarNovedadesInterno');
+  if (boton) boton.style.display = userRole === 'admin' ? '' : 'none';
+}
+
 window.abrirNovedades = () => {
   const pantalla = document.getElementById('pantallaNovedadesInterna');
   if (!pantalla) {
@@ -789,45 +819,36 @@ window.abrirNovedades = () => {
   }
   pantalla.classList.remove('hidden');
   document.body.classList.add('viendo-novedades');
-  const contenedor = document.getElementById('novedadesContenidoInterno');
-  if (contenedor && !novedadesCargadas.length) {
-    contenedor.innerHTML = '<div class="novedades-vacio-interno">Cargando novedades…</div>';
-  }
+  actualizarBotonBorrarNovedades();
+  cargarNovedadesDesdeProductosCargados();
+  history.replaceState(null, '', '#novedades');
+};
 
-  if (!unsubscribeNovedades) {
-    // Leemos el historial desde /productos_publicos, que la web y la app pueden consultar.
-    // Solo contiene datos visibles del producto; no incluye correo ni información privada.
-    unsubscribeNovedades = onValue(productosPublicosRef, snap => {
-      novedadesCargadas = [];
-      snap.forEach(productoSnap => {
-        const producto = productoSnap.val() || {};
-        const historial = producto.historialNovedades || {};
-        Object.entries(historial).forEach(([novedadId, datoOriginal]) => {
-          const dato = datoOriginal || {};
-          novedadesCargadas.push({
-            id: `${productoSnap.key}_${novedadId}`,
-            productoId: dato.productoId || productoSnap.key,
-            productoNombre: dato.productoNombre || producto.nombre || 'Producto',
-            imagen: dato.imagen || producto.imagen || '',
-            ...dato,
-            cantidadAnadida: Number(dato.cantidadAnadida ?? dato.cantidad ?? 0),
-            stockAnterior: Number(dato.stockAnterior ?? 0),
-            stockTotal: Number(dato.stockTotal ?? 0),
-            timestamp: Number(dato.timestamp || 0),
-            fechaDia: dato.fechaDia || fechaNovedadLocal(dato.timestamp)
-          });
-        });
-      });
-      novedadesCargadas.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
-      renderNovedadesInternas();
-    }, error => {
-      console.error('Error cargando novedades desde productos públicos:', error);
-      const contenedor = document.getElementById('novedadesContenidoInterno');
-      if (contenedor) contenedor.innerHTML = `<div class="novedades-vacio-interno">✖ No se pudieron cargar las novedades.<br><small>${escaparNovedad(error?.message || error || '')}</small></div>`;
-      showToast('✖ No se pudieron cargar las novedades', 'error');
+window.borrarTodasNovedades = async () => {
+  if (userRole !== 'admin') return showToast('✖ Solo ADMIN puede borrar las novedades', 'error');
+  if (!novedadesCargadas.length) return showToast('ℹ️ No hay novedades para borrar', 'info');
+  const confirmar = confirm(`¿Borrar definitivamente las ${novedadesCargadas.length} novedades de stock?\n\nEsta acción no cambia el stock actual.`);
+  if (!confirmar) return;
+
+  const updates = {};
+  Object.entries(productos || {}).forEach(([id, producto]) => {
+    if (producto && producto.historialNovedades) {
+      updates[`productos/${id}/historialNovedades`] = null;
+      updates[`productos_publicos/${id}/historialNovedades`] = null;
+    }
+  });
+
+  try {
+    await update(ref(db), updates);
+    Object.values(productos || {}).forEach(producto => {
+      if (producto) delete producto.historialNovedades;
     });
-  } else {
+    novedadesCargadas = [];
     renderNovedadesInternas();
+    showToast('✅ Novedades de stock borradas', 'success');
+  } catch (error) {
+    console.error('Error borrando novedades:', error);
+    showToast(`✖ No se pudieron borrar: ${error?.message || error}`, 'error', 5000);
   }
 };
 
@@ -2378,6 +2399,10 @@ function loadData() {
     programarRender();
     actualizarPanelOcultosIndex();
     refrescarFichaProductoSiAbierta();
+    if (!document.getElementById('pantallaNovedadesInterna')?.classList.contains('hidden')) {
+      cargarNovedadesDesdeProductosCargados();
+      actualizarBotonBorrarNovedades();
+    }
     window.mostrarModalPreciosEmiliaObligatorio();
   }, (error) => {
     document.getElementById('status').textContent = '✖ Error de conexión';
@@ -3447,6 +3472,7 @@ window.cancelarEdit = () => {
       <button onclick="novedadesUltimosInternas(7)">7 días</button>
       <button onclick="limpiarNovedadesInternas()">Todas</button>
       <button onclick="imprimirNovedadesInternas()">🖨️ Imprimir</button>
+      <button id="btnBorrarNovedadesInterno" class="red" style="display:none" onclick="borrarTodasNovedades()">🗑️ Borrar novedades</button>
       <div id="novedadesResumenInterno" class="novedades-resumen-interno">0 productos · 0 unidades</div>
     </div>
   </section>
