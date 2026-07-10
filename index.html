@@ -148,6 +148,7 @@
 
         <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
         <button onclick="abrirStock()" class="stock-btn">📦 Stock</button>
+        <button onclick="abrirNovedades()" class="stock-btn">✨ Novedades</button>
         <button onclick="abrirCatalogo()" class="catalogo-btn">📉 Abrir catálogo</button>
         <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
         <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
@@ -280,6 +281,7 @@
       <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
       <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
       <button onclick="abrirStock()" class="stock-btn">📦 Stock</button>
+      <button onclick="abrirNovedades()" class="stock-btn">✨ Novedades</button>
       <button onclick="abrirCatalogo()" class="catalogo-btn">📉 Abrir catálogo</button>
       <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
       <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
@@ -493,6 +495,7 @@ const storage = getStorage(app);
 const productosRef = ref(db, "productos");
 const logsRef = ref(db, "logs");
 const backupRef = ref(db, "backup/ultimo");
+const novedadesRef = ref(db, "novedades");
 
 let productos = {};
 let totalesGlobales = { bea: 0, laura: 0, vendidos: 0, reservados: 0 };
@@ -707,6 +710,13 @@ window.abrirScannerMovil = () => {
     console.error(error);
     showToast('✖ Error abriendo el scanner', 'error');
   }
+};
+
+window.abrirNovedades = () => {
+  if (!currentUser || !['admin', 'user'].includes(userRole)) {
+    return showToast('✖ Debes iniciar sesión para ver Novedades', 'error');
+  }
+  window.location.href = 'novedades.html';
 };
 
 window.abrirStock = () => {
@@ -1511,8 +1521,29 @@ window.anadirProximoStock = async (id) => {
   const cantidad = Number(inputProx?.value) || 0;
   if (cantidad <= 0) return showToast('✖ Cantidad inválida', 'error');
 
-  const nuevoStock = Number(p.stock || 0) + cantidad;
-  await update(ref(db,'productos/'+id), { stock:nuevoStock, proximo:0, emailAgotadoEnviado:false });
+  const stockAnterior = Number(p.stock || 0);
+  const nuevoStock = stockAnterior + cantidad;
+  const ahora = Date.now();
+  const novedadNuevaRef = push(novedadesRef);
+
+  const cambios = {};
+  cambios[`productos/${id}/stock`] = nuevoStock;
+  cambios[`productos/${id}/proximo`] = 0;
+  cambios[`productos/${id}/emailAgotadoEnviado`] = false;
+  cambios[`novedades/${novedadNuevaRef.key}`] = {
+    productoId: id,
+    productoNombre: p.nombre || '',
+    imagen: p.imagen || '',
+    cantidadAnadida: cantidad,
+    stockAnterior,
+    stockTotal: nuevoStock,
+    timestamp: ahora,
+    fecha: new Date(ahora).toLocaleString('es-ES'),
+    fechaDia: new Date(ahora).toLocaleDateString('sv-SE'),
+    usuario: currentUser?.email || ''
+  };
+
+  await update(ref(db), cambios);
   productos[id].stock = nuevoStock;
   productos[id].proximo = 0;
   productos[id].emailAgotadoEnviado = false;

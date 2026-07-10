@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novedades - Ventas 3D</title>
+  <style>
+    :root{--azul:#2563eb;--oscuro:#0f172a;--gris:#64748b;--borde:#dbe3ee;--fondo:#f1f5f9;--verde:#059669}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--fondo);color:var(--oscuro)}
+    .wrap{width:min(1200px,calc(100% - 24px));margin:24px auto}.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 8px 30px rgba(15,23,42,.08);margin-bottom:18px}
+    h1{margin:0 0 6px}.sub{color:var(--gris);margin:0}.hidden{display:none!important}.status{padding:12px;border-radius:10px;font-weight:700;margin-top:14px}.ok{background:#dcfce7;color:#166534}.error{background:#fee2e2;color:#991b1b}
+    .login{max-width:480px;margin:60px auto}.login input{width:100%;margin:6px 0}.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.campo{display:flex;flex-direction:column;gap:5px}.campo label{font-size:13px;font-weight:700;color:#475569}
+    input,button{font:inherit;border-radius:9px;padding:10px 12px}input{border:1px solid #cbd5e1}button{border:0;background:var(--azul);color:#fff;font-weight:700;cursor:pointer}.sec{background:#475569}.verde{background:var(--verde)}
+    .resumen{margin-left:auto;background:#eff6ff;padding:10px 14px;border-radius:10px;font-weight:700}.fecha-grupo{margin:24px 0}.fecha-titulo{font-size:20px;border-bottom:3px solid var(--azul);padding-bottom:8px;margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}.producto{border:1px solid var(--borde);border-radius:15px;padding:14px;display:grid;grid-template-columns:82px 1fr;gap:13px;break-inside:avoid;background:#fff}
+    .foto{width:82px;height:82px;object-fit:cover;border-radius:11px;background:#e2e8f0}.sin-foto{display:grid;place-items:center;font-size:30px}.nombre{font-size:17px;font-weight:800;margin-bottom:8px}.dato{display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#475569}.dato strong{color:#0f172a}.anadido{color:#047857!important}.hora{font-size:12px;color:#64748b;margin-top:8px}.vacio{text-align:center;padding:45px;color:#64748b;font-weight:700}
+    @media(max-width:600px){.wrap{width:min(100% - 12px,1200px);margin:8px auto}.card{padding:14px;border-radius:12px}.campo,input,.toolbar button{width:100%}.resumen{margin-left:0;width:100%;text-align:center}.grid{grid-template-columns:1fr}}
+    @media print{body{background:#fff}.wrap{width:100%;margin:0}.no-print,.login,#status{display:none!important}.card{box-shadow:none;padding:0}.fecha-grupo{page-break-inside:avoid}.producto{box-shadow:none}.fecha-titulo{color:#000;border-color:#000}h1{font-size:25px}.sub{margin-bottom:18px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section id="login" class="card login">
+      <h2>Iniciar sesión</h2>
+      <input id="email" type="email" placeholder="Email">
+      <input id="pass" type="password" placeholder="Contraseña">
+      <button onclick="entrar()">Entrar</button>
+      <div id="loginError"></div>
+    </section>
+
+    <main id="app" class="hidden">
+      <section class="card">
+        <h1>✨ Novedades de stock</h1>
+        <p class="sub">Productos incorporados al stock real desde “Próximo”.</p>
+        <div id="status" class="status ok"></div>
+      </section>
+      <section class="card no-print">
+        <div class="toolbar">
+          <button class="sec" onclick="volverInicio()">← Volver</button>
+          <div class="campo"><label>Desde</label><input id="desde" type="date" onchange="render()"></div>
+          <div class="campo"><label>Hasta</label><input id="hasta" type="date" onchange="render()"></div>
+          <button class="sec" onclick="hoy()">Hoy</button>
+          <button class="sec" onclick="ultimos(7)">7 días</button>
+          <button class="sec" onclick="limpiar()">Todas</button>
+          <button class="verde" onclick="window.print()">🖨️ Imprimir</button>
+          <div id="resumen" class="resumen">0 productos · 0 unidades</div>
+        </div>
+      </section>
+      <section class="card"><div id="contenido"></div></section>
+    </main>
+  </div>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import {getDatabase,ref,onValue} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+const firebaseConfig={apiKey:'AIzaSyBYKEUjEi8TDwJ79l1QU67BNAPn7QOsKV4',authDomain:'inventario-laura.firebaseapp.com',databaseURL:'https://inventario-laura-default-rtdb.europe-west1.firebasedatabase.app',projectId:'inventario-laura',storageBucket:'inventario-laura.firebasestorage.app',messagingSenderId:'778807935660',appId:'1:778807935660:web:947e223465f9347b17d509'};
+const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app);let datos=[];
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+window.entrar=async()=>{try{document.getElementById('loginError').textContent='';await signInWithEmailAndPassword(auth,email.value.trim(),pass.value)}catch(e){document.getElementById('loginError').innerHTML='<div class="status error">No se pudo iniciar sesión</div>'}};
+onAuthStateChanged(auth,user=>{login.classList.toggle('hidden',!!user);document.getElementById('app').classList.toggle('hidden',!user);if(user){status.textContent='Sesión: '+user.email;cargar()}});
+function cargar(){onValue(ref(db,'novedades'),snap=>{datos=[];snap.forEach(x=>datos.push({id:x.key,...x.val()}));datos.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));render()})}
+function fechaLocal(ts){const d=new Date(Number(ts)||Date.now());return d.toLocaleDateString('sv-SE')}
+window.render=()=>{const d=desde.value,h=hasta.value;const lista=datos.filter(n=>{const f=n.fechaDia||fechaLocal(n.timestamp);return(!d||f>=d)&&(!h||f<=h)});const grupos={};lista.forEach(n=>{const f=n.fechaDia||fechaLocal(n.timestamp);(grupos[f]??=[]).push(n)});resumen.textContent=`${lista.length} productos · ${lista.reduce((s,n)=>s+Number(n.cantidadAnadida||0),0)} unidades`;const claves=Object.keys(grupos).sort().reverse();contenido.innerHTML=claves.length?claves.map(f=>`<section class="fecha-grupo"><div class="fecha-titulo">📅 ${new Date(f+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</div><div class="grid">${grupos[f].map(n=>`<article class="producto">${n.imagen?`<img class="foto" src="${esc(n.imagen)}" alt="">`:`<div class="foto sin-foto">📦</div>`}<div><div class="nombre">${esc(n.productoNombre||'Producto')}</div><div class="dato"><span>Añadidos</span><strong class="anadido">+${Number(n.cantidadAnadida||0)}</strong></div><div class="dato"><span>Había</span><strong>${Number(n.stockAnterior||0)}</strong></div><div class="dato"><span>Stock total</span><strong>${Number(n.stockTotal||0)}</strong></div><div class="hora">${new Date(Number(n.timestamp)||Date.now()).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div></div></article>`).join('')}</div></section>`).join(''):'<div class="vacio">No hay novedades en las fechas seleccionadas.</div>'}
+window.volverInicio=()=>{ window.location.href='index.html'; };
+window.hoy=()=>{const f=new Date().toLocaleDateString('sv-SE');desde.value=f;hasta.value=f;render()};window.ultimos=dias=>{const h=new Date(),d=new Date();d.setDate(h.getDate()-(dias-1));desde.value=d.toLocaleDateString('sv-SE');hasta.value=h.toLocaleDateString('sv-SE');render()};window.limpiar=()=>{desde.value='';hasta.value='';render()};
+</script>
+</body></html>
