@@ -428,12 +428,13 @@
     };
 
     const ADMIN_EMAIL = 'nilose2014@gmail.com';
-    const USER_EMAILS = []; // Ya no se usa lista fija: cualquier cuenta autenticada es usuario registrado.
+    const USER_EMAILS = ['emiliahernandorivas84@gmail.com'];
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
     const productosRef = ref(db, 'productos');
+    const productosPublicosRef = ref(db, 'productos_publicos');
 
     let productos = {};
     let currentUser = null;
@@ -452,7 +453,7 @@
     function getRole(email = '') {
       const emailNormalizado = String(email || '').trim().toLowerCase();
       if (emailNormalizado === ADMIN_EMAIL) return 'admin';
-      if (emailNormalizado) return 'user';
+      if (USER_EMAILS.includes(emailNormalizado)) return 'user';
       return null;
     }
 
@@ -492,7 +493,15 @@
         productos = snap.val() || {};
         renderStock();
       }, (error) => {
-        setStatus('error', '✖ Error cargando stock: ' + escaparHtml(error.message));
+        console.warn('No se pudo leer productos; usando productos_publicos:', error);
+        onValue(productosPublicosRef, (snapPublico) => {
+          productos = snapPublico.val() || {};
+          renderStock();
+          setStatus(userRole === 'admin' ? 'admin' : 'user',
+            `${userRole === 'admin' ? '👑 <strong>ADMIN:</strong>' : '👤 <strong>USUARIO:</strong>'} ${escaparHtml(currentUser.email)}<br>Vista de stock activada.`);
+        }, (errorPublico) => {
+          setStatus('error', '✖ Error cargando stock: ' + escaparHtml(errorPublico.message));
+        });
       });
     }
 
