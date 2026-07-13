@@ -326,21 +326,6 @@
 <div id="toastContainer"></div>
 
 
-<div id="modalPreciosEmiliaObligatorio" class="modal-overlay modal-precios-obligatorio">
-  <div class="modal-box modal-precios-obligatorio-box">
-    <div class="modal-title">⚠️ Productos sin precio Emilia</div>
-    <div class="modal-message modal-precios-obligatorio-msg">
-      Hay productos con precio Bea pero sin precio Emilia. Debes completar todos los precios para continuar.
-    </div>
-    <div id="preciosEmiliaObligatorioCount" class="precios-laura-obligatorio-count">0 productos pendientes</div>
-    <div id="preciosEmiliaObligatorioLista" class="precios-laura-obligatorio-lista"></div>
-    <div class="modal-actions precios-laura-obligatorio-actions">
-      <button id="btnGuardarPreciosEmiliaObligatorio" class="green" onclick="guardarPreciosEmiliaObligatorio()">💾 Guardar y continuar</button>
-    </div>
-  </div>
-</div>
-
-
 <div id="appModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title" id="modalTitle">Modal</div>
@@ -2438,25 +2423,15 @@ function obtenerProductosSinPrecioEmilia() {
 }
 
 function refrescarEstadoBloqueoPreciosEmilia() {
-  const pendientes = obtenerProductosSinPrecioEmilia();
-  const modal = document.getElementById('modalPreciosEmiliaObligatorio');
+  // Aviso obligatorio desactivado: los productos sin precio Emilia no bloquean la aplicación.
+  document.body.classList.remove('bloqueo-precios-laura-activo');
   const mainApp = document.getElementById('mainApp');
-
- const debeBloquear = !!currentUser && userRole === 'user' && pendientes.length > 0;
-
-  document.body.classList.toggle('bloqueo-precios-laura-activo', debeBloquear);
-
-  if (modal) {
-    modal.classList.toggle('show', debeBloquear);
-    modal.style.display = debeBloquear ? 'flex' : 'none';
-  }
-
-  if (mainApp) {
-    mainApp.classList.toggle('precios-laura-bloqueado', debeBloquear);
-  }
+  if (mainApp) mainApp.classList.remove('precios-laura-bloqueado');
 }
 
 window.mostrarModalPreciosEmiliaObligatorio = () => {
+  refrescarEstadoBloqueoPreciosEmilia();
+  return; // Aviso de productos sin precio Emilia desactivado.
   const lista = document.getElementById('preciosEmiliaObligatorioLista');
   const count = document.getElementById('preciosEmiliaObligatorioCount');
   const pendientes = obtenerProductosSinPrecioEmilia();
