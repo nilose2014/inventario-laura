@@ -2284,11 +2284,11 @@ document.getElementById('userEmail').addEventListener('keydown', (e) => {
 });
 
 function checkUserRole() {
-  const esAdmin = currentUser && currentUser.email === 'nilose2014@gmail.com';
-  const esUsuarioRegistrado = currentUser && [
-    'djsubixj@gmail.com',
-    'xiomaralamasmala@gmail.com'
-  ].includes(currentUser.email);
+  const emailActual = String(currentUser?.email || '').trim().toLowerCase();
+  const esAdmin = emailActual === 'nilose2014@gmail.com';
+  // Toda cuenta que haya iniciado sesión correctamente en Firebase Auth
+  // se considera usuario registrado. Así no depende de una lista fija de correos.
+  const esUsuarioRegistrado = !!currentUser && !esAdmin;
 
   if (esAdmin) {
     userRole = 'admin';
@@ -3080,6 +3080,9 @@ window.modificarPrecioEmilia = (id) => {
 };
 
 window.modificarPrecioEmiliaGlobal = () => {
+  if (!currentUser || !['admin', 'user'].includes(userRole)) {
+    return showToast('✖ No tienes permiso para modificar el precio Emilia', 'error');
+  }
   openModal({
     title: '💷 Precio Emilia Global',
     fields: [

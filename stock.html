@@ -427,7 +427,7 @@
     };
 
     const ADMIN_EMAIL = 'nilose2014@gmail.com';
-    const USER_EMAILS = ['djsubixj@gmail.com', 'xiomaralamasmala@gmail.com'];
+    const USER_EMAILS = []; // Ya no se usa lista fija: cualquier cuenta autenticada es usuario registrado.
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -451,7 +451,7 @@
     function getRole(email = '') {
       const emailNormalizado = String(email || '').trim().toLowerCase();
       if (emailNormalizado === ADMIN_EMAIL) return 'admin';
-      if (USER_EMAILS.includes(emailNormalizado)) return 'user';
+      if (emailNormalizado) return 'user';
       return null;
     }
 
