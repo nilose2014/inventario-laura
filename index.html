@@ -3062,22 +3062,54 @@ window.modificarPrecioEmiliaGlobal = () => {
   openModal({
     title: '💷 Precio Emilia Global',
     fields: [
-      { name: 'precio', label: 'Nuevo precio Emilia para TODOS', type: 'number', value: 0, min: 0, step: '0.01' }
+      { name: 'porcentaje', label: 'Porcentaje sobre el precio Bea (%)', type: 'number', value: 0, min: 0, step: '0.01' }
     ],
     onConfirm: async (values) => {
-      const precio = Math.max(0, Number(values.precio));
-      if (isNaN(precio)) return showToast('✖ Precio inválido', 'error');
-      const updates = {};
-      Object.entries(productos).forEach(([id]) => {
-        updates[`productos/${id}/laura`] = precio;
-      });
-      await update(ref(db), updates);
-      for (const [id, p] of Object.entries(productos)) {
-        productos[id].laura = precio;
-        try { await syncProductoPublico(id, productos[id]); } catch (e) { console.warn('No se pudo sincronizar el catálogo público:', e); }
-        try { await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email); } catch (e) { console.warn('No se pudo guardar el log:', e); }
+      const porcentaje = Number(values.porcentaje);
+      if (!Number.isFinite(porcentaje) || porcentaje < 0) {
+        return showToast('✖ Porcentaje inválido', 'error');
       }
-      showToast(`✅ Emilia GLOBAL: €${precio.toFixed(2)}`, 'success');
+
+      const updates = {};
+      const productosActualizados = [];
+      let sinPrecioBea = 0;
+
+      Object.entries(productos).forEach(([id, producto]) => {
+        const precioBea = Number(producto.bea);
+        if (!Number.isFinite(precioBea) || precioBea <= 0) {
+          sinPrecioBea++;
+          return;
+        }
+
+        const precioEmilia = Math.round((precioBea * (1 + porcentaje / 100) + Number.EPSILON) * 100) / 100;
+        updates[`productos/${id}/laura`] = precioEmilia;
+        productosActualizados.push({ id, producto, precioEmilia });
+      });
+
+      if (!productosActualizados.length) {
+        return showToast('✖ No hay productos con precio Bea válido', 'error');
+      }
+
+      await update(ref(db), updates);
+
+      for (const { id, producto, precioEmilia } of productosActualizados) {
+        productos[id].laura = precioEmilia;
+        try { await syncProductoPublico(id, productos[id]); } catch (e) { console.warn('No se pudo sincronizar el catálogo público:', e); }
+        try {
+          await guardarLog(
+            'precio-laura-global',
+            id,
+            producto.nombre,
+            precioEmilia,
+            currentUser.email,
+            `Precio Bea: €${Number(producto.bea).toFixed(2)} · Porcentaje: ${porcentaje}%`
+          );
+        } catch (e) { console.warn('No se pudo guardar el log:', e); }
+      }
+
+      programarRender();
+      const omitidos = sinPrecioBea ? ` · ${sinPrecioBea} sin precio Bea no modificados` : '';
+      showToast(`✅ Precio Emilia calculado con un ${porcentaje}% sobre Bea${omitidos}`, 'success');
     }
   });
 };
