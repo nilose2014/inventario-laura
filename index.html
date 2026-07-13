@@ -2542,7 +2542,6 @@ window.guardarPreciosEmiliaObligatorio = async () => {
     }
 
     updates[`productos/${id}/laura`] = valor;
-    updates[`productos_publicos/${id}/laura`] = valor;
   }
 
   if (hayErrores) {
@@ -2558,12 +2557,26 @@ window.guardarPreciosEmiliaObligatorio = async () => {
   }
 
   try {
+    // Primero guardamos únicamente en /productos, donde los usuarios registrados
+    // tienen permiso. La sincronización pública y los logs son secundarios y no
+    // deben impedir que el precio quede guardado.
     await update(ref(db), updates);
 
     for (const [id] of pendientes) {
       const nuevoPrecio = Number(updates[`productos/${id}/laura`]);
       if (productos[id]) productos[id].laura = nuevoPrecio;
-      await guardarLog('precio-laura', id, productos[id]?.nombre || '', nuevoPrecio, currentUser?.email || '', 'Precio Emilia completado desde aviso obligatorio');
+
+      try {
+        await syncProductoPublico(id, productos[id]);
+      } catch (syncError) {
+        console.warn('Precio guardado, pero no se pudo sincronizar productos_publicos:', syncError);
+      }
+
+      try {
+        await guardarLog('precio-laura', id, productos[id]?.nombre || '', nuevoPrecio, currentUser?.email || '', 'Precio Emilia completado desde aviso obligatorio');
+      } catch (logError) {
+        console.warn('Precio guardado, pero no se pudo guardar el log:', logError);
+      }
     }
 
     showToast('✅ Precios Emilia guardados', 'success');
@@ -3057,8 +3070,8 @@ window.modificarPrecioEmilia = (id) => {
       if (isNaN(precio)) return showToast('✖ Precio inválido', 'error');
       await update(ref(db,'productos/'+id), { laura:precio });
       productos[id].laura = precio;
-      await syncProductoPublico(id, productos[id]);
-      await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+      try { await syncProductoPublico(id, productos[id]); } catch (e) { console.warn('No se pudo sincronizar el catálogo público:', e); }
+      try { await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email); } catch (e) { console.warn('No se pudo guardar el log:', e); }
       showToast(`✅ Emilia: €${precio.toFixed(2)}`, 'success');
       refrescarFichaProductoSiAbierta();
       programarRender();
@@ -3078,12 +3091,12 @@ window.modificarPrecioEmiliaGlobal = () => {
       const updates = {};
       Object.entries(productos).forEach(([id]) => {
         updates[`productos/${id}/laura`] = precio;
-        updates[`productos_publicos/${id}/laura`] = precio;
       });
       await update(ref(db), updates);
       for (const [id, p] of Object.entries(productos)) {
         productos[id].laura = precio;
-        await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email);
+        try { await syncProductoPublico(id, productos[id]); } catch (e) { console.warn('No se pudo sincronizar el catálogo público:', e); }
+        try { await guardarLog('precio-laura-global', id, p.nombre, precio, currentUser.email); } catch (e) { console.warn('No se pudo guardar el log:', e); }
       }
       showToast(`✅ Emilia GLOBAL: €${precio.toFixed(2)}`, 'success');
     }
@@ -3380,8 +3393,8 @@ window.modificarPrecioEmiliaDesdeFicha = () => {
         await update(ref(db, 'productos/' + id), { laura: precio });
         productos[id].laura = precio;
 
-        await syncProductoPublico(id, productos[id]);
-        await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email);
+        try { await syncProductoPublico(id, productos[id]); } catch (e) { console.warn('No se pudo sincronizar el catálogo público:', e); }
+        try { await guardarLog('precio-laura', id, productos[id].nombre, precio, currentUser.email); } catch (e) { console.warn('No se pudo guardar el log:', e); }
 
         document.getElementById('productoModalEmilia').textContent = precio.toFixed(2);
         programarRender();
