@@ -11,7 +11,9 @@
   body:not(.es-admin) .nav-admin-only,
   body:not(.es-admin) #btnGestionOcultosTop,
   body:not(.es-admin) #ocultosIndexSection,
-  body:not(.es-admin) #btnResetStockTotal {
+  body:not(.es-admin) #btnResetStockTotal,
+  body:not(.es-admin) #btnBorrarPreciosEmilia,
+  body:not(.es-admin) #btnBorrarPreciosEmiliaTop {
     display: none !important;
   }
 </style>
@@ -163,7 +165,7 @@
         <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
         <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
         <button onclick="modificarPrecioEmiliaGlobal()" id="precioGlobalBtnTop">💷 Precio Emilia global</button>
-        <button class="red nav-admin-only" onclick="borrarTodosPreciosEmilia()" id="btnBorrarPreciosEmiliaTop" style="display:none" title="Pone a 0 todos los precios Emilia">🗑️ Borrar todos los precios Emilia</button>
+        <button class="red nav-admin-only" onclick="borrarTodosPreciosEmilia()" id="btnBorrarPreciosEmiliaTop" hidden style="display:none" title="Pone a 0 todos los precios Emilia">🗑️ Borrar todos los precios Emilia</button>
 
         <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
           📳 Ver estadísticas
@@ -290,7 +292,7 @@
       <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🧹 Reset completo</button>
       <button class="red nav-admin-only" onclick="resetearTodoStock()" id="btnResetStockTotal" style="display:none" title="Pone el stock real de todos los productos a 0">📦 Resetear todo el stock a 0</button>
       <button onclick="modificarPrecioEmiliaGlobal()" id="precioGlobalBtn">💷 Precio Emilia global</button>
-      <button class="red nav-admin-only" onclick="borrarTodosPreciosEmilia()" id="btnBorrarPreciosEmilia" style="display:none" title="Pone a 0 todos los precios Emilia">🗑️ Borrar todos los precios Emilia</button>
+      <button class="red nav-admin-only" onclick="borrarTodosPreciosEmilia()" id="btnBorrarPreciosEmilia" hidden style="display:none" title="Pone a 0 todos los precios Emilia">🗑️ Borrar todos los precios Emilia</button>
       <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📳 Ver estadísticas</button>
       <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
       <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
@@ -2330,7 +2332,23 @@ function updateUI() {
 
   // Los controles de ocultos y de reseteo de stock son exclusivamente del ADMIN.
   document.querySelectorAll('.nav-admin-only').forEach((elemento) => {
-    elemento.style.display = userRole === 'admin' ? '' : 'none';
+    const permitido = userRole === 'admin';
+    elemento.hidden = !permitido;
+    if (permitido) {
+      elemento.style.removeProperty('display');
+    } else {
+      elemento.style.setProperty('display', 'none', 'important');
+    }
+  });
+
+  // Seguridad adicional: estos dos botones jamás se muestran a usuarios normales.
+  ['btnBorrarPreciosEmilia', 'btnBorrarPreciosEmiliaTop'].forEach((id) => {
+    const boton = document.getElementById(id);
+    if (!boton) return;
+    const permitido = userRole === 'admin';
+    boton.hidden = !permitido;
+    if (permitido) boton.style.removeProperty('display');
+    else boton.style.setProperty('display', 'none', 'important');
   });
 
   const status = document.getElementById('status');
