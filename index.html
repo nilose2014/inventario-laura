@@ -162,6 +162,8 @@
         <button onclick="abrirCatalogo()" class="catalogo-btn">📉 Abrir catálogo</button>
         <button onclick="descargarCatalogo()" class="catalogo-download-btn">⬇️ Descargar catálogo</button>
         <button onclick="descargarTodosLosQR()" class="zip-btn">⬇️ Descargar todos los QR</button>
+        <button onclick="modificarPrecioEmiliaGlobal()" id="precioGlobalBtnTop">💷 Precio Emilia global</button>
+        <button class="red nav-admin-only" onclick="borrarTodosPreciosEmilia()" id="btnBorrarPreciosEmiliaTop" style="display:none" title="Pone a 0 todos los precios Emilia">🗑️ Borrar todos los precios Emilia</button>
 
         <button id="btnEstadisticasTop" onclick="irEstadisticas()" style="display:none">
           📳 Ver estadísticas
@@ -288,6 +290,7 @@
       <button class="red" onclick="resetear()" id="resetBtn" title="Resetea ventas, vendidos, reservados y totales">🧹 Reset completo</button>
       <button class="red nav-admin-only" onclick="resetearTodoStock()" id="btnResetStockTotal" style="display:none" title="Pone el stock real de todos los productos a 0">📦 Resetear todo el stock a 0</button>
       <button onclick="modificarPrecioEmiliaGlobal()" id="precioGlobalBtn">💷 Precio Emilia global</button>
+      <button class="red nav-admin-only" onclick="borrarTodosPreciosEmilia()" id="btnBorrarPreciosEmilia" style="display:none" title="Pone a 0 todos los precios Emilia">🗑️ Borrar todos los precios Emilia</button>
       <button id="btnEstadisticas" onclick="irEstadisticas()" style="display:none">📳 Ver estadísticas</button>
       <button id="btnLogs" onclick="irLogs()" class="log-btn" style="display:none">📋 Ver logs</button>
       <button onclick="abrirScannerMovil()" class="scanner-btn">📲 Escanear producto</button>
@@ -2333,7 +2336,10 @@ function updateUI() {
   const status = document.getElementById('status');
   const guardarBtn = document.getElementById('guardarBtn');
   const resetBtn = document.getElementById('resetBtn');
-  const precioGlobalBtn = document.getElementById('precioGlobalBtn');
+  const precioGlobalBtns = [
+    document.getElementById('precioGlobalBtn'),
+    document.getElementById('precioGlobalBtnTop')
+  ].filter(Boolean);
   const thAcciones = document.getElementById('thAcciones');
 
   if (userRole === 'admin') {
@@ -2344,7 +2350,7 @@ function updateUI() {
     guardarBtn.className = '';
     resetBtn.disabled = false;
     resetBtn.className = 'red';
-    precioGlobalBtn.disabled = false;
+    precioGlobalBtns.forEach((boton) => { boton.disabled = false; boton.className = ''; });
   } else {
     if (thAcciones) thAcciones.style.display = 'none';
     status.innerHTML = `👤 <strong>USUARIO:</strong> ${currentUser.email}<br>Solo ventas + precio Emilia + corregir ventas + subir fotos`;
@@ -2353,8 +2359,7 @@ function updateUI() {
     guardarBtn.className = 'disabled';
     resetBtn.disabled = true;
     resetBtn.className = 'disabled';
-    precioGlobalBtn.disabled = false;
-    precioGlobalBtn.className = '';
+    precioGlobalBtns.forEach((boton) => { boton.disabled = false; boton.className = ''; });
   }
 }
 
@@ -3112,6 +3117,58 @@ window.modificarPrecioEmiliaGlobal = () => {
       showToast(`✅ Precio Emilia calculado con un ${porcentaje}% sobre Bea${omitidos}`, 'success');
     }
   });
+};
+
+window.borrarTodosPreciosEmilia = async () => {
+  if (!currentUser || userRole !== 'admin') {
+    return showToast('✖ Solo el ADMIN puede borrar todos los precios Emilia', 'error');
+  }
+
+  const cantidadConPrecio = Object.values(productos || {}).filter((producto) => Number(producto?.laura || 0) > 0).length;
+  if (!cantidadConPrecio) {
+    return showToast('ℹ️ No hay precios Emilia para borrar', 'info');
+  }
+
+  const confirmado = confirm(
+    `⚠️ Vas a borrar el precio Emilia de ${cantidadConPrecio} producto(s).\n\n` +
+    'Todos los precios Emilia quedarán a 0 €. Esta acción no se puede deshacer.\n\n¿Quieres continuar?'
+  );
+  if (!confirmado) return;
+
+  try {
+    const updates = {};
+    Object.entries(productos || {}).forEach(([id, producto]) => {
+      updates[`productos/${id}/laura`] = 0;
+      updates[`productos_publicos/${id}/laura`] = 0;
+      updates[`productos_publicos/${id}/emilia`] = 0;
+    });
+
+    await update(ref(db), updates);
+
+    Object.values(productos || {}).forEach((producto) => {
+      producto.laura = 0;
+    });
+
+    try {
+      await guardarLog(
+        'precios-emilia-borrados',
+        null,
+        'TODOS LOS PRODUCTOS',
+        cantidadConPrecio,
+        currentUser.email,
+        `Se borraron los precios Emilia de ${cantidadConPrecio} producto(s)`
+      );
+    } catch (e) {
+      console.warn('No se pudo guardar el log del borrado global:', e);
+    }
+
+    programarRender();
+    refrescarFichaProductoSiAbierta();
+    showToast(`✅ Se han borrado ${cantidadConPrecio} precios Emilia`, 'success', 4000);
+  } catch (error) {
+    console.error('Error borrando precios Emilia:', error);
+    showToast('✖ No se pudieron borrar todos los precios Emilia', 'error', 4000);
+  }
 };
 
 window.editar = (id) => {
