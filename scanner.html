@@ -1068,7 +1068,21 @@ function renderImagenPrivada(url){
       let color=0;
       for(let i=0;i<a.hist.length;i++) color+=a.hist[i]*b.hist[i];
       // Estructura pesa más que color para evitar falsos positivos por fondos.
-      return dot*0.78 + color*0.22;
+      return dot*0.88 + color*0.12;
+    }
+
+    function recortarCentro(img, factor=0.72){
+      const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      const side=Math.min(w,h)*factor;
+      const sx=(w-side)/2, sy=(h-side)/2;
+      const c=document.createElement('canvas');
+      c.width=Math.max(64,Math.round(side)); c.height=c.width;
+      c.getContext('2d').drawImage(img,sx,sy,side,side,0,0,c.width,c.height);
+      return c;
+    }
+
+    function variantesConsulta(img){
+      return [img, recortarCentro(img,0.82), recortarCentro(img,0.62)];
     }
 
     async function cargarModeloVision() {
@@ -1153,16 +1167,21 @@ function renderImagenPrivada(url){
       candidatos.sort((a,b)=>b.quick-a.quick);
       if(!candidatos.length) return {mejor:null,comparaciones:0,ms:Math.round(performance.now()-inicio)};
 
-      // Solo las 6 mejores referencias pasan por MobileNet. Esto reduce muchísimo el tiempo.
-      const top=candidatos.slice(0,6);
+      // Analizamos más candidatos para no descartar el producto correcto por el fondo.
+      const top=candidatos.slice(0,20);
       let mejor=null;
-      const consultaEmb=await embeddingDesdeImagen(consultaImg);
+      const consultaEmbs=[];
+      for(const variante of variantesConsulta(consultaImg)){
+        consultaEmbs.push(await embeddingDesdeImagen(variante));
+      }
       for(const c of top){
         try{
           const emb=await embeddingDesdeImagen(c.ref.img);
-          const deep=similitudCoseno(consultaEmb,emb);
-          // Mezclamos apariencia rápida + características profundas.
-          const score=c.quick*0.42 + deep*0.58;
+          let deep=0;
+          for(const q of consultaEmbs){
+            deep=Math.max(deep,similitudCoseno(q,emb));
+          }
+          const score=c.quick*0.30 + deep*0.70;
           if(!mejor || score>mejor.score) mejor={producto:c.producto,score,quick:c.quick,deep};
         }catch(e){ console.warn('No se pudo comparar referencia',c.url,e); }
       }
@@ -1191,7 +1210,7 @@ function renderImagenPrivada(url){
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
         // Umbral más realista para esta combinación de similitudes.
-        if(mejor.score<0.58){
+        if(mejor.score<0.52){
           ocultarFichas();
           setStatus('scanStatus',`No encuentro una coincidencia fiable (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
