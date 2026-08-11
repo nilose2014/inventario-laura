@@ -1193,11 +1193,122 @@ function renderImagenPrivada(url){
       return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
     }
 
+    // Reconocimiento visual: abre la cámara REAL en un visor y permite tomar la foto.
+    let camaraReconocimientoStream = null;
+
+    window.cerrarCamaraReconocimiento = () => {
+      try {
+        if (camaraReconocimientoStream) {
+          camaraReconocimientoStream.getTracks().forEach(t => t.stop());
+          camaraReconocimientoStream = null;
+        }
+      } catch {}
+      const modal = document.getElementById('camaraReconocimientoModal');
+      if (modal) modal.remove();
+    };
+
     window.abrirSelectorFotoProducto = async () => {
       await detenerEscaner();
-      const input=document.getElementById('fotoProductoInput');
-      if(!input)return;
-      input.value=''; input.click();
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        // Fallback para dispositivos/navegadores que no permiten cámara web.
+        const input=document.getElementById('fotoProductoInput');
+        if (input) { input.value=''; input.click(); }
+        return;
+      }
+
+      cerrarCamaraReconocimiento();
+
+      const modal = document.createElement('div');
+      modal.id = 'camaraReconocimientoModal';
+      modal.style.cssText = `
+        position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.94);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        padding:16px;box-sizing:border-box;
+      `;
+      modal.innerHTML = `
+        <div style="width:min(680px,100%);display:flex;justify-content:space-between;align-items:center;color:white;margin-bottom:10px">
+          <strong style="font-size:18px">📷 Reconocer producto</strong>
+          <button type="button" id="cerrarCamaraReconocimiento" style="font-size:16px;padding:8px 12px">✕</button>
+        </div>
+        <video id="videoReconocimientoProducto" autoplay playsinline muted
+          style="width:min(680px,100%);max-height:68vh;object-fit:cover;border-radius:14px;background:#111"></video>
+        <canvas id="canvasReconocimientoProducto" style="display:none"></canvas>
+        <p id="estadoCamaraReconocimiento" style="color:white;text-align:center;margin:12px 0">
+          Solicitar permiso de cámara…
+        </p>
+        <button type="button" id="capturarReconocimientoProducto" class="green"
+          style="font-size:18px;padding:13px 24px;border-radius:12px">
+          📸 Tomar foto y reconocer
+        </button>
+      `;
+      document.body.appendChild(modal);
+
+      document.getElementById('cerrarCamaraReconocimiento').onclick = cerrarCamaraReconocimiento;
+
+      const video = document.getElementById('videoReconocimientoProducto');
+      const estado = document.getElementById('estadoCamaraReconocimiento');
+      const boton = document.getElementById('capturarReconocimientoProducto');
+
+      try {
+        camaraReconocimientoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        video.srcObject = camaraReconocimientoStream;
+        await video.play();
+        estado.textContent = 'Cámara activa. Enfoca el producto y pulsa «Tomar foto y reconocer».';
+      } catch (e) {
+        console.error('Error abriendo cámara de reconocimiento:', e);
+        estado.textContent = 'No se pudo abrir la cámara. Comprueba el permiso y que la web use HTTPS.';
+        boton.disabled = true;
+      }
+
+      boton.onclick = async () => {
+        if (!video.videoWidth || !video.videoHeight) return;
+        boton.disabled = true;
+        estado.textContent = '📸 Capturando y analizando…';
+
+        const canvas = document.getElementById('canvasReconocimientoProducto');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            boton.disabled = false;
+            estado.textContent = 'No se pudo capturar la imagen.';
+            return;
+          }
+          const file = new File([blob], 'foto-producto.jpg', { type: 'image/jpeg' });
+          cerrarCamaraReconocimiento();
+
+          document.getElementById('scanCard').classList.remove('hidden');
+          setStatus('scanStatus','📥 Analizando la foto del producto…','info');
+          try {
+            const {mejor,comparaciones,ms}=await reconocerProductoPorImagen(file);
+            if(!mejor){
+              ocultarFichas();
+              setStatus('scanStatus','No pude cargar las fotos de referencia de Firebase. Comprueba que las imágenes del inventario sean accesibles.','error');
+              return;
+            }
+            const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
+            if(mejor.score<0.58){
+              ocultarFichas();
+              setStatus('scanStatus',`No encuentro una coincidencia fiable (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
+              return;
+            }
+            await pintarProducto(mejor.producto,'foto');
+            document.getElementById('scanCard').classList.add('hidden');
+            setStatus('scanStatus',`✅ ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} foto(s) revisadas · ${ms/1000}s`,'success');
+          } catch(e) {
+            console.error('Error reconocimiento visual',e);
+            ocultarFichas();
+            setStatus('scanStatus',`No pude reconocer la foto. ${e?.message||'Comprueba la conexión.'}`,'error');
+          }
+        }, 'image/jpeg', 0.9);
+      };
     };
 
     window.procesarFotoProductoSeleccionada = async (event) => {
