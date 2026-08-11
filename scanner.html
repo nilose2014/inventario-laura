@@ -1221,38 +1221,82 @@ async function cargarModeloVision() {
       candidatos.sort((a,b)=>b.quick-a.quick);
       if(!candidatos.length) return {mejor:null,comparaciones:0,ms:Math.round(performance.now()-inicio)};
 
-      // CLIP: primero filtramos con la comparación rápida y después comparamos
-      // visualmente los mejores candidatos con embeddings semánticos de imagen.
-      const top=candidatos.slice(0,12);
-      let mejor=null;
-      const consultaVariantes=variantesImagen(consultaImg);
-      const consultaEmbs=[];
-      for(const v of consultaVariantes){
-        consultaEmbs.push(await embeddingCLIP(v));
+      // Identificación conservadora por producto.
+      // Todas las fotos del mismo producto compiten como un único candidato.
+      const top=candidatos.slice(0,24);
+      const grupos=new Map();
+      for(const c of top){
+        const id=String(c.producto.id);
+        if(!grupos.has(id)) grupos.set(id,[]);
+        grupos.get(id).push(c);
       }
 
-      for(const c of top){
-        try{
-          const refVariants=variantesImagen(c.ref.img);
-          let clipScore=0;
-          for(const q of consultaEmbs){
-            for(const r of refVariants){
-              clipScore=Math.max(clipScore,similitudCLIP(q,await embeddingCLIP(r)));
+      const consultaVariantes=variantesImagen(consultaImg);
+      const consultaEmbs=[];
+      for(const q of consultaVariantes) consultaEmbs.push(await embeddingCLIP(q));
+
+      const candidatosProducto=[];
+      for(const [id, refs] of grupos){
+        const scores=[];
+        for(const c of refs){
+          try{
+            const refVars=variantesImagen(c.ref.img);
+            let best=0;
+            for(const q of consultaEmbs){
+              for(const r of refVars){
+                const qe=await embeddingCLIP(q);
+                const re=await embeddingCLIP(r);
+                best=Math.max(best,similitudCLIP(qe,re));
+              }
             }
-          }
-          // CLIP es la señal principal; la firma rápida solo desempata.
-          const score=clipScore*0.88 + c.quick*0.12;
-          if(!mejor || score>mejor.score){
-            mejor={
-              producto:c.producto,
-              score,
-              clip:clipScore,
-              quick:c.quick,
-              referencias:1
-            };
-          }
-        }catch(e){
-          console.warn('No se pudo comparar referencia con CLIP',c.url,e);
+            scores.push({score:best,ref:c});
+          }catch(e){ console.warn('Referencia no disponible',c.url,e); }
+        }
+        if(!scores.length) continue;
+        scores.sort((a,b)=>b.score-a.score);
+
+        // Una referencia fuerte + una segunda referencia que confirme el producto.
+        const best=scores[0].score;
+        const second=scores[1]?.score ?? best;
+        const meanTop=Math.max(best*0.75 + second*0.25, best*0.82);
+        candidatosProducto.push({
+          producto:scores[0].ref.producto,
+          score:meanTop,
+          best,
+          second,
+          referencias:scores.length
+        });
+      }
+
+      candidatosProducto.sort((a,b)=>b.score-a.score);
+      const primero=candidatosProducto[0];
+      const segundo=candidatosProducto[1];
+
+      let mejor=null;
+      if(primero){
+        const margen=segundo ? primero.score-segundo.score : 1;
+        const absoluto=primero.score;
+        // No aceptar "el mejor de los malos": exigimos similitud absoluta
+        // y separación clara frente al segundo producto.
+        const fiable=absoluto>=0.60 && margen>=0.035 && primero.best>=0.64;
+        if(fiable){
+          mejor={
+            producto:primero.producto,
+            score:absoluto,
+            clip:primero.best,
+            second:primero.second,
+            margen,
+            referencias:primero.referencias
+          };
+        }else{
+          mejor={
+            producto:null,
+            score:absoluto,
+            clip:primero.best,
+            second:segundo?.score ?? 0,
+            margen,
+            candidato:primero.producto
+          };
         }
       }
 
@@ -1281,9 +1325,9 @@ async function cargarModeloVision() {
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
         // Umbral más realista para esta combinación de similitudes.
-        if(mejor.score<0.58 || (mejor.clip != null && mejor.clip < 0.55)){
+        if(!mejor || !mejor.producto){
           ocultarFichas();
-          setStatus('scanStatus',`No encuentro una coincidencia suficientemente clara (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
+          setStatus('scanStatus',`No encuentro una coincidencia suficientemente clara. No se muestra ningún producto para evitar una identificación incorrecta. (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
         }
         await pintarProducto(mejor.producto,'foto');
