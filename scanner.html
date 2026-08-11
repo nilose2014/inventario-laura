@@ -992,53 +992,23 @@ function renderImagenPrivada(url){
     async function resolverImagenFirebase(valor) {
       const src = String(valor || '').trim();
       if (!src) return '';
-      // La foto tomada y las URLs HTTP ya son imágenes utilizables directamente.
-      if (/^(https?:|blob:|data:image:)/i.test(src)) return src;
-      try {
-        return await getDownloadURL(storageRef(storage, src));
-      } catch (e) {
-        console.warn('No se pudo obtener URL de Storage:', src, e);
-        return '';
-      }
+      if (/^(https?:|blob:)/i.test(src) || src.startsWith('data:image/')) return src;
+      try { return await getDownloadURL(storageRef(storage, src)); }
+      catch (e) { console.warn('No se pudo resolver imagen Firebase:', src); return ''; }
     }
 
-    // Carga una imagen de Firebase como Blob. Esto permite diagnosticar claramente
-    // errores de CORS/permisos en vez de devolver un "no reconocida" genérico.
+    // Cargamos la imagen una sola vez y la reducimos antes de analizarla.
+    // Esto evita trabajar con fotos de varios MB y hace el reconocimiento mucho más rápido.
     async function cargarImagen(src) {
       const resolved = await resolverImagenFirebase(src);
-      if (!resolved) throw new Error('No se pudo obtener la URL de la imagen de Firebase');
-
-      if (/^blob:|^data:image:/i.test(resolved)) {
-        return cargarImagenDirecta(resolved);
-      }
-
-      try {
-        const response = await fetch(resolved, { mode: 'cors', credentials: 'omit' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const blob = await response.blob();
-        if (!blob.type.startsWith('image/')) throw new Error('El archivo no es una imagen');
-        const blobUrl = URL.createObjectURL(blob);
-        try {
-          return await cargarImagenDirecta(blobUrl);
-        } finally {
-          URL.revokeObjectURL(blobUrl);
-        }
-      } catch (e) {
-        const msg = String(e?.message || e);
-        if (/cors|failed to fetch|networkerror|network error/i.test(msg)) {
-          throw new Error('Firebase Storage bloquea la lectura de las imágenes (CORS).');
-        }
-        throw new Error(`No se pudo descargar la imagen de Firebase: ${msg}`);
-      }
-    }
-
-    function cargarImagenDirecta(src) {
+      if (!resolved) throw new Error('Imagen no disponible');
       return new Promise((resolve, reject) => {
         const img = new Image();
+        img.crossOrigin = 'anonymous';
         img.decoding = 'async';
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('No se pudo decodificar la imagen'));
-        img.src = src;
+        img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+        img.src = resolved;
       });
     }
 
@@ -1046,7 +1016,14 @@ function renderImagenPrivada(url){
       if (!file) throw new Error('No se recibió ninguna foto');
       const url = URL.createObjectURL(file);
       try {
-        return await cargarImagenDirecta(url);
+        const img = await new Promise((resolve, reject) => {
+          const image = new Image();
+          image.decoding = 'async';
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('No se pudo leer la foto tomada'));
+          image.src = url;
+        });
+        return img;
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -1100,7 +1077,7 @@ function renderImagenPrivada(url){
       visionModelPromise = (async () => {
         if (!window.tf || !window.mobilenet) throw new Error('No se cargó el reconocimiento visual.');
         await window.tf.ready();
-        return await window.mobilenet.load({ version: 2, alpha: 0.35 });
+        return await window.mobilenet.load({ version: 2, alpha: 0.50 });
       })();
       try { visionModel = await visionModelPromise; return visionModel; }
       catch(e){ visionModelPromise=null; throw e; }
@@ -1209,7 +1186,7 @@ function renderImagenPrivada(url){
         const {mejor,comparaciones,ms}=await reconocerProductoPorImagen(file);
         if(!mejor){
           ocultarFichas();
-          setStatus('scanStatus','No pude leer las fotos de referencia. Si aparece CORS, hay que configurar Firebase Storage para permitir lecturas desde esta aplicación.','error');
+          setStatus('scanStatus','No pude cargar las fotos de referencia de Firebase. Comprueba que las imágenes del inventario sean accesibles.','error');
           return;
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
