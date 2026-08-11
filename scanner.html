@@ -590,17 +590,43 @@
     </div>
 
     <div class="toolbar">
-      <button onclick="iniciarEscaner()">📷 Escanear producto</button>
+      <button onclick="iniciarEscaner()">📷 Escanear con cámara</button>
+      <button class="cyan" onclick="abrirSelectorFoto()">🖼️ Escanear QR desde foto</button>
+      <button class="green" onclick="abrirSelectorFotoProducto()">🔎 Reconocer producto por foto</button>
       <button class="gray" onclick="detenerEscaner()">⏹️ Parar cámara</button>
       <button class="cyan" onclick="buscarManual()">⌨️ Buscar manual</button>
     </div>
-    <p class="small">Si entras desde un QR con enlace, el producto se abrirá automáticamente.</p>
+
+    <input
+      id="fotoScanInput"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      class="hidden"
+      onchange="procesarFotoSeleccionada(event)"
+    >
+
+    <input
+      id="fotoProductoInput"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      class="hidden"
+      onchange="procesarFotoProductoSeleccionada(event)"
+    >
+
+    <p class="small">
+      Puedes escanear un QR o hacer una foto directamente al producto. El reconocimiento visual compara la imagen con las fotos de referencia guardadas en cada producto.
+    </p>
   </div>
 
   <div class="card hidden" id="scanCard">
     <div id="reader"></div>
-    <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto.</div>
+    <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto o selecciona una foto.</div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -627,6 +653,9 @@
     let scanner = null;
     let productoActual = null;
     let currentUser = null;
+    let visionModel = null;
+    let visionModelPromise = null;
+    const embeddingCache = new Map();
 
     function getQueryParam(name){
       const params = new URLSearchParams(window.location.search);
@@ -896,6 +925,206 @@ function renderImagenPrivada(url){
           scanner = null;
         }
       } catch {}
+    };
+
+    // Abre la cámara/galería del dispositivo para seleccionar o hacer una foto.
+    // Html5Qrcode analizará la imagen buscando el QR del producto.
+    window.abrirSelectorFoto = async () => {
+      await detenerEscaner();
+      const input = document.getElementById('fotoScanInput');
+      if (!input) return;
+      input.value = '';
+      input.click();
+    };
+
+    window.procesarFotoSeleccionada = async (event) => {
+      const input = event.target;
+      const file = input?.files?.[0];
+      if (!file) return;
+
+      document.getElementById('scanCard').classList.remove('hidden');
+      setStatus(
+        'scanStatus',
+        'Analizando la foto… busca un QR del producto.',
+        'info'
+      );
+
+      try {
+        await detenerEscaner();
+
+        if (!window.Html5Qrcode) {
+          setStatus('scanStatus', 'No se cargó la librería de escaneo.', 'error');
+          return;
+        }
+
+        // Creamos una instancia temporal para analizar la imagen.
+        const fotoScanner = new Html5Qrcode('reader');
+
+        try {
+          const decodedText = await fotoScanner.scanFile(file, true);
+          await fotoScanner.clear();
+
+          await procesarScan(decodedText);
+        } catch (e) {
+          try { await fotoScanner.clear(); } catch {}
+
+          ocultarFichas();
+          setStatus(
+            'scanStatus',
+            'No encontré ningún QR en la foto. Haz otra foto con el código completo, bien enfocado y con buena luz.',
+            'error'
+          );
+        }
+      } catch (e) {
+        console.error('Error analizando foto', e);
+        setStatus(
+          'scanStatus',
+          'No pude analizar la foto. Prueba con otra imagen.',
+          'error'
+        );
+      } finally {
+        input.value = '';
+      }
+    };
+
+    function cargarImagenParaVision(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('No se pudo cargar una imagen de referencia.'));
+        img.src = src;
+      });
+    }
+
+    async function cargarModeloVision() {
+      if (visionModel) return visionModel;
+      if (visionModelPromise) return visionModelPromise;
+      visionModelPromise = (async () => {
+        if (!window.tf || !window.mobilenet) throw new Error('No se cargó el motor de reconocimiento visual.');
+        await window.tf.ready();
+        visionModel = await window.mobilenet.load({ version: 2, alpha: 1.0 });
+        return visionModel;
+      })();
+      try { return await visionModelPromise; }
+      catch (e) { visionModelPromise = null; throw e; }
+    }
+
+    async function obtenerEmbeddingImagen(src, cacheKey = src) {
+      if (embeddingCache.has(cacheKey)) return embeddingCache.get(cacheKey);
+      const modelo = await cargarModeloVision();
+      const img = await cargarImagenParaVision(src);
+      const tensor = window.tf.browser.fromPixels(img);
+      const embeddingTensor = modelo.infer(tensor, true);
+      const datos = await embeddingTensor.data();
+      const vector = Array.from(datos);
+      tensor.dispose();
+      embeddingTensor.dispose();
+      let norma = 0;
+      for (const v of vector) norma += v * v;
+      norma = Math.sqrt(norma) || 1;
+      const normalizado = vector.map(v => v / norma);
+      embeddingCache.set(cacheKey, normalizado);
+      return normalizado;
+    }
+
+    function similitudCoseno(a, b) {
+      const n = Math.min(a.length, b.length);
+      let suma = 0;
+      for (let i = 0; i < n; i++) suma += a[i] * b[i];
+      return suma;
+    }
+
+    async function obtenerImagenDataUrl(file) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(String(e.target.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function referenciasDeProducto(p) {
+      const lista = Array.isArray(p?.imagenesReferencia) ? p.imagenesReferencia : [];
+      const todas = [...lista];
+      if (p?.imagen && !todas.includes(p.imagen)) todas.unshift(p.imagen);
+      return [...new Set(todas.filter(Boolean))];
+    }
+
+    async function obtenerProductosParaReconocimiento() {
+      const refProductos = tieneSesionValida(currentUser) ? productosRef : productosPublicosRef;
+      const snap = await get(refProductos);
+      const datos = snap.val() || {};
+      return Object.entries(datos).map(([id, p]) => ({ id, ...p })).filter(p => referenciasDeProducto(p).length);
+    }
+
+    async function reconocerProductoPorImagen(file) {
+      const dataUrl = await obtenerImagenDataUrl(file);
+      const consulta = await obtenerEmbeddingImagen(dataUrl, `consulta:${Date.now()}`);
+      const productos = await obtenerProductosParaReconocimiento();
+      let mejor = null;
+      let comparaciones = 0;
+
+      for (const p of productos) {
+        const referencias = referenciasDeProducto(p);
+        for (let i = 0; i < referencias.length; i++) {
+          try {
+            const embedding = await obtenerEmbeddingImagen(referencias[i], `ref:${p.id}:${i}:${referencias[i]}`);
+            const score = similitudCoseno(consulta, embedding);
+            comparaciones++;
+            if (!mejor || score > mejor.score) mejor = { producto: p, score };
+          } catch (e) {
+            console.warn('No se pudo analizar referencia visual:', p.nombre, e);
+          }
+        }
+      }
+      return { mejor, comparaciones };
+    }
+
+    window.abrirSelectorFotoProducto = async () => {
+      await detenerEscaner();
+      const input = document.getElementById('fotoProductoInput');
+      if (!input) return;
+      input.value = '';
+      input.click();
+    };
+
+    window.procesarFotoProductoSeleccionada = async (event) => {
+      const input = event.target;
+      const file = input?.files?.[0];
+      if (!file) return;
+      document.getElementById('scanCard').classList.remove('hidden');
+      setStatus('scanStatus', '🧠 Analizando el producto y comparándolo con el inventario…', 'info');
+      try {
+        const { mejor, comparaciones } = await reconocerProductoPorImagen(file);
+        if (!mejor) {
+          ocultarFichas();
+          setStatus('scanStatus', 'No hay fotos de referencia guardadas en los productos. Añade una foto a los productos del inventario.', 'error');
+          return;
+        }
+        const score = mejor.score;
+        const porcentaje = Math.max(0, Math.min(99, Math.round(score * 100)));
+        if (score < 0.55) {
+          ocultarFichas();
+          setStatus('scanStatus', `No encontré una coincidencia suficientemente fiable (${porcentaje}%). Prueba otra foto más frontal y con buena luz.`, 'error');
+          return;
+        }
+        await pintarProducto(mejor.producto, 'foto');
+        document.getElementById('scanCard').classList.add('hidden');
+        setStatus('scanStatus', `Producto reconocido: ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} referencia(s).`, 'success');
+        if (currentUser) {
+          try {
+            await guardarLog('reconocimiento-visual', mejor.producto.id, mejor.producto.nombre, 0, currentUser.email,
+              `Coincidencia: ${porcentaje}% · Referencias: ${comparaciones}`, { scoreVisual: score, porcentajeVisual: porcentaje });
+          } catch (e) { console.warn('No se pudo guardar el log de reconocimiento visual', e); }
+        }
+      } catch (e) {
+        console.error('Error en reconocimiento visual:', e);
+        ocultarFichas();
+        setStatus('scanStatus', `No pude reconocer la foto. ${e?.message || 'Comprueba la conexión y vuelve a intentarlo.'}`, 'error');
+      } finally {
+        input.value = '';
+      }
     };
 
  window.buscarManual = async () => {

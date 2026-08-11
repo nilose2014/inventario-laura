@@ -128,8 +128,14 @@
         </div>
 
         <div class="form-campo">
-          <label for="fotoProducto">Foto</label>
+          <label for="fotoProducto">Foto principal</label>
           <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*">
+        </div>
+
+        <div class="form-campo">
+          <label for="fotoReferenciasProducto">Fotos de referencia visual</label>
+          <input id="fotoReferenciasProducto" class="input-file-foto" type="file" accept="image/*" multiple>
+          <small style="display:block;margin-top:6px;color:#64748b;font-weight:600;line-height:1.35">Añade varias vistas del mismo producto para mejorar el reconocimiento por foto.</small>
         </div>
       </div>
 
@@ -563,6 +569,9 @@ function construirProductoPublico(producto) {
     laura: Number(producto?.laura || 0),
     stock: Number(producto?.stock || 0),
     imagen: producto?.imagen || '',
+    imagenesReferencia: Array.isArray(producto?.imagenesReferencia)
+      ? producto.imagenesReferencia.filter(Boolean)
+      : (producto?.imagen ? [producto.imagen] : []),
     historialNovedades: historialPublico
   };
 }
@@ -3008,13 +3017,31 @@ window.guardar = async () => {
   if (!nombre) return alert('✖ Nombre requerido');
 
   let imagenActual = editId ? (productos[editId]?.imagen || '') : '';
+  let imagenesReferencia = editId && Array.isArray(productos[editId]?.imagenesReferencia)
+    ? [...productos[editId].imagenesReferencia]
+    : [];
   const file = document.getElementById('fotoProducto').files[0];
+  const referenciaFiles = Array.from(document.getElementById('fotoReferenciasProducto')?.files || []);
 
   try {
     if (file) {
-      showToast('⌛ Comprimiendo y subiendo foto...', 'info', 3000);
+      showToast('⌛ Comprimiendo y subiendo foto principal...', 'info', 3000);
       imagenActual = await subirImagenProducto(file, nombre);
     }
+
+    if (file && imagenActual && !imagenesReferencia.includes(imagenActual)) {
+      imagenesReferencia.push(imagenActual);
+    }
+
+    if (referenciaFiles.length) {
+      showToast(`⌛ Subiendo ${referenciaFiles.length} foto(s) de referencia...`, 'info', 3500);
+      for (const referenciaFile of referenciaFiles) {
+        const referenciaUrl = await subirImagenProducto(referenciaFile, `${nombre}_referencia`);
+        if (referenciaUrl && !imagenesReferencia.includes(referenciaUrl)) imagenesReferencia.push(referenciaUrl);
+      }
+    }
+
+    if (!imagenesReferencia.length && imagenActual) imagenesReferencia = [imagenActual];
 
     const data = {
       nombre,
@@ -3023,6 +3050,7 @@ window.guardar = async () => {
       bea: Math.max(0, Number(document.getElementById('bea').value) || 0),
       laura: Math.max(0, Number(document.getElementById('laura').value) || 0),
       imagen: imagenActual,
+      imagenesReferencia,
       vendidos: editId ? Number(productos[editId]?.vendidos || 0) : 0,
       reservados: editId ? Number(productos[editId]?.reservados || 0) : 0,
       vBea: editId ? Number(productos[editId]?.vBea || 0) : 0,
@@ -3591,6 +3619,8 @@ function limpiarFormulario() {
   document.getElementById('bea').value = '';
   document.getElementById('laura').value = '';
   document.getElementById('fotoProducto').value = '';
+  const referenciasInput = document.getElementById('fotoReferenciasProducto');
+  if (referenciasInput) referenciasInput.value = '';
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 }
