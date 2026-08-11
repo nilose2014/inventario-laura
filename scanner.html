@@ -629,6 +629,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
 
   <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, get, update, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
@@ -1092,7 +1093,53 @@ function renderImagenPrivada(url){
       return out;
     }
 
-    async function cargarModeloVision() {
+    
+    // Reconocimiento visual con CLIP. Transformers.js permite ejecutar el modelo
+    // directamente en el navegador y obtener embeddings de imagen para similitud.
+    let clipExtractor=null;
+    let clipPromise=null;
+    const clipCache=new Map();
+
+    async function cargarModeloCLIP(){
+      if(clipExtractor) return clipExtractor;
+      if(clipPromise) return clipPromise;
+      clipPromise=(async()=>{
+        setStatus('scanStatus','🧠 Cargando modelo visual CLIP por primera vez…','info');
+        return await pipeline('image-feature-extraction','Xenova/clip-vit-base-patch32');
+      })();
+      try{ clipExtractor=await clipPromise; return clipExtractor; }
+      catch(e){ clipPromise=null; throw e; }
+    }
+
+    function imagenComoDataURL(img, size=224){
+      const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      const scale=Math.min(1, size/Math.max(w,h));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(w*scale));
+      c.height=Math.max(1,Math.round(h*scale));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      return c.toDataURL('image/jpeg',0.86);
+    }
+
+    async function embeddingCLIP(img){
+      const key=img.__clipKey || null;
+      if(key && clipCache.has(key)) return clipCache.get(key);
+      const extractor=await cargarModeloCLIP();
+      const dataURL=imagenComoDataURL(img,224);
+      const out=await extractor(dataURL,{pooling:'mean',normalize:true});
+      const arr=Array.from(out.data);
+      if(key) clipCache.set(key,arr);
+      return arr;
+    }
+
+    function similitudCLIP(a,b){
+      const n=Math.min(a.length,b.length);
+      let s=0;
+      for(let i=0;i<n;i++) s+=a[i]*b[i];
+      return s;
+    }
+
+async function cargarModeloVision() {
       if (visionModel) return visionModel;
       if (visionModelPromise) return visionModelPromise;
       visionModelPromise = (async () => {
@@ -1174,57 +1221,38 @@ function renderImagenPrivada(url){
       candidatos.sort((a,b)=>b.quick-a.quick);
       if(!candidatos.length) return {mejor:null,comparaciones:0,ms:Math.round(performance.now()-inicio)};
 
-      // Comparación robusta: agrupamos por producto y comparamos varias zonas
-      // tanto de la foto tomada como de cada foto de referencia.
-      const top=candidatos.slice(0,30);
+      // CLIP: primero filtramos con la comparación rápida y después comparamos
+      // visualmente los mejores candidatos con embeddings semánticos de imagen.
+      const top=candidatos.slice(0,12);
       let mejor=null;
-      const consultaEmbs=await embeddingsVariantes(consultaImg);
-
-      // Cacheamos los embeddings de cada referencia para no recalcularlos.
-      const embCache=new Map();
-      async function obtenerEmbeddingsReferencia(c){
-        if(embCache.has(c.url)) return embCache.get(c.url);
-        const p=embeddingsVariantes(c.ref.img);
-        embCache.set(c.url,p);
-        return p;
+      const consultaVariantes=variantesImagen(consultaImg);
+      const consultaEmbs=[];
+      for(const v of consultaVariantes){
+        consultaEmbs.push(await embeddingCLIP(v));
       }
 
-      const porProducto=new Map();
       for(const c of top){
-        if(!porProducto.has(c.producto.id)) porProducto.set(c.producto.id,[]);
-        porProducto.get(c.producto.id).push(c);
-      }
-
-      for(const [id, refs] of porProducto){
-        const scores=[];
-        for(const c of refs){
-          try{
-            const refEmbs=await obtenerEmbeddingsReferencia(c);
-            let deep=0;
-            for(const q of consultaEmbs){
-              for(const r of refEmbs){
-                deep=Math.max(deep,similitudCoseno(q,r));
-              }
+        try{
+          const refVariants=variantesImagen(c.ref.img);
+          let clipScore=0;
+          for(const q of consultaEmbs){
+            for(const r of refVariants){
+              clipScore=Math.max(clipScore,similitudCLIP(q,await embeddingCLIP(r)));
             }
-            scores.push({deep,quick:c.quick,ref:c});
-          }catch(e){ console.warn('No se pudo comparar referencia',c.url,e); }
-        }
-        if(!scores.length) continue;
-
-        scores.sort((a,b)=>b.deep-a.deep);
-        const best=scores[0];
-        const second=scores[1];
-        const support=second ? second.deep*0.12 : 0;
-        const score=best.deep*0.73 + best.quick*0.15 + support;
-
-        if(!mejor || score>mejor.score){
-          mejor={
-            producto:best.ref.producto,
-            score,
-            quick:best.quick,
-            deep:best.deep,
-            referencias:scores.length
-          };
+          }
+          // CLIP es la señal principal; la firma rápida solo desempata.
+          const score=clipScore*0.88 + c.quick*0.12;
+          if(!mejor || score>mejor.score){
+            mejor={
+              producto:c.producto,
+              score,
+              clip:clipScore,
+              quick:c.quick,
+              referencias:1
+            };
+          }
+        }catch(e){
+          console.warn('No se pudo comparar referencia con CLIP',c.url,e);
         }
       }
 
@@ -1253,7 +1281,7 @@ function renderImagenPrivada(url){
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
         // Umbral más realista para esta combinación de similitudes.
-        if(mejor.score<0.44 || (mejor.deep != null && mejor.deep < 0.32)){
+        if(mejor.score<0.58 || (mejor.clip != null && mejor.clip < 0.55)){
           ocultarFichas();
           setStatus('scanStatus',`No encuentro una coincidencia suficientemente clara (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
