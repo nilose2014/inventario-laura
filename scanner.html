@@ -1167,24 +1167,51 @@ function renderImagenPrivada(url){
       candidatos.sort((a,b)=>b.quick-a.quick);
       if(!candidatos.length) return {mejor:null,comparaciones:0,ms:Math.round(performance.now()-inicio)};
 
-      // Analizamos más candidatos para no descartar el producto correcto por el fondo.
-      const top=candidatos.slice(0,20);
+      // Analizamos más candidatos y agrupamos por producto: un producto puede tener varias fotos.
+      // MobileNet generalista no debe decidir por una sola referencia.
+      const top=candidatos.slice(0,30);
       let mejor=null;
       const consultaEmbs=[];
       for(const variante of variantesConsulta(consultaImg)){
         consultaEmbs.push(await embeddingDesdeImagen(variante));
       }
+
+      const porProducto=new Map();
       for(const c of top){
-        try{
-          const emb=await embeddingDesdeImagen(c.ref.img);
-          let deep=0;
-          for(const q of consultaEmbs){
-            deep=Math.max(deep,similitudCoseno(q,emb));
-          }
-          const score=c.quick*0.30 + deep*0.70;
-          if(!mejor || score>mejor.score) mejor={producto:c.producto,score,quick:c.quick,deep};
-        }catch(e){ console.warn('No se pudo comparar referencia',c.url,e); }
+        if(!porProducto.has(c.producto.id)) porProducto.set(c.producto.id,[]);
+        porProducto.get(c.producto.id).push(c);
       }
+
+      for(const [id, refs] of porProducto){
+        const scores=[];
+        for(const c of refs){
+          try{
+            const emb=await embeddingDesdeImagen(c.ref.img);
+            let deep=0;
+            for(const q of consultaEmbs) deep=Math.max(deep,similitudCoseno(q,emb));
+            scores.push({deep,quick:c.quick,ref:c});
+          }catch(e){ console.warn('No se pudo comparar referencia',c.url,e); }
+        }
+        if(!scores.length) continue;
+
+        scores.sort((a,b)=>b.deep-a.deep);
+        // Mejor referencia + apoyo de la segunda mejor cuando existe.
+        const best=scores[0];
+        const second=scores[1];
+        const support=second ? Math.max(0,second.deep)*0.15 : 0;
+        const score=best.deep*0.68 + best.quick*0.17 + support + (second ? second.quick*0.05 : 0);
+
+        if(!mejor || score>mejor.score){
+          mejor={
+            producto:best.ref.producto,
+            score,
+            quick:best.quick,
+            deep:best.deep,
+            referencias:scores.length
+          };
+        }
+      }
+
       return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
     }
 
@@ -1210,14 +1237,14 @@ function renderImagenPrivada(url){
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
         // Umbral más realista para esta combinación de similitudes.
-        if(mejor.score<0.52){
+        if(mejor.score<0.48 || (mejor.deep != null && mejor.deep < 0.35)){
           ocultarFichas();
           setStatus('scanStatus',`No encuentro una coincidencia fiable (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
         }
         await pintarProducto(mejor.producto,'foto');
         document.getElementById('scanCard').classList.add('hidden');
-        setStatus('scanStatus',`✅ ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} foto(s) revisadas · ${ms/1000}s`,'success');
+        setStatus('scanStatus',`✅ ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} foto(s) revisadas · ${mejor.referencias||1} referencia(s) del producto · ${ms/1000}s`,'success');
         if(currentUser){
           try{await guardarLog('reconocimiento-visual',mejor.producto.id,mejor.producto.nombre,0,currentUser.email,
             `Coincidencia: ${porcentaje}% · Fotos: ${comparaciones} · ${ms}ms`,{scoreVisual:mejor.score,porcentajeVisual:porcentaje});}
