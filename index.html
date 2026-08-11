@@ -914,8 +914,17 @@ window.subirFotoRapidaDesdeArchivo = async (id, file) => {
     const producto = productos[id];
     const imagenUrl = await subirImagenProducto(file, producto?.nombre || 'producto');
 
-    await update(ref(db, 'productos/' + id), { imagen: imagenUrl });
+    const referenciasActuales = Array.isArray(productos[id]?.imagenesReferencia)
+      ? [...productos[id].imagenesReferencia].filter(Boolean)
+      : [];
+    if (!referenciasActuales.includes(imagenUrl)) referenciasActuales.unshift(imagenUrl);
+
+    await update(ref(db, 'productos/' + id), {
+      imagen: imagenUrl,
+      imagenesReferencia: referenciasActuales
+    });
     productos[id].imagen = imagenUrl;
+    productos[id].imagenesReferencia = referenciasActuales;
 
     await syncProductoPublico(id, productos[id]);
     await guardarLog('foto-subida', id, producto?.nombre || '', 0, currentUser?.email || '', 'Foto actualizada');
@@ -965,11 +974,17 @@ window.borrarFotoProducto = async (id) => {
       danger: true,
       onConfirm: async () => {
         try {
+          const referenciasRestantes = Array.isArray(productos[id]?.imagenesReferencia)
+            ? productos[id].imagenesReferencia.filter(url => url && url !== p.imagen)
+            : [];
+
           await update(ref(db, 'productos/' + id), {
-            imagen: ''
+            imagen: '',
+            imagenesReferencia: referenciasRestantes
           });
 
           productos[id].imagen = '';
+          productos[id].imagenesReferencia = referenciasRestantes;
 
           await syncProductoPublico(id, productos[id]);
           await guardarLog('foto-borrada', id, p.nombre, 0, currentUser.email);

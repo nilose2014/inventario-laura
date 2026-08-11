@@ -1045,17 +1045,36 @@ function renderImagenPrivada(url){
     }
 
     function referenciasDeProducto(p) {
-      const lista = Array.isArray(p?.imagenesReferencia) ? p.imagenesReferencia : [];
-      const todas = [...lista];
-      if (p?.imagen && !todas.includes(p.imagen)) todas.unshift(p.imagen);
-      return [...new Set(todas.filter(Boolean))];
+      // Usamos TODAS las imágenes que ya existan en el inventario.
+      // La foto principal también cuenta como referencia aunque el producto
+      // se haya creado antes de añadir el reconocimiento visual.
+      const candidatas = [];
+      const anadir = valor => {
+        if (!valor) return;
+        if (Array.isArray(valor)) {
+          valor.forEach(anadir);
+          return;
+        }
+        if (typeof valor === 'string' && valor.trim()) candidatas.push(valor.trim());
+      };
+
+      anadir(p?.imagen);
+      anadir(p?.imagenesReferencia);
+      anadir(p?.imagenes);
+      anadir(p?.fotos);
+      anadir(p?.foto);
+      anadir(p?.image);
+      anadir(p?.photos);
+
+      return [...new Set(candidatas)];
     }
 
     async function obtenerProductosParaReconocimiento() {
       const refProductos = tieneSesionValida(currentUser) ? productosRef : productosPublicosRef;
       const snap = await get(refProductos);
       const datos = snap.val() || {};
-      return Object.entries(datos).map(([id, p]) => ({ id, ...p })).filter(p => referenciasDeProducto(p).length);
+      return Object.entries(datos).map(([id, p]) => ({ id, ...p }))
+        .filter(p => referenciasDeProducto(p).length);
     }
 
     async function reconocerProductoPorImagen(file) {
