@@ -992,183 +992,212 @@ function renderImagenPrivada(url){
     async function resolverImagenFirebase(valor) {
       const src = String(valor || '').trim();
       if (!src) return '';
-      // Las fotos actuales normalmente se guardan como URL de Firebase Storage.
-      // También admitimos rutas de Storage (por ejemplo: productos/foto.jpg)
-      // para que el reconocimiento funcione aunque el inventario tenga datos antiguos.
       if (/^https?:\/\//i.test(src) || src.startsWith('data:image/')) return src;
-      try {
-        return await getDownloadURL(storageRef(storage, src));
-      } catch (e) {
-        console.warn('No se pudo resolver la imagen de Firebase Storage:', src, e);
-        return '';
-      }
+      try { return await getDownloadURL(storageRef(storage, src)); }
+      catch (e) { console.warn('No se pudo resolver imagen Firebase:', src); return ''; }
     }
 
-    async function cargarImagenParaVision(src) {
-      const resolvedSrc = await resolverImagenFirebase(src);
-      if (!resolvedSrc) throw new Error('No se pudo obtener la foto desde Firebase Storage.');
+    // Cargamos la imagen una sola vez y la reducimos antes de analizarla.
+    // Esto evita trabajar con fotos de varios MB y hace el reconocimiento mucho más rápido.
+    async function cargarImagen(src) {
+      const resolved = await resolverImagenFirebase(src);
+      if (!resolved) throw new Error('Imagen no disponible');
       return new Promise((resolve, reject) => {
         const img = new Image();
-        // Necesario para que TensorFlow.js pueda leer imágenes alojadas en Firebase Storage.
         img.crossOrigin = 'anonymous';
+        img.decoding = 'async';
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('No se pudo cargar una imagen de referencia desde Firebase Storage.'));
-        img.src = resolvedSrc;
+        img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+        img.src = resolved;
       });
+    }
+
+    async function cargarImagenArchivo(file) {
+      const url = URL.createObjectURL(file);
+      try { return await cargarImagen(url); }
+      finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    }
+
+    function imagenEnCanvas(img, size = 48) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, size, size);
+      return { canvas, ctx, data: ctx.getImageData(0, 0, size, size).data };
+    }
+
+    // Firma visual muy barata: color + luminosidad + estructura.
+    // Se usa para descartar rápidamente casi todos los productos.
+    function firmaVisual(img) {
+      const { data } = imagenEnCanvas(img, 32);
+      const gray = new Float32Array(32 * 32);
+      const hist = new Float32Array(24);
+      let mean = 0;
+      for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+        const r=data[i]/255, g=data[i+1]/255, b=data[i+2]/255;
+        const y = 0.299*r + 0.587*g + 0.114*b;
+        gray[j] = y; mean += y;
+        hist[Math.min(7, Math.floor(r*8))] += 1;
+        hist[8+Math.min(7, Math.floor(g*8))] += 1;
+        hist[16+Math.min(7, Math.floor(b*8))] += 1;
+      }
+      mean /= gray.length;
+      let norm=0;
+      for(let i=0;i<gray.length;i++){ gray[i]-=mean; norm+=gray[i]*gray[i]; }
+      norm=Math.sqrt(norm)||1;
+      for(let i=0;i<gray.length;i++) gray[i]/=norm;
+      let hnorm=0; for(const x of hist) hnorm+=x*x; hnorm=Math.sqrt(hnorm)||1;
+      for(let i=0;i<hist.length;i++) hist[i]/=hnorm;
+      return { gray, hist };
+    }
+
+    function similitudRapida(a,b){
+      let dot=0;
+      for(let i=0;i<a.gray.length;i++) dot+=a.gray[i]*b.gray[i];
+      let color=0;
+      for(let i=0;i<a.hist.length;i++) color+=a.hist[i]*b.hist[i];
+      // Estructura pesa más que color para evitar falsos positivos por fondos.
+      return dot*0.78 + color*0.22;
     }
 
     async function cargarModeloVision() {
       if (visionModel) return visionModel;
       if (visionModelPromise) return visionModelPromise;
       visionModelPromise = (async () => {
-        if (!window.tf || !window.mobilenet) throw new Error('No se cargó el motor de reconocimiento visual.');
+        if (!window.tf || !window.mobilenet) throw new Error('No se cargó el reconocimiento visual.');
         await window.tf.ready();
-        visionModel = await window.mobilenet.load({ version: 2, alpha: 1.0 });
-        return visionModel;
+        return await window.mobilenet.load({ version: 2, alpha: 0.35 });
       })();
-      try { return await visionModelPromise; }
-      catch (e) { visionModelPromise = null; throw e; }
+      try { visionModel = await visionModelPromise; return visionModel; }
+      catch(e){ visionModelPromise=null; throw e; }
     }
 
-    async function obtenerEmbeddingImagen(src, cacheKey = src) {
-      if (embeddingCache.has(cacheKey)) return embeddingCache.get(cacheKey);
+    async function embeddingDesdeImagen(img) {
       const modelo = await cargarModeloVision();
-      const img = await cargarImagenParaVision(src);
-      const tensor = window.tf.browser.fromPixels(img);
-      const embeddingTensor = modelo.infer(tensor, true);
-      const datos = await embeddingTensor.data();
-      const vector = Array.from(datos);
-      tensor.dispose();
-      embeddingTensor.dispose();
-      let norma = 0;
-      for (const v of vector) norma += v * v;
-      norma = Math.sqrt(norma) || 1;
-      const normalizado = vector.map(v => v / norma);
-      embeddingCache.set(cacheKey, normalizado);
-      return normalizado;
+      const tensor = window.tf.tidy(() => window.tf.browser.fromPixels(img).resizeBilinear([224,224]));
+      const emb = modelo.infer(tensor, true);
+      const datos = await emb.data();
+      tensor.dispose(); emb.dispose();
+      let norma=0; for(const v of datos) norma+=v*v; norma=Math.sqrt(norma)||1;
+      return Array.from(datos, v=>v/norma);
     }
 
-    function similitudCoseno(a, b) {
-      const n = Math.min(a.length, b.length);
-      let suma = 0;
-      for (let i = 0; i < n; i++) suma += a[i] * b[i];
-      return suma;
-    }
-
-    async function obtenerImagenDataUrl(file) {
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(String(e.target.result || ''));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+    function similitudCoseno(a,b){
+      const n=Math.min(a.length,b.length); let s=0;
+      for(let i=0;i<n;i++) s+=a[i]*b[i];
+      return s;
     }
 
     function referenciasDeProducto(p) {
-      // Usamos TODAS las imágenes que ya existan en el inventario.
-      // La foto principal también cuenta como referencia aunque el producto
-      // se haya creado antes de añadir el reconocimiento visual.
-      const candidatas = [];
-      const anadir = valor => {
-        if (!valor) return;
-        if (Array.isArray(valor)) {
-          valor.forEach(anadir);
-          return;
-        }
-        if (typeof valor === 'string' && valor.trim()) candidatas.push(valor.trim());
+      const out=[];
+      const add=v=>{
+        if(!v)return;
+        if(Array.isArray(v)){v.forEach(add);return;}
+        if(typeof v==='string' && v.trim()) out.push(v.trim());
       };
-
-      anadir(p?.imagen);
-      anadir(p?.imagenesReferencia);
-      anadir(p?.imagenes);
-      anadir(p?.fotos);
-      anadir(p?.foto);
-      anadir(p?.image);
-      anadir(p?.photos);
-      // Campos adicionales habituales en inventarios antiguos/nuevos.
-      anadir(p?.imagenUrl);
-      anadir(p?.imageUrl);
-      anadir(p?.storagePath);
-      anadir(p?.storagePaths);
-
-      return [...new Set(candidatas)];
+      add(p?.imagen); add(p?.imagenesReferencia); add(p?.imagenes); add(p?.fotos);
+      add(p?.foto); add(p?.image); add(p?.photos); add(p?.imagenUrl); add(p?.imageUrl);
+      add(p?.storagePath); add(p?.storagePaths);
+      return [...new Set(out)];
     }
 
-    async function obtenerProductosParaReconocimiento() {
-      const refProductos = tieneSesionValida(currentUser) ? productosRef : productosPublicosRef;
-      const snap = await get(refProductos);
-      const datos = snap.val() || {};
-      return Object.entries(datos).map(([id, p]) => ({ id, ...p }))
-        .filter(p => referenciasDeProducto(p).length);
+    async function obtenerProductosParaReconocimiento(){
+      const refProductos=tieneSesionValida(currentUser)?productosRef:productosPublicosRef;
+      const snap=await get(refProductos); const datos=snap.val()||{};
+      return Object.entries(datos).map(([id,p])=>({id,...p})).filter(p=>referenciasDeProducto(p).length);
     }
 
-    async function reconocerProductoPorImagen(file) {
-      const dataUrl = await obtenerImagenDataUrl(file);
-      const consulta = await obtenerEmbeddingImagen(dataUrl, `consulta:${Date.now()}`);
-      const productos = await obtenerProductosParaReconocimiento();
-      let mejor = null;
-      let comparaciones = 0;
+    // Caché en memoria: las fotos de Firebase se descargan y analizan solo una vez por sesión.
+    const visualCache = new Map();
+    async function referenciaPreparada(url){
+      if(visualCache.has(url)) return visualCache.get(url);
+      const promise=(async()=>{
+        const img=await cargarImagen(url);
+        return { img, firma:firmaVisual(img) };
+      })();
+      visualCache.set(url,promise);
+      try{return await promise;}catch(e){visualCache.delete(url);throw e;}
+    }
 
-      for (const p of productos) {
-        const referencias = referenciasDeProducto(p);
-        for (let i = 0; i < referencias.length; i++) {
-          try {
-            const embedding = await obtenerEmbeddingImagen(referencias[i], `ref:${p.id}:${i}:${referencias[i]}`);
-            const score = similitudCoseno(consulta, embedding);
-            comparaciones++;
-            if (!mejor || score > mejor.score) mejor = { producto: p, score };
-          } catch (e) {
-            console.warn('No se pudo analizar referencia visual:', p.nombre, e);
-          }
+    async function reconocerProductoPorImagen(file){
+      const inicio=performance.now();
+      const consultaImg=await cargarImagenArchivo(file);
+      const consultaFirma=firmaVisual(consultaImg);
+      const productos=await obtenerProductosParaReconocimiento();
+
+      // Primera fase rápida: todas las fotos en paralelo, sin cargar TensorFlow.
+      const candidatos=[];
+      const tareas=[];
+      for(const p of productos){
+        for(const url of referenciasDeProducto(p)){
+          tareas.push((async()=>{
+            try{
+              const r=await referenciaPreparada(url);
+              candidatos.push({producto:p,url,ref:r,quick:similitudRapida(consultaFirma,r.firma)});
+            }catch(e){ /* imagen inaccesible: se ignora */ }
+          })());
         }
       }
-      return { mejor, comparaciones };
+      await Promise.all(tareas);
+      candidatos.sort((a,b)=>b.quick-a.quick);
+      if(!candidatos.length) return {mejor:null,comparaciones:0,ms:Math.round(performance.now()-inicio)};
+
+      // Solo las 6 mejores referencias pasan por MobileNet. Esto reduce muchísimo el tiempo.
+      const top=candidatos.slice(0,6);
+      let mejor=null;
+      const consultaEmb=await embeddingDesdeImagen(consultaImg);
+      for(const c of top){
+        try{
+          const emb=await embeddingDesdeImagen(c.ref.img);
+          const deep=similitudCoseno(consultaEmb,emb);
+          // Mezclamos apariencia rápida + características profundas.
+          const score=c.quick*0.42 + deep*0.58;
+          if(!mejor || score>mejor.score) mejor={producto:c.producto,score,quick:c.quick,deep};
+        }catch(e){ console.warn('No se pudo comparar referencia',c.url,e); }
+      }
+      return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
     }
 
     window.abrirSelectorFotoProducto = async () => {
       await detenerEscaner();
-      const input = document.getElementById('fotoProductoInput');
-      if (!input) return;
-      input.value = '';
-      input.click();
+      const input=document.getElementById('fotoProductoInput');
+      if(!input)return;
+      input.value=''; input.click();
     };
 
     window.procesarFotoProductoSeleccionada = async (event) => {
-      const input = event.target;
-      const file = input?.files?.[0];
-      if (!file) return;
+      const input=event.target, file=input?.files?.[0];
+      if(!file)return;
       document.getElementById('scanCard').classList.remove('hidden');
-      setStatus('scanStatus', '🧠 Analizando el producto y comparándolo con el inventario…', 'info');
-      try {
-        const { mejor, comparaciones } = await reconocerProductoPorImagen(file);
-        if (!mejor) {
+      setStatus('scanStatus','📥 Cargando fotos del inventario…','info');
+      try{
+        setStatus('scanStatus','⚡ Comparando rápidamente con tus productos…','info');
+        const {mejor,comparaciones,ms}=await reconocerProductoPorImagen(file);
+        if(!mejor){
           ocultarFichas();
-          setStatus('scanStatus', 'No hay fotos de referencia guardadas en los productos. Añade una foto a los productos del inventario.', 'error');
+          setStatus('scanStatus','No pude cargar las fotos de referencia de Firebase. Comprueba que las imágenes del inventario sean accesibles.','error');
           return;
         }
-        const score = mejor.score;
-        const porcentaje = Math.max(0, Math.min(99, Math.round(score * 100)));
-        if (score < 0.55) {
+        const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
+        // Umbral más realista para esta combinación de similitudes.
+        if(mejor.score<0.58){
           ocultarFichas();
-          setStatus('scanStatus', `No encontré una coincidencia suficientemente fiable (${porcentaje}%). Prueba otra foto más frontal y con buena luz.`, 'error');
+          setStatus('scanStatus',`No encuentro una coincidencia fiable (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
         }
-        await pintarProducto(mejor.producto, 'foto');
+        await pintarProducto(mejor.producto,'foto');
         document.getElementById('scanCard').classList.add('hidden');
-        setStatus('scanStatus', `Producto reconocido: ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} referencia(s).`, 'success');
-        if (currentUser) {
-          try {
-            await guardarLog('reconocimiento-visual', mejor.producto.id, mejor.producto.nombre, 0, currentUser.email,
-              `Coincidencia: ${porcentaje}% · Referencias: ${comparaciones}`, { scoreVisual: score, porcentajeVisual: porcentaje });
-          } catch (e) { console.warn('No se pudo guardar el log de reconocimiento visual', e); }
+        setStatus('scanStatus',`✅ ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} foto(s) revisadas · ${ms/1000}s`,'success');
+        if(currentUser){
+          try{await guardarLog('reconocimiento-visual',mejor.producto.id,mejor.producto.nombre,0,currentUser.email,
+            `Coincidencia: ${porcentaje}% · Fotos: ${comparaciones} · ${ms}ms`,{scoreVisual:mejor.score,porcentajeVisual:porcentaje});}
+          catch(e){console.warn('No se pudo guardar log',e);}
         }
-      } catch (e) {
-        console.error('Error en reconocimiento visual:', e);
+      }catch(e){
+        console.error('Error reconocimiento visual',e);
         ocultarFichas();
-        setStatus('scanStatus', `No pude reconocer la foto. ${e?.message || 'Comprueba la conexión y vuelve a intentarlo.'}`, 'error');
-      } finally {
-        input.value = '';
-      }
+        setStatus('scanStatus',`No pude reconocer la foto. ${e?.message||'Comprueba la conexión.'}`,'error');
+      }finally{input.value='';}
     };
 
  window.buscarManual = async () => {
