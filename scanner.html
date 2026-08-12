@@ -1104,7 +1104,7 @@ function renderImagenPrivada(url){
       if(clipExtractor) return clipExtractor;
       if(clipPromise) return clipPromise;
       clipPromise=(async()=>{
-        setStatus('scanStatus','🧠 Cargando DINOv2 por primera vez…','info');
+        setStatus('scanStatus','🧠 Cargando modelo visual CLIP por primera vez…','info');
         return await pipeline('image-feature-extraction','Xenova/clip-vit-base-patch32');
       })();
       try{ clipExtractor=await clipPromise; return clipExtractor; }
@@ -1139,7 +1139,7 @@ function renderImagenPrivada(url){
       return s;
     }
 
-\n    // V5: DINOv2 para similitud visual.\n    let dinoExtractor=null;\n    let dinoPromise=null;\n\n    async function cargarModeloDINO(){\n      if(dinoExtractor) return dinoExtractor;\n      if(dinoPromise) return dinoPromise;\n      dinoPromise=(async()=>{\n        setStatus('scanStatus','🧠 Cargando DINOv2 por primera vez…','info');\n        return await pipeline('image-feature-extraction','Xenova/dinov2-small');\n      })();\n      try{ dinoExtractor=await dinoPromise; return dinoExtractor; }\n      catch(e){ dinoPromise=null; throw e; }\n    }\n\n    async function embeddingDINO(img){\n      const extractor=await cargarModeloDINO();\n      const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;\n      const scale=Math.min(1,518/Math.max(w,h));\n      const c=document.createElement('canvas');\n      c.width=Math.max(224,Math.round(w*scale));\n      c.height=Math.max(224,Math.round(h*scale));\n      c.getContext('2d').drawImage(img,0,0,c.width,c.height);\n      const out=await extractor(c,{pooling:'mean',normalize:true});\n      return Array.from(out.data);\n    }\n\n    function similitudDINO(a,b){\n      const n=Math.min(a.length,b.length); let s=0;\n      for(let i=0;i<n;i++) s+=a[i]*b[i];\n      return s;\n    }\n\nasync function cargarModeloVision() {
+async function cargarModeloVision() {
       if (visionModel) return visionModel;
       if (visionModelPromise) return visionModelPromise;
       visionModelPromise = (async () => {
@@ -1221,7 +1221,86 @@ function renderImagenPrivada(url){
       candidatos.sort((a,b)=>b.quick-a.quick);
       if(!candidatos.length) return {mejor:null,comparaciones:0,ms:Math.round(performance.now()-inicio)};
 
-      // V5: identificación conservadora por producto con DINOv2.\n      const top=candidatos.slice(0,30);\n      const grupos=new Map();\n      for(const c of top){ const id=String(c.producto.id); if(!grupos.has(id)) grupos.set(id,[]); grupos.get(id).push(c); }\n\n      const consultaEmbs=[];\n      for(const q of variantesImagen(consultaImg)) consultaEmbs.push(await embeddingDINO(q));\n\n      const candidatosProducto=[];\n      for(const [id,refs] of grupos){\n        const scores=[];\n        for(const c of refs){\n          try{\n            let best=0;\n            for(const r of variantesImagen(c.ref.img)){\n              const re=await embeddingDINO(r);\n              for(const qe of consultaEmbs) best=Math.max(best,similitudDINO(qe,re));\n            }\n            scores.push({score:best,ref:c});\n          }catch(e){ console.warn('No se pudo comparar referencia con DINOv2',c.url,e); }\n        }\n        if(!scores.length) continue;\n        scores.sort((a,b)=>b.score-a.score);\n        const best=scores[0].score, second=scores[1]?.score ?? best;\n        candidatosProducto.push({producto:scores[0].ref.producto,score:best*0.78+second*0.22,best,second,referencias:scores.length});\n      }\n\n      candidatosProducto.sort((a,b)=>b.score-a.score);\n      const primero=candidatosProducto[0], segundo=candidatosProducto[1];\n      let mejor=null;\n      if(primero){\n        const margen=segundo ? primero.score-segundo.score : 1;\n        const fiable=primero.score>=0.62 && primero.best>=0.66 && margen>=0.035;\n        if(fiable) mejor={producto:primero.producto,score:primero.score,dino:primero.best,second:primero.second,margen,referencias:primero.referencias};\n        else mejor={producto:null,score:primero.score,dino:primero.best,second:segundo?.score ?? 0,margen,candidato:primero.producto};\n      }\n\n      return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
+      // Identificación conservadora por producto.
+      // Todas las fotos del mismo producto compiten como un único candidato.
+      const top=candidatos.slice(0,24);
+      const grupos=new Map();
+      for(const c of top){
+        const id=String(c.producto.id);
+        if(!grupos.has(id)) grupos.set(id,[]);
+        grupos.get(id).push(c);
+      }
+
+      const consultaVariantes=variantesImagen(consultaImg);
+      const consultaEmbs=[];
+      for(const q of consultaVariantes) consultaEmbs.push(await embeddingCLIP(q));
+
+      const candidatosProducto=[];
+      for(const [id, refs] of grupos){
+        const scores=[];
+        for(const c of refs){
+          try{
+            const refVars=variantesImagen(c.ref.img);
+            let best=0;
+            for(const q of consultaEmbs){
+              for(const r of refVars){
+                const qe=await embeddingCLIP(q);
+                const re=await embeddingCLIP(r);
+                best=Math.max(best,similitudCLIP(qe,re));
+              }
+            }
+            scores.push({score:best,ref:c});
+          }catch(e){ console.warn('Referencia no disponible',c.url,e); }
+        }
+        if(!scores.length) continue;
+        scores.sort((a,b)=>b.score-a.score);
+
+        // Una referencia fuerte + una segunda referencia que confirme el producto.
+        const best=scores[0].score;
+        const second=scores[1]?.score ?? best;
+        const meanTop=Math.max(best*0.75 + second*0.25, best*0.82);
+        candidatosProducto.push({
+          producto:scores[0].ref.producto,
+          score:meanTop,
+          best,
+          second,
+          referencias:scores.length
+        });
+      }
+
+      candidatosProducto.sort((a,b)=>b.score-a.score);
+      const primero=candidatosProducto[0];
+      const segundo=candidatosProducto[1];
+
+      let mejor=null;
+      if(primero){
+        const margen=segundo ? primero.score-segundo.score : 1;
+        const absoluto=primero.score;
+        // No aceptar "el mejor de los malos": exigimos similitud absoluta
+        // y separación clara frente al segundo producto.
+        const fiable=absoluto>=0.60 && margen>=0.035 && primero.best>=0.64;
+        if(fiable){
+          mejor={
+            producto:primero.producto,
+            score:absoluto,
+            clip:primero.best,
+            second:primero.second,
+            margen,
+            referencias:primero.referencias
+          };
+        }else{
+          mejor={
+            producto:null,
+            score:absoluto,
+            clip:primero.best,
+            second:segundo?.score ?? 0,
+            margen,
+            candidato:primero.producto
+          };
+        }
+      }
+
+      return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
     }
 
     window.abrirSelectorFotoProducto = async () => {
