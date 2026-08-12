@@ -629,7 +629,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
 
   <script type="module">
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, get, update, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
@@ -1094,52 +1093,6 @@ function renderImagenPrivada(url){
     }
 
     
-    // Reconocimiento visual con CLIP. Transformers.js permite ejecutar el modelo
-    // directamente en el navegador y obtener embeddings de imagen para similitud.
-    let clipExtractor=null;
-    let clipPromise=null;
-    const clipCache=new Map();
-
-    async function cargarModeloCLIP(){
-      if(clipExtractor) return clipExtractor;
-      if(clipPromise) return clipPromise;
-      clipPromise=(async()=>{
-        setStatus('scanStatus','🧠 Cargando DINOv2 por primera vez…','info');
-        return await pipeline('image-feature-extraction','Xenova/clip-vit-base-patch32');
-      })();
-      try{ clipExtractor=await clipPromise; return clipExtractor; }
-      catch(e){ clipPromise=null; throw e; }
-    }
-
-    function imagenComoDataURL(img, size=224){
-      const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-      const scale=Math.min(1, size/Math.max(w,h));
-      const c=document.createElement('canvas');
-      c.width=Math.max(1,Math.round(w*scale));
-      c.height=Math.max(1,Math.round(h*scale));
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      return c.toDataURL('image/jpeg',0.86);
-    }
-
-    async function embeddingCLIP(img){
-      const key=img.__clipKey || null;
-      if(key && clipCache.has(key)) return clipCache.get(key);
-      const extractor=await cargarModeloCLIP();
-      const dataURL=imagenComoDataURL(img,224);
-      const out=await extractor(dataURL,{pooling:'mean',normalize:true});
-      const arr=Array.from(out.data);
-      if(key) clipCache.set(key,arr);
-      return arr;
-    }
-
-    function similitudCLIP(a,b){
-      const n=Math.min(a.length,b.length);
-      let s=0;
-      for(let i=0;i<n;i++) s+=a[i]*b[i];
-      return s;
-    }
-
-
     // V5: DINOv2 para similitud visual.
     let dinoExtractor=null;
     let dinoPromise=null;
@@ -1148,10 +1101,12 @@ function renderImagenPrivada(url){
       if(dinoExtractor) return dinoExtractor;
       if(dinoPromise) return dinoPromise;
       dinoPromise=(async()=>{
-        setStatus('scanStatus','🧠 Cargando DINOv2 por primera vez…','info');
-        return await pipeline('image-feature-extraction','Xenova/dinov2-small');
+        setStatus('scanStatus','🧠 Preparando reconocimiento visual…','info');
+        const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
+        dinoExtractor=await mod.pipeline('image-feature-extraction','Xenova/dinov2-small');
+        return dinoExtractor;
       })();
-      try{ dinoExtractor=await dinoPromise; return dinoExtractor; }
+      try{ return await dinoPromise; }
       catch(e){ dinoPromise=null; throw e; }
     }
 
