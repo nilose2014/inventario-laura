@@ -1096,6 +1096,19 @@ function renderImagenPrivada(url){
     // V5: DINOv2 para similitud visual.
     let dinoExtractor=null;
     let dinoPromise=null;
+    // Índice en memoria: cada foto de Firebase se procesa una sola vez por sesión.
+    const dinoEmbeddingCache=new Map();
+    let dinoReferenceIndex=[];
+    let dinoIndexReady=false;
+    let dinoIndexPromise=null;
+
+    async function embeddingDINOCache(img,url){
+      const key=String(url||'').split('?')[0];
+      if(key && dinoEmbeddingCache.has(key)) return dinoEmbeddingCache.get(key);
+      const emb=await embeddingDINO(img);
+      if(key) dinoEmbeddingCache.set(key,emb);
+      return emb;
+    }
 
     async function cargarModeloDINO(){
       if(dinoExtractor) return dinoExtractor;
@@ -1212,41 +1225,91 @@ async function cargarModeloVision() {
         throw new Error('No se pudo cargar ninguna foto de referencia de Firebase. Revisa CORS, las rutas de Storage y que las fotos sigan existiendo.');
       }
 
-      // V5: identificación conservadora por producto con DINOv2.
-      const top=candidatos.slice(0,30);
-      const grupos=new Map();
-      for(const c of top){ const id=String(c.producto.id); if(!grupos.has(id)) grupos.set(id,[]); grupos.get(id).push(c); }
+      // V5.1: índice DINOv2 en memoria + comparación en dos fases.
+      // La primera identificación prepara las referencias; las siguientes reutilizan el índice.
+      if(!dinoIndexReady){
+        if(!dinoIndexPromise){
+          dinoIndexPromise=(async()=>{
+            setStatus('scanStatus','🧠 Preparando referencias visuales (solo la primera vez)…','info');
+            dinoReferenceIndex=[];
+            for(const c of candidatos){
+              try{
+                const emb=await embeddingDINOCache(c.ref.img,c.url);
+                dinoReferenceIndex.push({emb,producto:c.producto,url:c.url,quick:c.quick});
+              }catch(e){
+                console.warn('No se pudo indexar referencia',c.url,e);
+              }
+            }
+            dinoIndexReady=true;
+          })();
+        }
+        await dinoIndexPromise;
+      }
 
       const consultaEmbs=[];
-      for(const q of variantesImagen(consultaImg)) consultaEmbs.push(await embeddingDINO(q));
+      for(const q of variantesImagen(consultaImg)){
+        consultaEmbs.push(await embeddingDINO(q));
+      }
+
+      const candidatosDINO=[];
+      for(const ref of dinoReferenceIndex){
+        let score=0;
+        for(const qe of consultaEmbs){
+          score=Math.max(score,similitudDINO(qe,ref.emb));
+        }
+        candidatosDINO.push({...ref,score});
+      }
+      candidatosDINO.sort((a,b)=>b.score-a.score);
+
+      // Solo los 10 mejores candidatos pasan a la fase por producto.
+      const topRefs=candidatosDINO.slice(0,10);
+      const grupos=new Map();
+      for(const c of topRefs){
+        const id=String(c.producto.id);
+        if(!grupos.has(id)) grupos.set(id,[]);
+        grupos.get(id).push(c);
+      }
 
       const candidatosProducto=[];
       for(const [id,refs] of grupos){
-        const scores=[];
-        for(const c of refs){
-          try{
-            let best=0;
-            for(const r of variantesImagen(c.ref.img)){
-              const re=await embeddingDINO(r);
-              for(const qe of consultaEmbs) best=Math.max(best,similitudDINO(qe,re));
-            }
-            scores.push({score:best,ref:c});
-          }catch(e){ console.warn('No se pudo comparar referencia con DINOv2',c.url,e); }
-        }
-        if(!scores.length) continue;
-        scores.sort((a,b)=>b.score-a.score);
-        const best=scores[0].score, second=scores[1]?.score ?? best;
-        candidatosProducto.push({producto:scores[0].ref.producto,score:best*0.78+second*0.22,best,second,referencias:scores.length});
+        refs.sort((a,b)=>b.score-a.score);
+        const best=refs[0].score;
+        const second=refs[1]?.score ?? best;
+        const score=best*0.82 + second*0.18;
+        candidatosProducto.push({
+          producto:refs[0].producto,
+          score,best,second,
+          referencias:refs.length
+        });
       }
 
       candidatosProducto.sort((a,b)=>b.score-a.score);
-      const primero=candidatosProducto[0], segundo=candidatosProducto[1];
+      const primero=candidatosProducto[0];
+      const segundo=candidatosProducto[1];
+
       let mejor=null;
       if(primero){
         const margen=segundo ? primero.score-segundo.score : 1;
         const fiable=primero.score>=0.62 && primero.best>=0.66 && margen>=0.035;
-        if(fiable) mejor={producto:primero.producto,score:primero.score,dino:primero.best,second:primero.second,margen,referencias:primero.referencias};
-        else mejor={producto:null,score:primero.score,dino:primero.best,second:segundo?.score ?? 0,margen,candidato:primero.producto};
+        if(fiable){
+          mejor={
+            producto:primero.producto,
+            score:primero.score,
+            dino:primero.best,
+            second:primero.second,
+            margen,
+            referencias:primero.referencias
+          };
+        }else{
+          mejor={
+            producto:null,
+            score:primero.score,
+            dino:primero.best,
+            second:segundo?.score ?? 0,
+            margen,
+            candidato:primero.producto
+          };
+        }
       }
 
       return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
