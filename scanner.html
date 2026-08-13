@@ -509,13 +509,6 @@
       box-shadow:0 4px 12px rgba(0,0,0,.2);
     }
 
-    .scan-top3-title{font-weight:700;font-size:18px;margin:12px 0 8px}
-    .scan-match{display:flex;align-items:center;width:100%;gap:12px;padding:12px;margin:7px 0;border:1px solid #ddd;border-radius:10px;background:#fff;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
-    .scan-match:hover{background:#f8fbff}
-    .scan-rank{font-size:20px;font-weight:700;min-width:28px}
-    .scan-match-main{display:flex;flex-direction:column;gap:4px}
-    .scan-match-main small{opacity:.75}
-
     @media (max-width:700px){
       .grid{grid-template-columns:1fr}
       body{padding:10px}
@@ -719,9 +712,6 @@
     let dinoExtractor = null;
     let dinoPromise = null;
     const dinoEmbeddingCache = new Map();
-    let dinoReferenceIndex = [];
-    let dinoIndexReady = false;
-    let dinoIndexPromise = null;
 
     // --- DOM Helpers ---
     function getQueryParam(name){
@@ -752,7 +742,6 @@
       document.getElementById('privadaImagenWrap').innerHTML = '';
     }
 
-    // --- FIX: XSS Prevention ---
     function renderImagenPublica(url){
       const wrap = document.getElementById('publicImagenWrap');
       wrap.innerHTML = '';
@@ -974,7 +963,6 @@
       }
     });
 
-    // --- FIX: Listener for visual recognition ---
     window.addEventListener('producto-reconocido', (e) => {
       if (e.detail) {
         pintarProducto(e.detail, 'visual');
@@ -1146,26 +1134,12 @@
       return dot*0.88 + color*0.12;
     }
 
-    function recortarCentro(img, factor=0.72){
-      const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-      const side=Math.min(w,h)*factor;
-      const sx=(w-side)/2, sy=(h-side)/2;
-      const c=document.createElement('canvas');
-      c.width=Math.max(64,Math.round(side)); c.height=c.width;
-      c.getContext('2d').drawImage(img,sx,sy,side,side,0,0,c.width,c.height);
-      return c;
-    }
-
-    function variantesImagen(img){
-      return [img, recortarCentro(img,0.82), recortarCentro(img,0.62)];
-    }
-
     // --- DINOv2 Logic ---
     async function cargarModeloDINO(){
       if(dinoExtractor) return dinoExtractor;
       if(dinoPromise) return dinoPromise;
       dinoPromise=(async()=>{
-        setStatus('scanStatus','🧠 Preparando reconocimiento visual…','info');
+        setStatus('scanStatus','🧠 Preparando reconocimiento visual (esto tarda la primera vez)…','info');
         const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
         dinoExtractor=await mod.pipeline('image-feature-extraction','Xenova/dinov2-small');
         return dinoExtractor;
@@ -1231,7 +1205,7 @@
     }
 
     // --- FIX: Visual results rendering on dedicated card ---
-    function mostrarTop3Visual(resultados, stats = {}) {
+    async function mostrarTop3Visual(resultados, stats = {}) {
       const host = document.getElementById('scanResult');
       const card = document.getElementById('visualCard');
       if(!host || !card) return;
@@ -1253,35 +1227,42 @@
 
       host.innerHTML = statsHtml +
         `<div style="font-weight:800;font-size:18px;margin:12px 0 8px;color:#0f172a;">3 productos más parecidos</div>`;
-        
-      resultados.forEach((r, i) => {
+
+      // Obtenemos las URLs de las imágenes de Firebase en paralelo
+      const itemsHtml = await Promise.all(resultados.map(async (r, i) => {
           const p = r.producto || {};
           const nombre = p.nombre || p.name || 'Producto';
           const stock = Number(p.stock ?? p.cantidad ?? 0);
           const porcentaje = Number(r.porcentaje) || 0;
-          
-          // Usamos un div con estilos inline para evitar el conflicto del CSS global con los botones
-          const item = document.createElement('div');
-          item.style.cssText = 'display:flex;align-items:center;width:100%;gap:12px;padding:14px;margin:8px 0;border:1px solid #dbe4f0;border-radius:16px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,0.05);transition:transform 0.18s ease, box-shadow 0.18s ease;';
-          
-          item.innerHTML = `
-            <span style="font-size:22px;font-weight:900;min-width:28px;color:#2563eb;">${i + 1}</span>
-            <span style="display:flex;flex-direction:column;gap:4px;color:#0f172a;">
-              <strong style="font-size:16px;color:#0f172a;">${esc(nombre)}</strong>
-              <small style="opacity:.75;font-size:13px;color:#475569;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
-            </span>
+          const imgRef = referenciasDeProducto(p)[0] || '';
+          let imgSrc = '';
+          try { imgSrc = await resolverImagenFirebase(imgRef); } catch {}
+
+          return `
+            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:12px;padding:14px;margin:8px 0;border:1px solid #dbe4f0;border-radius:16px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,0.05);transition:transform 0.18s ease, box-shadow 0.18s ease;">
+              <span style="font-size:22px;font-weight:900;min-width:28px;color:#2563eb;">${i + 1}</span>
+              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
+              <span style="display:flex;flex-direction:column;gap:4px;color:#0f172a;">
+                <strong style="font-size:16px;color:#0f172a;">${esc(nombre)}</strong>
+                <small style="opacity:.75;font-size:13px;color:#475569;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
+              </span>
+            </div>
           `;
-          
-          item.addEventListener('click', (ev) => { 
-            ev.preventDefault();
-            window.dispatchEvent(new CustomEvent('producto-reconocido', { detail: r.producto }));
-          });
-          
-          host.appendChild(item);
-      });
+      }));
+
+      host.innerHTML += itemsHtml.join('');
 
       card.classList.remove('hidden');
       card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      host.querySelectorAll('.scan-match').forEach(item => {
+        item.addEventListener('click', (ev) => { 
+          ev.preventDefault();
+          const r = resultados[Number(item.dataset.index)];
+          if (!r || !r.producto) return;
+          window.dispatchEvent(new CustomEvent('producto-reconocido', { detail: r.producto }));
+        });
+      });
     }
 
     window.cerrarReconocimientoVisual = () => {
@@ -1291,7 +1272,6 @@
       if(host) host.innerHTML = '';
     };
 
-    // --- FIX: Parallel pool for DINO indexing ---
     async function pool(items, n, fn) {
       const out = []; let i = 0;
       const workers = Array.from({length: Math.min(n, items.length)}, async () => {
@@ -1332,42 +1312,36 @@
         throw new Error('No se pudo cargar ninguna foto de referencia de Firebase. Revisa CORS, las rutas de Storage y que las fotos existan.');
       }
 
+      // 1. Ordenamos por la firma rápida
       candidatos.sort((a,b)=>b.quick-a.quick);
 
-      if(!dinoIndexReady){
-        if(!dinoIndexPromise){
-          dinoIndexPromise=(async()=>{
-            setStatus('scanStatus','🧠 Preparando referencias visuales…','info');
-            dinoReferenceIndex=[];
-            await pool(candidatos, 6, async (c) => {
-              try{
-                const emb=await embeddingDINOCache(c.ref.img,c.url);
-                dinoReferenceIndex.push({
-                  emb:emb,
-                  producto:c.producto,
-                  url:c.url
-                });
-              }catch(e){
-                console.warn('No se pudo indexar referencia:',c.url,e);
-              }
-            });
-            dinoIndexReady=true;
-          })();
-        }
-        await dinoIndexPromise;
-      }
+      // 2. Limitamos a los 100 mejores candidatos para no congelar el navegador y acertar mejor
+      const topCandidatos = candidatos.slice(0, 100);
 
-      const consultaEmbs=[];
-      for(const q of variantesImagen(consultaImg)){
-        consultaEmbs.push(await embeddingDINO(q));
-      }
+      setStatus('scanStatus','🧠 Analizando formas y colores con IA... (Esto puede tardar unos segundos)','info');
+
+      // Yield a la UI para que el mensaje anterior se pinte
+      await new Promise(r => setTimeout(r, 50));
+
+      // 3. Indexamos DINOv2 de los 100 candidatos
+      const dinoRefIndex = [];
+      await pool(topCandidatos, 2, async (c) => { // concurrency 2 para no saturar RAM
+        try{
+          const emb = await embeddingDINOCache(c.ref.img, c.url);
+          dinoRefIndex.push({ emb, producto: c.producto });
+          // Pequeña pausa para no bloquear el hilo principal
+          await new Promise(r => setTimeout(r, 0));
+        }catch(e){
+          console.warn('No se pudo indexar referencia:',c.url,e);
+        }
+      });
+
+      // 4. Generamos 1 solo embedding de la foto del usuario (sin variantes)
+      const consultaEmb = await embeddingDINO(consultaImg);
 
       const porProducto=new Map();
-      for(const ref of dinoReferenceIndex){
-        let score=0;
-        for(const qe of consultaEmbs){
-          score=Math.max(score,similitudDINO(qe,ref.emb));
-        }
+      for(const ref of dinoRefIndex){
+        const score = similitudDINO(consultaEmb, ref.emb);
         const id=String(ref.producto.id);
         if(!porProducto.has(id)){
           porProducto.set(id,{producto:ref.producto,scores:[]});
@@ -1379,12 +1353,10 @@
         .map(p=>{
           p.scores.sort((a,b)=>b-a);
           const best=p.scores[0]||0;
-          const second=p.scores[1]||best;
-          const score=best*0.82+second*0.18;
           return {
             producto:p.producto,
-            score:score,
-            porcentaje:Math.max(0,Math.min(99,Math.round(score*100))),
+            score:best,
+            porcentaje:Math.max(0,Math.min(99,Math.round(best*100))),
             referencias:p.scores.length
           };
         })
@@ -1428,7 +1400,7 @@
           return;
         }
 
-        mostrarTop3Visual(res.resultados, { comparaciones: res.comparaciones, ms: res.ms });
+        await mostrarTop3Visual(res.resultados, { comparaciones: res.comparaciones, ms: res.ms });
 
         if(scanCard)scanCard.classList.add('hidden');
       }catch(e){
@@ -1439,7 +1411,6 @@
       }
     };
 
-    // --- FIX: Manual search without prompt() ---
     window.toggleManualSearch = () => {
       const wrap = document.getElementById('manualSearchWrap');
       wrap.classList.toggle('hidden');
@@ -1527,7 +1498,6 @@
       return nuevo;
     }
 
-    // --- FIX: Transactions for atomic operations ---
     window.venderRapido = async (e) => {
       if (e) e.target.disabled = true;
       
