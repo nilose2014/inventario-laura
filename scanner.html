@@ -1207,24 +1207,30 @@ async function cargarModeloVision() {
       if(!host){
         host=document.createElement('div');
         host.id='scanResult';
-        const parent=document.getElementById('scanCard') || document.querySelector('main') || document.body;
-        parent.appendChild(host);
+        const card=document.getElementById('scanCard');
+        if(card) card.appendChild(host);
+        else {
+          const target=document.querySelector('main')||document.body;
+          target.appendChild(host);
+        }
       }
-      if(!Array.isArray(resultados) || !resultados.length){
-        host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
-        return;
-      }
+
       const esc=v=>String(v??'')
         .replace(/&/g,'&amp;')
         .replace(/</g,'&lt;')
         .replace(/>/g,'&gt;')
         .replace(/"/g,'&quot;');
 
+      if(!Array.isArray(resultados)||!resultados.length){
+        host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
+        return;
+      }
+
       host.innerHTML=
         '<div class="scan-top3-title">3 productos más parecidos</div>'+
         resultados.map((r,i)=>{
-          const p=r && r.producto ? r.producto : {};
-          const nombre=p.nombre || p.name || 'Producto';
+          const p=r.producto||{};
+          const nombre=p.nombre||p.name||'Producto';
           const stock=p.stock ?? p.cantidad ?? 0;
           return '<button type="button" class="scan-match" data-index="'+i+'">'+
             '<span class="scan-rank">'+(i+1)+'</span>'+
@@ -1236,9 +1242,9 @@ async function cargarModeloVision() {
         }).join('');
 
       host.querySelectorAll('.scan-match').forEach(btn=>{
-        btn.addEventListener('click',()=>{
+        btn.addEventListener('click',(ev)=>{ ev.preventDefault();
           const r=resultados[Number(btn.dataset.index)];
-          if(!r || !r.producto) return;
+          if(!r || !r.producto)return;
           window.ultimoProductoSeleccionado=r.producto;
           window.dispatchEvent(new CustomEvent('producto-reconocido',{detail:r.producto}));
         });
@@ -1367,23 +1373,23 @@ async function reconocerProductoPorImagen(file){
         setStatus('scanStatus','🧠 Buscando los 3 productos más parecidos…','info');
         const res=await reconocerProductoPorImagen(file);
 
-        if(!res.resultados || !res.resultados.length){
-          ocultarFichas();
+        if(!res || !Array.isArray(res.resultados) || !res.resultados.length){
           setStatus('scanStatus','No se encontraron productos con fotos de referencia accesibles.','error');
           return;
         }
 
+        // Mostrar resultados sin ocultar la pantalla principal.
         mostrarTop3Visual(res.resultados);
 
         if(card)card.classList.add('hidden');
+
         setStatus(
           'scanStatus',
-          `✅ ${res.resultados.length} productos encontrados · ${res.comparaciones} foto(s) revisadas · ${Math.round(res.ms/1000)}s`,
+          `✅ ${res.resultados.length} productos encontrados · ${res.comparaciones||0} foto(s) revisadas · ${Math.round((res.ms||0)/1000)}s`,
           'success'
         );
       }catch(e){
         console.error('Error reconocimiento visual',e);
-        ocultarFichas();
         setStatus('scanStatus',`No pude reconocer la foto. ${e?.message||'Comprueba la conexión.'}`,'error');
       }finally{
         input.value='';
