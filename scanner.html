@@ -324,7 +324,8 @@
 
     .public-card::before,
     .producto::before,
-    #scanCard::before{
+    #scanCard::before,
+    #visualCard::before{
       content:"";
       position:absolute;
       inset:0 0 auto 0;
@@ -509,7 +510,8 @@
     }
 
     .scan-top3-title{font-weight:700;font-size:18px;margin:12px 0 8px}
-    .scan-match{display:flex;align-items:center;width:100%;gap:12px;padding:12px;margin:7px 0;border:1px solid #ddd;border-radius:10px;background:#fff;text-align:left;cursor:pointer}
+    .scan-match{display:flex;align-items:center;width:100%;gap:12px;padding:12px;margin:7px 0;border:1px solid #ddd;border-radius:10px;background:#fff;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+    .scan-match:hover{background:#f8fbff}
     .scan-rank{font-size:20px;font-weight:700;min-width:28px}
     .scan-match-main{display:flex;flex-direction:column;gap:4px}
     .scan-match-main small{opacity:.75}
@@ -673,6 +675,18 @@
     <div id="scanStatus" class="info" style="margin-top:12px">Apunta al QR del producto o selecciona una foto.</div>
   </div>
 
+  <!-- Tarjeta dedicada para resultados visuales -->
+  <div class="card hidden" id="visualCard">
+    <div class="card-head">
+      <div>
+        <h2>🧠 Reconocimiento visual</h2>
+        <p>Estos son los productos más parecidos. Selecciona el correcto.</p>
+      </div>
+      <button class="red" onclick="cerrarReconocimientoVisual()">❌ Cerrar</button>
+    </div>
+    <div id="scanResult"></div>
+  </div>
+
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, get, update, push, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
@@ -727,17 +741,8 @@
     }
 
     async function puedeOperar(user){
-      // Si no hay usuario, no puede operar
       if(!user) return false;
-      // Ejemplo de verificación de rol en Firebase (descomentar si se usa)
-      // try {
-      //   const snap = await get(ref(db, `usuarios/${user.uid}/rol`));
-      //   const rol = snap.val();
-      //   return rol === 'admin' || rol === 'vendedor';
-      // } catch {
-      //   return false;
-      // }
-      return true; // Por defecto, si está logueado permite operar
+      return true; 
     }
 
     function ocultarFichas(){
@@ -959,14 +964,12 @@
       const scanId = getQueryParam('scanId');
       if (scanId) {
         const producto = await buscarProductoPorContenidoQR(scanId);
-
         if (!producto) {
           document.getElementById('scanCard').classList.remove('hidden');
           setStatus('scanStatus', `Producto no encontrado para scanId: ${scanId}`, 'error');
           ocultarFichas();
           return;
         }
-
         await pintarProducto(producto, 'url');
       }
     });
@@ -975,10 +978,9 @@
     window.addEventListener('producto-reconocido', (e) => {
       if (e.detail) {
         pintarProducto(e.detail, 'visual');
-        const card = document.getElementById('scanCard');
-        if(card) card.classList.add('hidden');
-        const host = document.getElementById('scanResult');
-        if(host) host.innerHTML = '';
+        const scanCard = document.getElementById('scanCard');
+        if(scanCard) scanCard.classList.add('hidden');
+        cerrarReconocimientoVisual();
       }
     });
 
@@ -1110,7 +1112,7 @@
       canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0, size, size);
-      return ctx.getImageData(0, 0, size, size).data;
+      return ctx.getImageData(0,0, size, size).data;
     }
 
     function firmaVisual(img) {
@@ -1228,55 +1230,62 @@
       try{return await promise;}catch(e){visualCache.delete(url);throw e;}
     }
 
-    // --- FIX: Optimized Top-3 UI ---
-    function mostrarTop3Visual(resultados){
-      let host=document.getElementById('scanResult');
-      if(!host){
-        host=document.createElement('div');
-        host.id='scanResult';
-        const card=document.getElementById('scanCard');
-        if(card) card.appendChild(host);
-        else {
-          const target=document.querySelector('main')||document.body;
-          target.appendChild(host);
-        }
-      }
+    // --- FIX: Visual results rendering on dedicated card ---
+    function mostrarTop3Visual(resultados, stats = {}) {
+      const host = document.getElementById('scanResult');
+      const card = document.getElementById('visualCard');
+      if(!host || !card) return;
 
-      const esc=v=>String(v??'')
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;');
+      const esc = v => String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 
-      if(!Array.isArray(resultados)||!resultados.length){
-        host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
+      if (!Array.isArray(resultados) || !resultados.length) {
+        host.innerHTML = '<div class="error">No se encontraron productos parecidos.</div>';
+        card.classList.remove('hidden');
         return;
       }
 
-      host.innerHTML=
-        '<div class="scan-top3-title">3 productos más parecidos</div>'+
-        resultados.map((r,i)=>{
-          const p=r.producto||{};
-          const nombre=p.nombre||p.name||'Producto';
-          const stock=Number(p.stock ?? p.cantidad ?? 0);
-          const porcentaje=Number(r.porcentaje)||0;
-          return '<button type="button" class="scan-match" data-index="'+i+'">'+
-            '<span class="scan-rank">'+(i+1)+'</span>'+
-            '<span class="scan-match-main">'+
-              '<strong>'+esc(nombre)+'</strong>'+
-              '<small>'+esc(porcentaje)+'% parecido · Stock: '+esc(stock)+'</small>'+
-            '</span>'+
+      const statsHtml = stats.comparaciones ? 
+        `<div class="small" style="margin-bottom:12px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
+
+      host.innerHTML = statsHtml +
+        '<div class="scan-top3-title">3 productos más parecidos</div>' +
+        resultados.map((r, i) => {
+          const p = r.producto || {};
+          const nombre = p.nombre || p.name || 'Producto';
+          const stock = Number(p.stock ?? p.cantidad ?? 0);
+          const porcentaje = Number(r.porcentaje) || 0;
+          return '<button type="button" class="scan-match" data-index="' + i + '">' +
+            '<span class="scan-rank">' + (i + 1) + '</span>' +
+            '<span class="scan-match-main">' +
+              '<strong>' + esc(nombre) + '</strong>' +
+              '<small>' + esc(porcentaje) + '% parecido · Stock: ' + esc(stock) + '</small>' +
+            '</span>' +
           '</button>';
         }).join('');
 
-      host.querySelectorAll('.scan-match').forEach(btn=>{
-        btn.addEventListener('click',(ev)=>{ ev.preventDefault();
-          const r=resultados[Number(btn.dataset.index)];
-          if(!r || !r.producto)return;
-          window.dispatchEvent(new CustomEvent('producto-reconocido',{detail:r.producto}));
+      card.classList.remove('hidden');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      host.querySelectorAll('.scan-match').forEach(btn => {
+        btn.addEventListener('click', (ev) => { 
+          ev.preventDefault();
+          const r = resultados[Number(btn.dataset.index)];
+          if (!r || !r.producto) return;
+          window.dispatchEvent(new CustomEvent('producto-reconocido', { detail: r.producto }));
         });
       });
     }
+
+    window.cerrarReconocimientoVisual = () => {
+      const visualCard = document.getElementById('visualCard');
+      if(visualCard) visualCard.classList.add('hidden');
+      const host = document.getElementById('scanResult');
+      if(host) host.innerHTML = '';
+    };
 
     // --- FIX: Parallel pool for DINO indexing ---
     async function pool(items, n, fn) {
@@ -1326,7 +1335,6 @@
           dinoIndexPromise=(async()=>{
             setStatus('scanStatus','🧠 Preparando referencias visuales…','info');
             dinoReferenceIndex=[];
-            // Usar pool de 6 concurrentes para acelerar la indexación
             await pool(candidatos, 6, async (c) => {
               try{
                 const emb=await embeddingDINOCache(c.ref.img,c.url);
@@ -1403,8 +1411,8 @@
       const file=input?.files?.[0];
       if(!file)return;
 
-      const card=document.getElementById('scanCard');
-      if(card)card.classList.remove('hidden');
+      const scanCard=document.getElementById('scanCard');
+      if(scanCard)scanCard.classList.remove('hidden');
       setStatus('scanStatus','📥 Cargando fotos del inventario…','info');
 
       try{
@@ -1416,15 +1424,9 @@
           return;
         }
 
-        mostrarTop3Visual(res.resultados);
+        mostrarTop3Visual(res.resultados, { comparaciones: res.comparaciones, ms: res.ms });
 
-        if(card)card.classList.add('hidden');
-
-        setStatus(
-          'scanStatus',
-          `✅ ${res.resultados.length} productos encontrados · ${res.comparaciones||0} foto(s) revisadas · ${Math.round((res.ms||0)/1000)}s`,
-          'success'
-        );
+        if(scanCard)scanCard.classList.add('hidden');
       }catch(e){
         console.error('Error reconocimiento visual',e);
         setStatus('scanStatus',`No pude reconocer la foto. ${e?.message||'Comprueba la conexión.'}`,'error');
@@ -1494,8 +1496,7 @@
       const img = document.getElementById('fotoModalImg');
       if (!modal || !img) return;
 
-      // Cierra si se hace clic en el fondo o en el botón de cerrar
-      if (event.target.id === 'fotoModal' || event.target.id === 'fotoModal' || event.target.classList.contains('foto-close')) {
+      if (event.target.id === 'fotoModal' || event.target.classList.contains('foto-close')) {
         modal.classList.add('hidden');
         img.src = '';
       }
@@ -1541,16 +1542,16 @@
 
       try {
         const result = await runTransaction(ref(db, `productos/${pid}`), (p) => {
-          if (!p) return null; // Abortar si no existe
+          if (!p) return null; 
           const stock = Number(p.stock || 0);
-          if (stock < cantidad) return; // Abortar transacción sin commit
+          if (stock < cantidad) return; 
           
           p.stock = stock - cantidad;
           p.vendidos = Number(p.vendidos || 0) + cantidad;
           p.vBea = Number(p.vBea || 0) + Number(p.bea || 0) * cantidad;
           p.vEmilia = Number(p.vEmilia || 0) + Number(p.laura || 0) * cantidad;
           if (p.stock === 0) p.emailAgotadoEnviado = true;
-          return p; // Hacer commit
+          return p; 
         });
 
         if (!result.committed) {
@@ -1559,7 +1560,6 @@
 
         const p = result.snapshot.val();
         
-        // Sincronizar nodo público
         await update(ref(db, `productos_publicos/${pid}`), {
           nombre: p.nombre || '',
           laura: Number(p.laura || 0),
@@ -1567,7 +1567,6 @@
           imagen: p.imagen || ''
         });
 
-        // Guardar log
         await guardarLog(
           'venta', pid, p.nombre, cantidad, currentUser.email,
           `Bea:€${Number(p.bea || 0).toFixed(2)} Emilia:€${Number(p.laura || 0).toFixed(2)} | Venta rápida QR`,
@@ -1611,7 +1610,7 @@
         const result = await runTransaction(ref(db, `productos/${pid}`), (p) => {
           if (!p) return null;
           const stock = Number(p.stock || 0);
-          if (stock < cantidad) return; // Abortar
+          if (stock < cantidad) return; 
           
           p.stock = stock - cantidad;
           p.reservados = Number(p.reservados || 0) + cantidad;
@@ -1648,7 +1647,6 @@
 
   <script src="https://unpkg.com/html5-qrcode" defer></script>
   
-  <!-- FIX: Modal Accessibility -->
   <div id="fotoModal" class="foto-modal hidden" role="dialog" aria-modal="true" aria-label="Imagen ampliada" onclick="cerrarFotoGrande(event)">
     <button class="foto-close" aria-label="Cerrar" onclick="cerrarFotoGrande(event)">×</button>
     <div class="foto-modal-content">
