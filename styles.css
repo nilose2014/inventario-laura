@@ -2699,3 +2699,74 @@ body.bloqueo-precios-laura-activo{
     width:100%;
   }
 }
+/* =========================
+   FIX RESULTADOS VISUALES
+========================= */
+
+#visualCard {
+  border: 2px solid #dbeafe;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.scan-top3-title {
+  font-weight: 800;
+  font-size: 18px;
+  margin: 12px 0 8px;
+  color: #0f172a !important;
+}
+
+.scan-match {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 12px !important;
+  padding: 14px !important;
+  margin: 8px 0 !important;
+  border: 1px solid #dbe4f0 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  color: #0f172a !important; /* Forzamos texto oscuro */
+  text-align: left !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(15,23,42,0.05) !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+  min-height: auto !important;
+  height: auto !important;
+}
+
+.scan-match:hover {
+  background: #f1f5f9 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,0.08) !important;
+}
+
+.scan-rank {
+  font-size: 20px;
+  font-weight: 900;
+  min-width: 28px;
+  color: #2563eb !important; /* Número en azul */
+}
+
+.scan-match-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #0f172a !important;
+}
+
+.scan-match-main strong {
+  font-size: 15px;
+  color: #0f172a !important;
+}
+
+.scan-match-main small {
+  opacity: .75;
+  font-size: 12px;
+  color: #475569 !important; /* Detalles en gris oscuro */
+}
+
+/* El botón de cerrar en la tarjeta visual */
+#visualCard .red {
+  min-height: 40px !important;
+  height: 40px !important;
+}
