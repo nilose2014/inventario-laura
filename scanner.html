@@ -1200,7 +1200,53 @@ async function cargarModeloVision() {
       try{return await promise;}catch(e){visualCache.delete(url);throw e;}
     }
 
-    async function reconocerProductoPorImagen(file){
+    
+    // V6.1: renderer del listado de los 3 productos más parecidos.
+    function mostrarTop3Visual(resultados){
+      let host=document.getElementById('scanResult');
+      if(!host){
+        host=document.createElement('div');
+        host.id='scanResult';
+        const parent=document.getElementById('scanCard') || document.querySelector('main') || document.body;
+        parent.appendChild(host);
+      }
+      if(!Array.isArray(resultados) || !resultados.length){
+        host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
+        return;
+      }
+      const esc=v=>String(v??'')
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+
+      host.innerHTML=
+        '<div class="scan-top3-title">3 productos más parecidos</div>'+
+        resultados.map((r,i)=>{
+          const p=r && r.producto ? r.producto : {};
+          const nombre=p.nombre || p.name || 'Producto';
+          const stock=p.stock ?? p.cantidad ?? 0;
+          return '<button type="button" class="scan-match" data-index="'+i+'">'+
+            '<span class="scan-rank">'+(i+1)+'</span>'+
+            '<span class="scan-match-main">'+
+              '<strong>'+esc(nombre)+'</strong>'+
+              '<small>'+esc(r.porcentaje)+'% parecido · Stock: '+esc(stock)+'</small>'+
+            '</span>'+
+          '</button>';
+        }).join('');
+
+      host.querySelectorAll('.scan-match').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const r=resultados[Number(btn.dataset.index)];
+          if(!r || !r.producto) return;
+          window.ultimoProductoSeleccionado=r.producto;
+          window.dispatchEvent(new CustomEvent('producto-reconocido',{detail:r.producto}));
+        });
+      });
+    }
+
+
+async function reconocerProductoPorImagen(file){
       const inicio=performance.now();
       const consultaImg=await cargarImagenArchivo(file);
       const consultaFirma=firmaVisual(consultaImg);
@@ -1484,32 +1530,7 @@ document.addEventListener('keydown', (e) => {
     };
   </script>
 
-  <script src="https://unpkg.com/html5-qrcode" defer>function mostrarTop3Visual(resultados){
-      let host=document.getElementById('scanResult');
-      if(!host){
-        host=document.createElement('div');
-        host.id='scanResult';
-        (document.querySelector('main')||document.body).appendChild(host);
-      }
-      const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      host.innerHTML='<div class="scan-top3-title">3 productos más parecidos</div>'+
-        resultados.map((r,i)=>{
-          const p=r.producto||{};
-          const nombre=p.nombre||p.name||'Producto';
-          const stock=p.stock ?? p.cantidad ?? 0;
-          return '<button type="button" class="scan-match" data-i="'+i+'">'+
-            '<span class="scan-rank">'+(i+1)+'</span>'+
-            '<span class="scan-match-main"><strong>'+esc(nombre)+'</strong>'+
-            '<small>'+r.porcentaje+'% parecido · Stock: '+esc(stock)+'</small></span></button>';
-        }).join('');
-      host.querySelectorAll('.scan-match').forEach(b=>b.addEventListener('click',()=>{
-        const r=resultados[Number(b.dataset.i)];
-        if(r){
-          window.ultimoProductoSeleccionado=r.producto;
-          window.dispatchEvent(new CustomEvent('producto-reconocido',{detail:r.producto}));
-        }
-      }));
-    }
+  <script src="https://unpkg.com/html5-qrcode" defer>
 
     </script>
   <div id="fotoModal" class="foto-modal hidden" onclick="cerrarFotoGrande(event)">
