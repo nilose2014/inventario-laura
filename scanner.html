@@ -1,16 +1,3 @@
-Aquí tienes el código completo con todas las correcciones aplicadas. 
-
-**Resumen de cambios realizados:**
-1. **Transacciones (`runTransaction`)**: `venderRapido` y `reservarRapido` ahora son atómicos, evitando ventas fantasma si dos cajeros venden a la vez.
-2. **Click en resultados visuales**: Se ha añadido el listener `producto-reconocido` para que al pulsar en uno de los 3 productos parecidos se abra su ficha.
-3. **Eliminado código muerto**: Quitados los scripts de TensorFlow.js y MobileNet (~3MB de carga inútil).
-4. **Seguridad anti-XSS**: Las imágenes ahora se renderizan con `addEventListener` en lugar de inyectar la URL en un `onclick`.
-5. **Optimización IA**: El indexado de DINOv2 ahora se hace en paralelo (6 hilos concurrentes) en lugar de uno por uno, reduciendo el tiempo a la mitad.
-6. **UI y UX**: El modal de foto tiene botón de cerrar y atributos de accesibilidad. La búsqueda manual ya no usa `prompt()`, usa un campo de texto integrado. Los botones se desactivan mientras procesan para evitar dobles clics.
-
-Sustituye todo el contenido de tu archivo por este:
-
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1491,7 +1478,7 @@ Sustituye todo el contenido de tu archivo por este:
         accionStatus.textContent = '';
       }
     };
-	
+    
     window.abrirFotoGrande = (src) => {
       if (!src) return;
       const modal = document.getElementById('fotoModal');
@@ -1670,4 +1657,3 @@ Sustituye todo el contenido de tu archivo por este:
   </div>
 </body>
 </html>
-```
