@@ -1291,7 +1291,13 @@ async function cargarModeloVision() {
       try{
         setStatus('scanStatus','⚡ Comparando rápidamente con tus productos…','info');
         const {mejor,comparaciones,ms}=await reconocerProductoPorImagen(file);
-        if(!mejor){
+              // V6: TOP3 es el resultado final; no ejecutar el renderizador antiguo.
+      if(resultados && resultados.length){
+        mostrarTop3Visual(resultados);
+      }
+      return {mejor:resultados[0]||null, resultados};
+
+      /* if(!mejor){
           ocultarFichas();
           setStatus('scanStatus',`No pude cargar las fotos de referencia de Firebase. ${e?.message||'Comprueba CORS y las rutas de Storage.'}`,'error');
           return;
@@ -1460,8 +1466,13 @@ document.addEventListener('keydown', (e) => {
 
   <script src="https://unpkg.com/html5-qrcode" defer>
     function mostrarTop3Visual(resultados){
-      const host=document.getElementById('scanResult') || document.getElementById('resultado');
-      if(!host) return;
+      let host=document.getElementById('scanResult') || document.getElementById('resultado');
+      if(!host){
+        host=document.createElement('div');
+        host.id='scanResult';
+        const parent=document.querySelector('main') || document.body;
+        parent.appendChild(host);
+      }
       if(!resultados.length){
         host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
         return;
@@ -1492,3 +1503,4 @@ document.addEventListener('keydown', (e) => {
 </div>
 </body>
 </html>
+ */
