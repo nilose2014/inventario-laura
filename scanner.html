@@ -512,7 +512,7 @@
       }
     }
   </style>
-</head>
+<style>.scan-top3-title{font-weight:700;font-size:18px;margin:12px 0 8px}.scan-match{display:flex;align-items:center;width:100%;gap:12px;padding:12px;margin:7px 0;border:1px solid #ddd;border-radius:10px;background:#fff;text-align:left;cursor:pointer}.scan-rank{font-size:20px;font-weight:700;min-width:28px}.scan-match-main{display:flex;flex-direction:column;gap:4px}.scan-match-main small{opacity:.75}</style></head>
 <body>
 
   <div class="app-header">
@@ -1206,7 +1206,6 @@ async function cargarModeloVision() {
       const consultaFirma=firmaVisual(consultaImg);
       const productos=await obtenerProductosParaReconocimiento();
 
-      // Primera fase rápida: todas las fotos en paralelo, sin cargar TensorFlow.
       const candidatos=[];
       const tareas=[];
       for(const p of productos){
@@ -1214,29 +1213,43 @@ async function cargarModeloVision() {
           tareas.push((async()=>{
             try{
               const r=await referenciaPreparada(url);
-              candidatos.push({producto:p,url,ref:r,quick:similitudRapida(consultaFirma,r.firma)});
-            }catch(e){ /* imagen inaccesible: se ignora  }
+              candidatos.push({
+                producto:p,
+                url:url,
+                ref:r,
+                quick:similitudRapida(consultaFirma,r.firma)
+              });
+            }catch(e){
+              console.warn('Referencia no accesible:',url,e);
+            }
           })());
         }
       }
       await Promise.all(tareas);
-      candidatos.sort((a,b)=>b.quick-a.quick);
-      if(!candidatos.length) {
-        throw new Error('No se pudo cargar ninguna foto de referencia de Firebase. Revisa CORS, las rutas de Storage y que las fotos sigan existiendo.');
+
+      if(!candidatos.length){
+        throw new Error('No se pudo cargar ninguna foto de referencia de Firebase. Revisa CORS, las rutas de Storage y que las fotos existan.');
       }
 
-      // V5.1: índice DINOv2 en memoria + comparación en dos fases.
-      // La primera identificación prepara las referencias; las siguientes reutilizan el índice.
+      candidatos.sort((a,b)=>b.quick-a.quick);
+
+      // Cargar/crear el índice DINOv2 solo una vez por sesión.
       if(!dinoIndexReady){
         if(!dinoIndexPromise){
           dinoIndexPromise=(async()=>{
-            setStatus('scanStatus','🧠 Preparando referencias visuales (solo la primera vez)…','info');
+            setStatus('scanStatus','🧠 Preparando referencias visuales…','info');
             dinoReferenceIndex=[];
             for(const c of candidatos){
               try{
                 const emb=await embeddingDINOCache(c.ref.img,c.url);
-                dinoReferenceIndex.push({emb,producto:c.producto,url:c.url});
-              }catch(e){ console.warn('No se pudo indexar referencia',c.url,e); }
+                dinoReferenceIndex.push({
+                  emb:emb,
+                  producto:c.producto,
+                  url:c.url
+                });
+              }catch(e){
+                console.warn('No se pudo indexar referencia:',c.url,e);
+              }
             }
             dinoIndexReady=true;
           })();
@@ -1245,33 +1258,47 @@ async function cargarModeloVision() {
       }
 
       const consultaEmbs=[];
-      for(const q of variantesImagen(consultaImg)) consultaEmbs.push(await embeddingDINO(q));
+      for(const q of variantesImagen(consultaImg)){
+        consultaEmbs.push(await embeddingDINO(q));
+      }
 
       const porProducto=new Map();
       for(const ref of dinoReferenceIndex){
         let score=0;
-        for(const qe of consultaEmbs) score=Math.max(score,similitudDINO(qe,ref.emb));
+        for(const qe of consultaEmbs){
+          score=Math.max(score,similitudDINO(qe,ref.emb));
+        }
         const id=String(ref.producto.id);
-        if(!porProducto.has(id)) porProducto.set(id,{producto:ref.producto,scores:[]});
+        if(!porProducto.has(id)){
+          porProducto.set(id,{producto:ref.producto,scores:[]});
+        }
         porProducto.get(id).scores.push(score);
       }
 
-      const resultados=Array.from(porProducto.values()).map(p=>{
-        p.scores.sort((a,b)=>b-a);
-        const best=p.scores[0]||0;
-        const second=p.scores[1]||best;
-        const score=best*0.82+second*0.18;
-        return {producto:p.producto,score,
-          porcentaje:Math.max(0,Math.min(99,Math.round(score*100))),
-          referencias:p.scores.length};
-      }).sort((a,b)=>b.score-a.score).slice(0,3);
+      const resultados=Array.from(porProducto.values())
+        .map(p=>{
+          p.scores.sort((a,b)=>b-a);
+          const best=p.scores[0]||0;
+          const second=p.scores[1]||best;
+          const score=best*0.82+second*0.18;
+          return {
+            producto:p.producto,
+            score:score,
+            porcentaje:Math.max(0,Math.min(99,Math.round(score*100))),
+            referencias:p.scores.length
+          };
+        })
+        .sort((a,b)=>b.score-a.score)
+        .slice(0,3);
 
       window.ultimosResultadosVisuales=resultados;
-      setTimeout(()=>mostrarTop3Visual(resultados),0);
-      return {mejor:resultados[0]||null,resultados:resultados};
-
-
-      return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
+      const ms=Math.round(performance.now()-inicio);
+      return {
+        mejor:resultados[0]||null,
+        resultados:resultados,
+        comparaciones:candidatos.length,
+        ms:ms
+      };
     }
 
     window.abrirSelectorFotoProducto = async () => {
@@ -1282,41 +1309,42 @@ async function cargarModeloVision() {
     };
 
     window.procesarFotoProductoSeleccionada = async (event) => {
-      const input=event.target, file=input?.files?.[0];
+      const input=event.target;
+      const file=input?.files?.[0];
       if(!file)return;
-      document.getElementById('scanCard').classList.remove('hidden');
+
+      const card=document.getElementById('scanCard');
+      if(card)card.classList.remove('hidden');
       setStatus('scanStatus','📥 Cargando fotos del inventario…','info');
+
       try{
-        setStatus('scanStatus','⚡ Comparando rápidamente con tus productos…','info');
-        const {mejor,comparaciones,ms}=await reconocerProductoPorImagen(file);
-        if(!mejor){
+        setStatus('scanStatus','🧠 Buscando los 3 productos más parecidos…','info');
+        const res=await reconocerProductoPorImagen(file);
+
+        if(!res.resultados || !res.resultados.length){
           ocultarFichas();
-          setStatus('scanStatus',`No pude cargar las fotos de referencia de Firebase. ${e?.message||'Comprueba CORS y las rutas de Storage.'}`,'error');
+          setStatus('scanStatus','No se encontraron productos con fotos de referencia accesibles.','error');
           return;
         }
-        const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
-        // Umbral más realista para esta combinación de similitudes.
-        if(!mejor || !mejor.producto){
-          ocultarFichas();
-          setStatus('scanStatus',`No encuentro una coincidencia suficientemente clara. No se muestra ningún producto para evitar una identificación incorrecta. (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
-          return;
-        }
-        await pintarProducto(mejor.producto,'foto');
-        document.getElementById('scanCard').classList.add('hidden');
-        setStatus('scanStatus',`✅ ${mejor.producto.nombre} · coincidencia ${porcentaje}% · ${comparaciones} foto(s) revisadas · ${mejor.referencias||1} referencia(s) del producto · ${ms/1000}s`,'success');
-        if(currentUser){
-          try{await guardarLog('reconocimiento-visual',mejor.producto.id,mejor.producto.nombre,0,currentUser.email,
-            `Coincidencia: ${porcentaje}% · Fotos: ${comparaciones} · ${ms}ms`,{scoreVisual:mejor.score,porcentajeVisual:porcentaje});}
-          catch(e){console.warn('No se pudo guardar log',e);}
-        }
+
+        mostrarTop3Visual(res.resultados);
+
+        if(card)card.classList.add('hidden');
+        setStatus(
+          'scanStatus',
+          `✅ ${res.resultados.length} productos encontrados · ${res.comparaciones} foto(s) revisadas · ${Math.round(res.ms/1000)}s`,
+          'success'
+        );
       }catch(e){
         console.error('Error reconocimiento visual',e);
         ocultarFichas();
         setStatus('scanStatus',`No pude reconocer la foto. ${e?.message||'Comprueba la conexión.'}`,'error');
-      }finally{input.value='';}
+      }finally{
+        input.value='';
+      }
     };
 
- window.buscarManual = async () => {
+    window.buscarManual = async () => {
   const texto = prompt('Escribe ID, URL QR o nombre exacto del producto');
   if (!texto) return;
   const producto = await buscarProductoPorContenidoQR(texto);
@@ -1456,17 +1484,12 @@ document.addEventListener('keydown', (e) => {
     };
   </script>
 
-  <script src="https://unpkg.com/html5-qrcode" defer>
-    function mostrarTop3Visual(resultados){
+  <script src="https://unpkg.com/html5-qrcode" defer>function mostrarTop3Visual(resultados){
       let host=document.getElementById('scanResult');
       if(!host){
         host=document.createElement('div');
         host.id='scanResult';
         (document.querySelector('main')||document.body).appendChild(host);
-      }
-      if(!resultados || !resultados.length){
-        host.innerHTML='<div>No se encontraron productos.</div>';
-        return;
       }
       const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       host.innerHTML='<div class="scan-top3-title">3 productos más parecidos</div>'+
@@ -1488,7 +1511,7 @@ document.addEventListener('keydown', (e) => {
       }));
     }
 
-</script>
+    </script>
   <div id="fotoModal" class="foto-modal hidden" onclick="cerrarFotoGrande(event)">
   <div class="foto-modal-content">
     <img id="fotoModalImg" src="" alt="Imagen ampliada del producto">
