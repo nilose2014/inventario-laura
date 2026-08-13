@@ -1236,9 +1236,7 @@ async function cargarModeloVision() {
               try{
                 const emb=await embeddingDINOCache(c.ref.img,c.url);
                 dinoReferenceIndex.push({emb,producto:c.producto,url:c.url,quick:c.quick});
-              }catch(e){
-                console.warn('No se pudo indexar referencia',c.url,e);
-              }
+              }catch(e){ console.warn('No se pudo indexar referencia',c.url,e); }
             }
             dinoIndexReady=true;
           })();
@@ -1247,70 +1245,33 @@ async function cargarModeloVision() {
       }
 
       const consultaEmbs=[];
-      for(const q of variantesImagen(consultaImg)){
-        consultaEmbs.push(await embeddingDINO(q));
-      }
+      for(const q of variantesImagen(consultaImg)) consultaEmbs.push(await embeddingDINO(q));
 
-      const candidatosDINO=[];
+      // Agrupar por producto y conservar las 3 mejores coincidencias.
+      const porProducto=new Map();
       for(const ref of dinoReferenceIndex){
         let score=0;
-        for(const qe of consultaEmbs){
-          score=Math.max(score,similitudDINO(qe,ref.emb));
-        }
-        candidatosDINO.push({...ref,score});
-      }
-      candidatosDINO.sort((a,b)=>b.score-a.score);
-
-      // Solo los 10 mejores candidatos pasan a la fase por producto.
-      const topRefs=candidatosDINO.slice(0,10);
-      const grupos=new Map();
-      for(const c of topRefs){
-        const id=String(c.producto.id);
-        if(!grupos.has(id)) grupos.set(id,[]);
-        grupos.get(id).push(c);
+        for(const qe of consultaEmbs) score=Math.max(score,similitudDINO(qe,ref.emb));
+        const id=String(ref.producto.id);
+        if(!porProducto.has(id)) porProducto.set(id,{producto:ref.producto,scores:[]});
+        porProducto.get(id).scores.push(score);
       }
 
-      const candidatosProducto=[];
-      for(const [id,refs] of grupos){
-        refs.sort((a,b)=>b.score-a.score);
-        const best=refs[0].score;
-        const second=refs[1]?.score ?? best;
-        const score=best*0.82 + second*0.18;
-        candidatosProducto.push({
-          producto:refs[0].producto,
-          score,best,second,
-          referencias:refs.length
-        });
-      }
+      const resultados=Array.from(porProducto.values()).map(p=>{
+        p.scores.sort((a,b)=>b-a);
+        const best=p.scores[0]||0;
+        const second=p.scores[1]||best;
+        return {
+          producto:p.producto,
+          score:best*0.82+second*0.18,
+          porcentaje:Math.max(0,Math.min(99,Math.round((best*0.82+second*0.18)*100))),
+          referencias:p.scores.length
+        };
+      }).sort((a,b)=>b.score-a.score).slice(0,3);
 
-      candidatosProducto.sort((a,b)=>b.score-a.score);
-      const primero=candidatosProducto[0];
-      const segundo=candidatosProducto[1];
-
-      let mejor=null;
-      if(primero){
-        const margen=segundo ? primero.score-segundo.score : 1;
-        const fiable=primero.score>=0.62 && primero.best>=0.66 && margen>=0.035;
-        if(fiable){
-          mejor={
-            producto:primero.producto,
-            score:primero.score,
-            dino:primero.best,
-            second:primero.second,
-            margen,
-            referencias:primero.referencias
-          };
-        }else{
-          mejor={
-            producto:null,
-            score:primero.score,
-            dino:primero.best,
-            second:segundo?.score ?? 0,
-            margen,
-            candidato:primero.producto
-          };
-        }
-      }
+      let mejor=resultados[0]||null;
+      window.ultimosResultadosVisuales=resultados;
+      if(typeof mostrarTop3Visual==='function') mostrarTop3Visual(resultados);
 
       return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
     }
@@ -1337,7 +1298,7 @@ async function cargarModeloVision() {
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
         // Umbral más realista para esta combinación de similitudes.
-        if(!mejor || !mejor.producto){
+        if(!mejor){
           ocultarFichas();
           setStatus('scanStatus',`No encuentro una coincidencia suficientemente clara. No se muestra ningún producto para evitar una identificación incorrecta. (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
@@ -1497,7 +1458,33 @@ document.addEventListener('keydown', (e) => {
     };
   </script>
 
-  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="https://unpkg.com/html5-qrcode" defer>
+    function mostrarTop3Visual(resultados){
+      const host=document.getElementById('scanResult') || document.getElementById('resultado');
+      if(!host) return;
+      if(!resultados.length){
+        host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
+        return;
+      }
+      host.innerHTML='<div class="scan-top3-title">3 productos más parecidos</div>'+
+        resultados.map((r,i)=>{
+          const p=r.producto||{};
+          const nombre=p.nombre||p.name||'Producto';
+          const stock=p.stock ?? p.cantidad ?? 0;
+          return `<button type="button" class="scan-match" data-id="${String(p.id||'').replace(/"/g,'&quot;')}">
+            <span class="scan-rank">${i+1}</span>
+            <span class="scan-match-main"><strong>${nombre}</strong><small>${r.porcentaje}% parecido · Stock: ${stock}</small></span>
+          </button>`;
+        }).join('');
+      host.querySelectorAll('.scan-match').forEach(b=>b.onclick=()=>{
+        const r=resultados.find(x=>String(x.producto?.id||'')===b.dataset.id);
+        if(r){
+          window.ultimoProductoSeleccionado=r.producto;
+          window.dispatchEvent(new CustomEvent('producto-reconocido',{detail:r.producto}));
+        }
+      });
+    }
+</script>
   <div id="fotoModal" class="foto-modal hidden" onclick="cerrarFotoGrande(event)">
   <div class="foto-modal-content">
     <img id="fotoModalImg" src="" alt="Imagen ampliada del producto">
