@@ -1215,7 +1215,7 @@ async function cargarModeloVision() {
             try{
               const r=await referenciaPreparada(url);
               candidatos.push({producto:p,url,ref:r,quick:similitudRapida(consultaFirma,r.firma)});
-            }catch(e){ /* imagen inaccesible: se ignora */ }
+            }catch(e){ /* imagen inaccesible: se ignora  }
           })());
         }
       }
@@ -1235,7 +1235,7 @@ async function cargarModeloVision() {
             for(const c of candidatos){
               try{
                 const emb=await embeddingDINOCache(c.ref.img,c.url);
-                dinoReferenceIndex.push({emb,producto:c.producto,url:c.url,quick:c.quick});
+                dinoReferenceIndex.push({emb,producto:c.producto,url:c.url});
               }catch(e){ console.warn('No se pudo indexar referencia',c.url,e); }
             }
             dinoIndexReady=true;
@@ -1247,7 +1247,6 @@ async function cargarModeloVision() {
       const consultaEmbs=[];
       for(const q of variantesImagen(consultaImg)) consultaEmbs.push(await embeddingDINO(q));
 
-      // Agrupar por producto y conservar las 3 mejores coincidencias.
       const porProducto=new Map();
       for(const ref of dinoReferenceIndex){
         let score=0;
@@ -1261,17 +1260,16 @@ async function cargarModeloVision() {
         p.scores.sort((a,b)=>b-a);
         const best=p.scores[0]||0;
         const second=p.scores[1]||best;
-        return {
-          producto:p.producto,
-          score:best*0.82+second*0.18,
-          porcentaje:Math.max(0,Math.min(99,Math.round((best*0.82+second*0.18)*100))),
-          referencias:p.scores.length
-        };
+        const score=best*0.82+second*0.18;
+        return {producto:p.producto,score,
+          porcentaje:Math.max(0,Math.min(99,Math.round(score*100))),
+          referencias:p.scores.length};
       }).sort((a,b)=>b.score-a.score).slice(0,3);
 
-      let mejor=resultados[0]||null;
       window.ultimosResultadosVisuales=resultados;
-      if(typeof mostrarTop3Visual==='function') mostrarTop3Visual(resultados);
+      setTimeout(()=>mostrarTop3Visual(resultados),0);
+      return {mejor:resultados[0]||null,resultados:resultados};
+
 
       return {mejor,comparaciones:candidatos.length,ms:Math.round(performance.now()-inicio)};
     }
@@ -1291,20 +1289,14 @@ async function cargarModeloVision() {
       try{
         setStatus('scanStatus','⚡ Comparando rápidamente con tus productos…','info');
         const {mejor,comparaciones,ms}=await reconocerProductoPorImagen(file);
-              // V6: TOP3 es el resultado final; no ejecutar el renderizador antiguo.
-      if(resultados && resultados.length){
-        mostrarTop3Visual(resultados);
-      }
-      return {mejor:resultados[0]||null, resultados};
-
-      /* if(!mejor){
+        if(!mejor){
           ocultarFichas();
           setStatus('scanStatus',`No pude cargar las fotos de referencia de Firebase. ${e?.message||'Comprueba CORS y las rutas de Storage.'}`,'error');
           return;
         }
         const porcentaje=Math.max(0,Math.min(99,Math.round(mejor.score*100)));
         // Umbral más realista para esta combinación de similitudes.
-        if(!mejor){
+        if(!mejor || !mejor.producto){
           ocultarFichas();
           setStatus('scanStatus',`No encuentro una coincidencia suficientemente clara. No se muestra ningún producto para evitar una identificación incorrecta. (${porcentaje}%). Prueba una foto más cercana, frontal y con menos fondo.` ,'error');
           return;
@@ -1466,35 +1458,36 @@ document.addEventListener('keydown', (e) => {
 
   <script src="https://unpkg.com/html5-qrcode" defer>
     function mostrarTop3Visual(resultados){
-      let host=document.getElementById('scanResult') || document.getElementById('resultado');
+      let host=document.getElementById('scanResult');
       if(!host){
         host=document.createElement('div');
         host.id='scanResult';
-        const parent=document.querySelector('main') || document.body;
-        parent.appendChild(host);
+        (document.querySelector('main')||document.body).appendChild(host);
       }
-      if(!resultados.length){
-        host.innerHTML='<div class="scan-empty">No se encontraron productos.</div>';
+      if(!resultados || !resultados.length){
+        host.innerHTML='<div>No se encontraron productos.</div>';
         return;
       }
+      const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       host.innerHTML='<div class="scan-top3-title">3 productos más parecidos</div>'+
         resultados.map((r,i)=>{
           const p=r.producto||{};
           const nombre=p.nombre||p.name||'Producto';
           const stock=p.stock ?? p.cantidad ?? 0;
-          return `<button type="button" class="scan-match" data-id="${String(p.id||'').replace(/"/g,'&quot;')}">
-            <span class="scan-rank">${i+1}</span>
-            <span class="scan-match-main"><strong>${nombre}</strong><small>${r.porcentaje}% parecido · Stock: ${stock}</small></span>
-          </button>`;
+          return '<button type="button" class="scan-match" data-i="'+i+'">'+
+            '<span class="scan-rank">'+(i+1)+'</span>'+
+            '<span class="scan-match-main"><strong>'+esc(nombre)+'</strong>'+
+            '<small>'+r.porcentaje+'% parecido · Stock: '+esc(stock)+'</small></span></button>';
         }).join('');
-      host.querySelectorAll('.scan-match').forEach(b=>b.onclick=()=>{
-        const r=resultados.find(x=>String(x.producto?.id||'')===b.dataset.id);
+      host.querySelectorAll('.scan-match').forEach(b=>b.addEventListener('click',()=>{
+        const r=resultados[Number(b.dataset.i)];
         if(r){
           window.ultimoProductoSeleccionado=r.producto;
           window.dispatchEvent(new CustomEvent('producto-reconocido',{detail:r.producto}));
         }
-      });
+      }));
     }
+
 </script>
   <div id="fotoModal" class="foto-modal hidden" onclick="cerrarFotoGrande(event)">
   <div class="foto-modal-content">
@@ -1503,4 +1496,3 @@ document.addEventListener('keydown', (e) => {
 </div>
 </body>
 </html>
- */
