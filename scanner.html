@@ -963,16 +963,12 @@
       }
     });
 
-    // --- FIX: Listener for visual recognition ---
     window.addEventListener('producto-reconocido', (e) => {
       if (e.detail) {
         pintarProducto(e.detail, 'visual');
         const scanCard = document.getElementById('scanCard');
         if(scanCard) scanCard.classList.add('hidden');
         cerrarReconocimientoVisual();
-        // Hacemos scroll suave hacia la ficha del producto para que vean los botones de Vender/Reservar
-        const productoCard = document.getElementById('productoCard');
-        if(productoCard) productoCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
 
@@ -1143,16 +1139,8 @@
       if(dinoExtractor) return dinoExtractor;
       if(dinoPromise) return dinoPromise;
       dinoPromise=(async()=>{
-        setStatus('scanStatus','🧠 Descargando IA de reconocimiento (solo la primera vez, ~80MB)...','info');
+        setStatus('scanStatus','🧠 Preparando reconocimiento visual (esto tarda la primera vez)…','info');
         const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
-        
-        // Optimización para móvil: evita que el navegador se quede sin memoria
-        mod.env.allowLocalModels = false;
-        if (mod.env.backends && mod.env.backends.onnx && mod.env.backends.onnx.wasm) {
-          mod.env.backends.onnx.wasm.numThreads = 1; 
-          mod.env.backends.onnx.wasm.proxy = false;
-        }
-        
         dinoExtractor=await mod.pipeline('image-feature-extraction','Xenova/dinov2-small');
         return dinoExtractor;
       })();
@@ -1235,11 +1223,12 @@
       }
 
       const statsHtml = stats.comparaciones ? 
-        `<div style="font-size:14px;color:#6b7280;font-weight:600;margin-bottom:16px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
+        `<div style="font-size:13px;color:#6b7280;font-weight:600;margin-bottom:12px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
 
       host.innerHTML = statsHtml +
-        `<div style="font-weight:800;font-size:20px;margin:16px 0 12px;color:#0f172a;">3 productos más parecidos</div>`;
+        `<div style="font-weight:800;font-size:18px;margin:12px 0 8px;color:#0f172a;">3 productos más parecidos</div>`;
 
+      // Obtenemos las URLs de las imágenes de Firebase en paralelo
       const itemsHtml = await Promise.all(resultados.map(async (r, i) => {
           const p = r.producto || {};
           const nombre = p.nombre || p.name || 'Producto';
@@ -1250,12 +1239,12 @@
           try { imgSrc = await resolverImagenFirebase(imgRef); } catch {}
 
           return `
-            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:18px;padding:18px;margin:12px 0;border:1px solid #dbe4f0;border-radius:20px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 6px 16px rgba(15,23,42,0.06);transition:transform 0.18s ease, box-shadow 0.18s ease;">
-              <span style="font-size:32px;font-weight:900;min-width:35px;color:#2563eb;">${i + 1}</span>
-              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:90px;height:90px;border-radius:18px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
-              <span style="display:flex;flex-direction:column;gap:8px;color:#0f172a;flex:1;">
-                <strong style="font-size:20px;color:#0f172a;line-height:1.2;">${esc(nombre)}</strong>
-                <small style="opacity:.85;font-size:15px;color:#475569;font-weight:700;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
+            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:12px;padding:14px;margin:8px 0;border:1px solid #dbe4f0;border-radius:16px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,0.05);transition:transform 0.18s ease, box-shadow 0.18s ease;">
+              <span style="font-size:22px;font-weight:900;min-width:28px;color:#2563eb;">${i + 1}</span>
+              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
+              <span style="display:flex;flex-direction:column;gap:4px;color:#0f172a;">
+                <strong style="font-size:16px;color:#0f172a;">${esc(nombre)}</strong>
+                <small style="opacity:.75;font-size:13px;color:#475569;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
               </span>
             </div>
           `;
@@ -1326,15 +1315,15 @@
       // 1. Ordenamos por la firma rápida
       candidatos.sort((a,b)=>b.quick-a.quick);
 
-      // 2. Limitamos a los 50 mejores candidatos para no congelar el navegador y acertar mejor
-      const topCandidatos = candidatos.slice(0, 50);
+      // 2. Limitamos a los 100 mejores candidatos para no congelar el navegador y acertar mejor
+      const topCandidatos = candidatos.slice(0, 100);
 
-      setStatus('scanStatus','🧠 Analizando formas y colores con IA (50 candidatos)...','info');
+      setStatus('scanStatus','🧠 Analizando formas y colores con IA... (Esto puede tardar unos segundos)','info');
 
       // Yield a la UI para que el mensaje anterior se pinte
       await new Promise(r => setTimeout(r, 50));
 
-      // 3. Indexamos DINOv2 de los 50 candidatos
+      // 3. Indexamos DINOv2 de los 100 candidatos
       const dinoRefIndex = [];
       await pool(topCandidatos, 2, async (c) => { // concurrency 2 para no saturar RAM
         try{
