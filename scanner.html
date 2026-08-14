@@ -550,6 +550,11 @@
       }
     }
   </style>
+  
+  <!-- IA Optimizada para Móvil: TensorFlow.js y MobileNet -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+  
 </head>
 <body>
 
@@ -708,10 +713,10 @@
     let productoActual = null;
     let currentUser = null;
 
-    // --- DINOv2 State ---
-    let dinoExtractor = null;
-    let dinoPromise = null;
-    const dinoEmbeddingCache = new Map();
+    // --- MobileNet State ---
+    let visionModel = null;
+    let visionModelPromise = null;
+    const embeddingCache = new Map();
 
     // --- DOM Helpers ---
     function getQueryParam(name){
@@ -963,12 +968,15 @@
       }
     });
 
+    // --- FIX: Listener for visual recognition ---
     window.addEventListener('producto-reconocido', (e) => {
       if (e.detail) {
         pintarProducto(e.detail, 'visual');
         const scanCard = document.getElementById('scanCard');
         if(scanCard) scanCard.classList.add('hidden');
         cerrarReconocimientoVisual();
+        const productoCard = document.getElementById('productoCard');
+        if(productoCard) productoCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
 
@@ -1095,6 +1103,7 @@
       }
     }
 
+    // Firma visual barata para pre-filtrar
     function imagenEnCanvas(img, size = 32) {
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
@@ -1134,41 +1143,31 @@
       return dot*0.88 + color*0.12;
     }
 
-    // --- DINOv2 Logic ---
-    async function cargarModeloDINO(){
-      if(dinoExtractor) return dinoExtractor;
-      if(dinoPromise) return dinoPromise;
-      dinoPromise=(async()=>{
-        setStatus('scanStatus','🧠 Preparando reconocimiento visual (esto tarda la primera vez)…','info');
-        const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
-        dinoExtractor=await mod.pipeline('image-feature-extraction','Xenova/dinov2-small');
-        return dinoExtractor;
+    // --- IA MobileNet Logic ---
+    async function cargarModeloVision() {
+      if (visionModel) return visionModel;
+      if (visionModelPromise) return visionModelPromise;
+      visionModelPromise = (async () => {
+        setStatus('scanStatus','🧠 Preparando IA de imagen (16MB, rápida)...','info');
+        if (!window.tf || !window.mobilenet) throw new Error('No se cargó el reconocimiento visual.');
+        await window.tf.ready();
+        return await window.mobilenet.load({ version: 2, alpha: 0.50 });
       })();
-      try{ return await dinoPromise; }
-      catch(e){ dinoPromise=null; throw e; }
+      try { visionModel = await visionModelPromise; return visionModel; }
+      catch(e){ visionModelPromise=null; throw e; }
     }
 
-    async function embeddingDINOCache(img,url){
-      const key=String(url||'').split('?')[0];
-      if(key && dinoEmbeddingCache.has(key)) return dinoEmbeddingCache.get(key);
-      const emb=await embeddingDINO(img);
-      if(key) dinoEmbeddingCache.set(key,emb);
-      return emb;
+    async function embeddingDesdeImagen(img) {
+      const modelo = await cargarModeloVision();
+      const tensor = window.tf.tidy(() => window.tf.browser.fromPixels(img).resizeBilinear([224,224]));
+      const emb = modelo.infer(tensor, true);
+      const datos = await emb.data();
+      tensor.dispose(); emb.dispose();
+      let norma=0; for(const v of datos) norma+=v*v; norma=Math.sqrt(norma)||1;
+      return Array.from(datos, v=>v/norma);
     }
 
-    async function embeddingDINO(img){
-      const extractor=await cargarModeloDINO();
-      const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-      const scale=Math.min(1,518/Math.max(w,h));
-      const c=document.createElement('canvas');
-      c.width=Math.max(224,Math.round(w*scale));
-      c.height=Math.max(224,Math.round(h*scale));
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      const out=await extractor(c,{pooling:'mean',normalize:true});
-      return Array.from(out.data);
-    }
-
-    function similitudDINO(a,b){
+    function similitudCoseno(a,b){
       const n=Math.min(a.length,b.length); let s=0;
       for(let i=0;i<n;i++) s+=a[i]*b[i];
       return s;
@@ -1204,7 +1203,7 @@
       try{return await promise;}catch(e){visualCache.delete(url);throw e;}
     }
 
-    // --- FIX: Visual results rendering on dedicated card ---
+    // --- Visual results rendering ---
     async function mostrarTop3Visual(resultados, stats = {}) {
       const host = document.getElementById('scanResult');
       const card = document.getElementById('visualCard');
@@ -1223,12 +1222,11 @@
       }
 
       const statsHtml = stats.comparaciones ? 
-        `<div style="font-size:13px;color:#6b7280;font-weight:600;margin-bottom:12px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
+        `<div style="font-size:14px;color:#6b7280;font-weight:600;margin-bottom:16px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
 
       host.innerHTML = statsHtml +
-        `<div style="font-weight:800;font-size:18px;margin:12px 0 8px;color:#0f172a;">3 productos más parecidos</div>`;
+        `<div style="font-weight:800;font-size:20px;margin:16px 0 12px;color:#0f172a;">3 productos más parecidos</div>`;
 
-      // Obtenemos las URLs de las imágenes de Firebase en paralelo
       const itemsHtml = await Promise.all(resultados.map(async (r, i) => {
           const p = r.producto || {};
           const nombre = p.nombre || p.name || 'Producto';
@@ -1239,12 +1237,12 @@
           try { imgSrc = await resolverImagenFirebase(imgRef); } catch {}
 
           return `
-            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:12px;padding:14px;margin:8px 0;border:1px solid #dbe4f0;border-radius:16px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,0.05);transition:transform 0.18s ease, box-shadow 0.18s ease;">
-              <span style="font-size:22px;font-weight:900;min-width:28px;color:#2563eb;">${i + 1}</span>
-              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
-              <span style="display:flex;flex-direction:column;gap:4px;color:#0f172a;">
-                <strong style="font-size:16px;color:#0f172a;">${esc(nombre)}</strong>
-                <small style="opacity:.75;font-size:13px;color:#475569;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
+            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:18px;padding:18px;margin:12px 0;border:1px solid #dbe4f0;border-radius:20px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 6px 16px rgba(15,23,42,0.06);transition:transform 0.18s ease, box-shadow 0.18s ease;">
+              <span style="font-size:32px;font-weight:900;min-width:35px;color:#2563eb;">${i + 1}</span>
+              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:90px;height:90px;border-radius:18px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
+              <span style="display:flex;flex-direction:column;gap:8px;color:#0f172a;flex:1;">
+                <strong style="font-size:20px;color:#0f172a;line-height:1.2;">${esc(nombre)}</strong>
+                <small style="opacity:.85;font-size:15px;color:#475569;font-weight:700;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
               </span>
             </div>
           `;
@@ -1312,36 +1310,27 @@
         throw new Error('No se pudo cargar ninguna foto de referencia de Firebase. Revisa CORS, las rutas de Storage y que las fotos existan.');
       }
 
-      // 1. Ordenamos por la firma rápida
       candidatos.sort((a,b)=>b.quick-a.quick);
+      const topCandidatos = candidatos.slice(0, 50);
 
-      // 2. Limitamos a los 100 mejores candidatos para no congelar el navegador y acertar mejor
-      const topCandidatos = candidatos.slice(0, 100);
-
-      setStatus('scanStatus','🧠 Analizando formas y colores con IA... (Esto puede tardar unos segundos)','info');
-
-      // Yield a la UI para que el mensaje anterior se pinte
+      setStatus('scanStatus','🧠 Analizando con IA rápida (50 candidatos)...','info');
       await new Promise(r => setTimeout(r, 50));
 
-      // 3. Indexamos DINOv2 de los 100 candidatos
-      const dinoRefIndex = [];
-      await pool(topCandidatos, 2, async (c) => { // concurrency 2 para no saturar RAM
+      const refIndex = [];
+      await pool(topCandidatos, 4, async (c) => { 
         try{
-          const emb = await embeddingDINOCache(c.ref.img, c.url);
-          dinoRefIndex.push({ emb, producto: c.producto });
-          // Pequeña pausa para no bloquear el hilo principal
-          await new Promise(r => setTimeout(r, 0));
+          const emb = await embeddingDesdeImagen(c.ref.img);
+          refIndex.push({ emb, producto: c.producto });
         }catch(e){
           console.warn('No se pudo indexar referencia:',c.url,e);
         }
       });
 
-      // 4. Generamos 1 solo embedding de la foto del usuario (sin variantes)
-      const consultaEmb = await embeddingDINO(consultaImg);
+      const consultaEmb = await embeddingDesdeImagen(consultaImg);
 
       const porProducto=new Map();
-      for(const ref of dinoRefIndex){
-        const score = similitudDINO(consultaEmb, ref.emb);
+      for(const ref of refIndex){
+        const score = similitudCoseno(consultaEmb, ref.emb);
         const id=String(ref.producto.id);
         if(!porProducto.has(id)){
           porProducto.set(id,{producto:ref.producto,scores:[]});
