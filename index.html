@@ -127,15 +127,21 @@
           <input id="laura" type="number" step="0.01" placeholder="0.00">
         </div>
 
-        <div class="form-campo">
-          <label for="fotoProducto">Foto principal</label>
-          <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*">
-        </div>
-
-        <div class="form-campo">
-          <label for="fotoReferenciasProducto">Fotos de referencia visual</label>
-          <input id="fotoReferenciasProducto" class="input-file-foto" type="file" accept="image/*" multiple>
-          <small style="display:block;margin-top:6px;color:#64748b;font-weight:600;line-height:1.35">Añade varias vistas del mismo producto para mejorar el reconocimiento por foto.</small>
+        <div class="form-campo fotos-producto-bloque">
+          <div class="fotos-producto-titulo">📸 Fotos del producto</div>
+          <div class="fotos-producto-grid">
+            <div class="foto-slot foto-slot-principal">
+              <label for="fotoProducto">Foto principal</label>
+              <input id="fotoProducto" class="input-file-foto" type="file" accept="image/*">
+              <small>1 foto</small>
+            </div>
+            <div class="foto-slot foto-slot-referencias">
+              <label for="fotoReferenciasProducto">Fotos de referencia visual <strong>(hasta 3)</strong></label>
+              <input id="fotoReferenciasProducto" class="input-file-foto" type="file" accept="image/*" multiple>
+              <small id="contadorFotosReferencia">0 / 3 seleccionadas</small>
+            </div>
+          </div>
+          <small class="fotos-producto-ayuda">Puedes poner la foto principal y hasta 3 fotos de referencia en este mismo apartado. Las referencias son vistas adicionales del mismo producto y ayudan al reconocimiento por cámara.</small>
         </div>
       </div>
 
@@ -3036,7 +3042,14 @@ window.guardar = async () => {
     ? [...productos[editId].imagenesReferencia]
     : [];
   const file = document.getElementById('fotoProducto').files[0];
-  const referenciaFiles = Array.from(document.getElementById('fotoReferenciasProducto')?.files || []);
+  const referenciasInput = document.getElementById('fotoReferenciasProducto');
+  const referenciaFiles = Array.from(referenciasInput?.files || []).slice(0, 3);
+  if (referenciasInput?.files?.length > 3) {
+    referenciasInput.value = '';
+    const contador = document.getElementById('contadorFotosReferencia');
+    if (contador) contador.textContent = '0 / 3 seleccionadas';
+    return showToast('✖ Puedes subir como máximo 3 fotos de referencia visual', 'error', 3500);
+  }
 
   try {
     if (file) {
@@ -3045,18 +3058,26 @@ window.guardar = async () => {
     }
 
     if (file && imagenActual && !imagenesReferencia.includes(imagenActual)) {
-      imagenesReferencia.push(imagenActual);
+      imagenesReferencia.unshift(imagenActual);
     }
 
     if (referenciaFiles.length) {
       showToast(`⌛ Subiendo ${referenciaFiles.length} foto(s) de referencia...`, 'info', 3500);
       for (const referenciaFile of referenciaFiles) {
+        if (imagenesReferencia.filter(url => url && url !== imagenActual).length >= 3) break;
         const referenciaUrl = await subirImagenProducto(referenciaFile, `${nombre}_referencia`);
         if (referenciaUrl && !imagenesReferencia.includes(referenciaUrl)) imagenesReferencia.push(referenciaUrl);
       }
     }
 
+    // La foto principal puede servir también como referencia.
+    // Máximo: 1 principal + 3 referencias adicionales.
     if (!imagenesReferencia.length && imagenActual) imagenesReferencia = [imagenActual];
+    if (imagenActual) {
+      imagenesReferencia = [imagenActual, ...imagenesReferencia.filter(url => url && url !== imagenActual)].slice(0, 4);
+    } else {
+      imagenesReferencia = imagenesReferencia.filter(Boolean).slice(0, 4);
+    }
 
     const data = {
       nombre,
@@ -3636,9 +3657,23 @@ function limpiarFormulario() {
   document.getElementById('fotoProducto').value = '';
   const referenciasInput = document.getElementById('fotoReferenciasProducto');
   if (referenciasInput) referenciasInput.value = '';
+  const contador = document.getElementById('contadorFotosReferencia');
+  if (contador) contador.textContent = '0 / 3 seleccionadas';
   editId = null;
   document.getElementById('cancelBtn').style.display = 'none';
 }
+
+document.getElementById('fotoReferenciasProducto')?.addEventListener('change', (event) => {
+  const cantidad = event.target.files?.length || 0;
+  const contador = document.getElementById('contadorFotosReferencia');
+  if (cantidad > 3) {
+    event.target.value = '';
+    if (contador) contador.textContent = '0 / 3 seleccionadas';
+    showToast('✖ Máximo 3 fotos de referencia visual', 'error', 3000);
+    return;
+  }
+  if (contador) contador.textContent = `${cantidad} / 3 seleccionadas`;
+});
 
 window.cancelarEdit = () => {
   limpiarFormulario();
