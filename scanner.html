@@ -963,12 +963,15 @@
       }
     });
 
+    // --- FIX: Listener for visual recognition ---
     window.addEventListener('producto-reconocido', (e) => {
       if (e.detail) {
         pintarProducto(e.detail, 'visual');
         const scanCard = document.getElementById('scanCard');
         if(scanCard) scanCard.classList.add('hidden');
         cerrarReconocimientoVisual();
+        const productoCard = document.getElementById('productoCard');
+        if(productoCard) productoCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
 
@@ -1139,8 +1142,16 @@
       if(dinoExtractor) return dinoExtractor;
       if(dinoPromise) return dinoPromise;
       dinoPromise=(async()=>{
-        setStatus('scanStatus','🧠 Preparando reconocimiento visual (esto tarda la primera vez)…','info');
+        setStatus('scanStatus','🧠 Preparando IA de reconocimiento visual (solo la primera vez)...','info');
         const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
+        
+        // Optimización para móvil: Usar proxy para que corra en segundo plano y no congele la UI
+        mod.env.allowLocalModels = false;
+        if (mod.env.backends && mod.env.backends.onnx && mod.env.backends.onnx.wasm) {
+          mod.env.backends.onnx.wasm.proxy = true; 
+          mod.env.backends.onnx.wasm.numThreads = navigator.hardwareConcurrency || 2;
+        }
+        
         dinoExtractor=await mod.pipeline('image-feature-extraction','Xenova/dinov2-small');
         return dinoExtractor;
       })();
@@ -1158,12 +1169,15 @@
 
     async function embeddingDINO(img){
       const extractor=await cargarModeloDINO();
+      // Mantenemos proporciones originales para no confundir a la IA (arregla fallos de precisión)
       const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-      const scale=Math.min(1,518/Math.max(w,h));
+      const scale=Math.min(1, 224/Math.max(w,h));
+      const rw=Math.max(224,Math.round(w*scale));
+      const rh=Math.max(224,Math.round(h*scale));
       const c=document.createElement('canvas');
-      c.width=Math.max(224,Math.round(w*scale));
-      c.height=Math.max(224,Math.round(h*scale));
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      c.width=rw;
+      c.height=rh;
+      c.getContext('2d').drawImage(img,0,0,rw,rh);
       const out=await extractor(c,{pooling:'mean',normalize:true});
       return Array.from(out.data);
     }
@@ -1204,7 +1218,7 @@
       try{return await promise;}catch(e){visualCache.delete(url);throw e;}
     }
 
-    // --- FIX: Visual results rendering on dedicated card ---
+    // --- Visual results rendering ---
     async function mostrarTop3Visual(resultados, stats = {}) {
       const host = document.getElementById('scanResult');
       const card = document.getElementById('visualCard');
@@ -1223,12 +1237,11 @@
       }
 
       const statsHtml = stats.comparaciones ? 
-        `<div style="font-size:13px;color:#6b7280;font-weight:600;margin-bottom:12px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
+        `<div style="font-size:14px;color:#6b7280;font-weight:600;margin-bottom:16px">${stats.comparaciones} foto(s) comparadas en ${stats.ms ? Math.round(stats.ms/1000) : 0}s</div>` : '';
 
       host.innerHTML = statsHtml +
-        `<div style="font-weight:800;font-size:18px;margin:12px 0 8px;color:#0f172a;">3 productos más parecidos</div>`;
+        `<div style="font-weight:800;font-size:20px;margin:16px 0 12px;color:#0f172a;">3 productos más parecidos</div>`;
 
-      // Obtenemos las URLs de las imágenes de Firebase en paralelo
       const itemsHtml = await Promise.all(resultados.map(async (r, i) => {
           const p = r.producto || {};
           const nombre = p.nombre || p.name || 'Producto';
@@ -1239,12 +1252,12 @@
           try { imgSrc = await resolverImagenFirebase(imgRef); } catch {}
 
           return `
-            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:12px;padding:14px;margin:8px 0;border:1px solid #dbe4f0;border-radius:16px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,0.05);transition:transform 0.18s ease, box-shadow 0.18s ease;">
-              <span style="font-size:22px;font-weight:900;min-width:28px;color:#2563eb;">${i + 1}</span>
-              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
-              <span style="display:flex;flex-direction:column;gap:4px;color:#0f172a;">
-                <strong style="font-size:16px;color:#0f172a;">${esc(nombre)}</strong>
-                <small style="opacity:.75;font-size:13px;color:#475569;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
+            <div class="scan-match" data-index="${i}" style="display:flex;align-items:center;width:100%;gap:18px;padding:18px;margin:12px 0;border:1px solid #dbe4f0;border-radius:20px;background:#ffffff;color:#0f172a;text-align:left;cursor:pointer;box-shadow:0 6px 16px rgba(15,23,42,0.06);transition:transform 0.18s ease, box-shadow 0.18s ease;">
+              <span style="font-size:32px;font-weight:900;min-width:35px;color:#2563eb;">${i + 1}</span>
+              ${imgSrc ? `<img src="${imgSrc}" alt="Foto" onerror="this.style.display='none'" style="width:90px;height:90px;border-radius:18px;object-fit:cover;border:1px solid #e5e7eb;background:#f1f5f9;">` : ''}
+              <span style="display:flex;flex-direction:column;gap:8px;color:#0f172a;flex:1;">
+                <strong style="font-size:20px;color:#0f172a;line-height:1.2;">${esc(nombre)}</strong>
+                <small style="opacity:.85;font-size:15px;color:#475569;font-weight:700;">${esc(porcentaje)}% parecido · Stock: ${esc(stock)}</small>
               </span>
             </div>
           `;
@@ -1312,31 +1325,23 @@
         throw new Error('No se pudo cargar ninguna foto de referencia de Firebase. Revisa CORS, las rutas de Storage y que las fotos existan.');
       }
 
-      // 1. Ordenamos por la firma rápida
       candidatos.sort((a,b)=>b.quick-a.quick);
+      // Aumentado a 250 para asegurar que el producto real entra en el análisis profundo
+      const topCandidatos = candidatos.slice(0, 250);
 
-      // 2. Limitamos a los 100 mejores candidatos para no congelar el navegador y acertar mejor
-      const topCandidatos = candidatos.slice(0, 100);
-
-      setStatus('scanStatus','🧠 Analizando formas y colores con IA... (Esto puede tardar unos segundos)','info');
-
-      // Yield a la UI para que el mensaje anterior se pinte
+      setStatus('scanStatus','🧠 Analizando con IA en segundo plano (250 candidatos)...','info');
       await new Promise(r => setTimeout(r, 50));
 
-      // 3. Indexamos DINOv2 de los 100 candidatos
       const dinoRefIndex = [];
-      await pool(topCandidatos, 2, async (c) => { // concurrency 2 para no saturar RAM
+      await pool(topCandidatos, 2, async (c) => { 
         try{
           const emb = await embeddingDINOCache(c.ref.img, c.url);
           dinoRefIndex.push({ emb, producto: c.producto });
-          // Pequeña pausa para no bloquear el hilo principal
-          await new Promise(r => setTimeout(r, 0));
         }catch(e){
           console.warn('No se pudo indexar referencia:',c.url,e);
         }
       });
 
-      // 4. Generamos 1 solo embedding de la foto del usuario (sin variantes)
       const consultaEmb = await embeddingDINO(consultaImg);
 
       const porProducto=new Map();
