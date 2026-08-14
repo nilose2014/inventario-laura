@@ -550,11 +550,6 @@
       }
     }
   </style>
-  
-  <!-- IA Optimizada para Móvil: TensorFlow.js y MobileNet -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
-  
 </head>
 <body>
 
@@ -713,10 +708,10 @@
     let productoActual = null;
     let currentUser = null;
 
-    // --- MobileNet State ---
-    let visionModel = null;
-    let visionModelPromise = null;
-    const embeddingCache = new Map();
+    // --- DINOv2 State ---
+    let dinoExtractor = null;
+    let dinoPromise = null;
+    const dinoEmbeddingCache = new Map();
 
     // --- DOM Helpers ---
     function getQueryParam(name){
@@ -1143,31 +1138,48 @@
       return dot*0.88 + color*0.12;
     }
 
-    // --- IA MobileNet Logic ---
-    async function cargarModeloVision() {
-      if (visionModel) return visionModel;
-      if (visionModelPromise) return visionModelPromise;
-      visionModelPromise = (async () => {
-        setStatus('scanStatus','🧠 Preparando IA de imagen (16MB, rápida)...','info');
-        if (!window.tf || !window.mobilenet) throw new Error('No se cargó el reconocimiento visual.');
-        await window.tf.ready();
-        return await window.mobilenet.load({ version: 2, alpha: 0.50 });
+    // --- DINOv2 Logic ---
+    async function cargarModeloDINO(){
+      if(dinoExtractor) return dinoExtractor;
+      if(dinoPromise) return dinoPromise;
+      dinoPromise=(async()=>{
+        setStatus('scanStatus','🧠 Preparando IA de reconocimiento visual (solo la primera vez)...','info');
+        const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm');
+        
+        // Optimización para móvil: Usar proxy para que corra en segundo plano y no congele la UI
+        mod.env.allowLocalModels = false;
+        if (mod.env.backends && mod.env.backends.onnx && mod.env.backends.onnx.wasm) {
+          mod.env.backends.onnx.wasm.proxy = true; // ¡Esto es clave para que no se congele el móvil!
+          mod.env.backends.onnx.wasm.numThreads = navigator.hardwareConcurrency || 2;
+        }
+        
+        dinoExtractor=await mod.pipeline('image-feature-extraction','Xenova/dinov2-small');
+        return dinoExtractor;
       })();
-      try { visionModel = await visionModelPromise; return visionModel; }
-      catch(e){ visionModelPromise=null; throw e; }
+      try{ return await dinoPromise; }
+      catch(e){ dinoPromise=null; throw e; }
     }
 
-    async function embeddingDesdeImagen(img) {
-      const modelo = await cargarModeloVision();
-      const tensor = window.tf.tidy(() => window.tf.browser.fromPixels(img).resizeBilinear([224,224]));
-      const emb = modelo.infer(tensor, true);
-      const datos = await emb.data();
-      tensor.dispose(); emb.dispose();
-      let norma=0; for(const v of datos) norma+=v*v; norma=Math.sqrt(norma)||1;
-      return Array.from(datos, v=>v/norma);
+    async function embeddingDINOCache(img,url){
+      const key=String(url||'').split('?')[0];
+      if(key && dinoEmbeddingCache.has(key)) return dinoEmbeddingCache.get(key);
+      const emb=await embeddingDINO(img);
+      if(key) dinoEmbeddingCache.set(key,emb);
+      return emb;
     }
 
-    function similitudCoseno(a,b){
+    async function embeddingDINO(img){
+      const extractor=await cargarModeloDINO();
+      // Reducimos la imagen a 224x224 para acelerar el cálculo
+      const c=document.createElement('canvas');
+      c.width=224;
+      c.height=224;
+      c.getContext('2d').drawImage(img,0,0,224,224);
+      const out=await extractor(c,{pooling:'mean',normalize:true});
+      return Array.from(out.data);
+    }
+
+    function similitudDINO(a,b){
       const n=Math.min(a.length,b.length); let s=0;
       for(let i=0;i<n;i++) s+=a[i]*b[i];
       return s;
@@ -1311,26 +1323,26 @@
       }
 
       candidatos.sort((a,b)=>b.quick-a.quick);
-      const topCandidatos = candidatos.slice(0, 50);
+      const topCandidatos = candidatos.slice(0, 25); // Reducido a 25 para ir el doble de rápido
 
-      setStatus('scanStatus','🧠 Analizando con IA rápida (50 candidatos)...','info');
+      setStatus('scanStatus','🧠 Analizando con IA en segundo plano (25 candidatos)...','info');
       await new Promise(r => setTimeout(r, 50));
 
-      const refIndex = [];
-      await pool(topCandidatos, 4, async (c) => { 
+      const dinoRefIndex = [];
+      await pool(topCandidatos, 2, async (c) => { 
         try{
-          const emb = await embeddingDesdeImagen(c.ref.img);
-          refIndex.push({ emb, producto: c.producto });
+          const emb = await embeddingDINOCache(c.ref.img, c.url);
+          dinoRefIndex.push({ emb, producto: c.producto });
         }catch(e){
           console.warn('No se pudo indexar referencia:',c.url,e);
         }
       });
 
-      const consultaEmb = await embeddingDesdeImagen(consultaImg);
+      const consultaEmb = await embeddingDINO(consultaImg);
 
       const porProducto=new Map();
-      for(const ref of refIndex){
-        const score = similitudCoseno(consultaEmb, ref.emb);
+      for(const ref of dinoRefIndex){
+        const score = similitudDINO(consultaEmb, ref.emb);
         const id=String(ref.producto.id);
         if(!porProducto.has(id)){
           porProducto.set(id,{producto:ref.producto,scores:[]});
