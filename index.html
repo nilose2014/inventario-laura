@@ -2476,124 +2476,16 @@ function obtenerProductosSinPrecioEmilia() {
 }
 
 function refrescarEstadoBloqueoPreciosEmilia() {
-  const overlay = document.getElementById('preciosEmiliaObligatorioModal');
-  const mainApp = document.getElementById('mainApp');
-
-  if (overlay) {
-    overlay.hidden = true;
-    overlay.style.display = 'none';
-  }
+  // Aviso obligatorio desactivado: los productos sin precio Emilia no bloquean la aplicación.
   document.body.classList.remove('bloqueo-precios-laura-activo');
+  const mainApp = document.getElementById('mainApp');
   if (mainApp) mainApp.classList.remove('precios-laura-bloqueado');
 }
 
-function asegurarModalPreciosEmiliaObligatorio() {
-  let modal = document.getElementById('preciosEmiliaObligatorioModal');
-  if (modal) return modal;
-
-  modal = document.createElement('div');
-  modal.id = 'preciosEmiliaObligatorioModal';
-  modal.style.cssText = [
-    'position:fixed',
-    'inset:0',
-    'z-index:100000',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'padding:20px',
-    'background:rgba(15,23,42,.78)',
-    'backdrop-filter:blur(4px)'
-  ].join(';');
-
-  modal.hidden = false;
-  modal.innerHTML = `
-    <div style="width:min(96vw,760px);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.35)">
-      <div style="margin-bottom:16px">
-        <div style="font-size:24px;font-weight:900;color:#0f172a">⚠️ Faltan precios Emilia</div>
-        <div id="preciosEmiliaObligatorioCount" style="margin-top:6px;color:#475569;font-weight:700"></div>
-        <p style="margin:10px 0 0;color:#64748b">
-          Completa los precios Emilia de los productos pendientes para poder continuar.
-        </p>
-      </div>
-      <div id="preciosEmiliaObligatorioLista" style="display:grid;gap:10px"></div>
-      <div style="display:flex;justify-content:flex-end;margin-top:18px">
-        <button id="btnGuardarPreciosEmiliaObligatorio" type="button"
-          style="border:0;border-radius:14px;padding:12px 18px;background:#2563eb;color:#fff;font-weight:900;cursor:pointer">
-          💾 Guardar y continuar
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-  document.getElementById('btnGuardarPreciosEmiliaObligatorio')
-    .addEventListener('click', () => window.guardarPreciosEmiliaObligatorio());
-
-  return modal;
-}
-
 window.mostrarModalPreciosEmiliaObligatorio = () => {
-  const pendientes = obtenerProductosSinPrecioEmilia();
-
-  if (!currentUser || userRole !== 'user' || !pendientes.length) {
-    refrescarEstadoBloqueoPreciosEmilia();
-    return;
-  }
-
-  const modal = asegurarModalPreciosEmiliaObligatorio();
+  refrescarEstadoBloqueoPreciosEmilia();
+  return; // Aviso de productos sin precio Emilia desactivado.
   const lista = document.getElementById('preciosEmiliaObligatorioLista');
-  const count = document.getElementById('preciosEmiliaObligatorioCount');
-
-  if (!lista || !count) return;
-
-  document.body.classList.add('bloqueo-precios-laura-activo');
-  const mainApp = document.getElementById('mainApp');
-  if (mainApp) mainApp.classList.add('precios-laura-bloqueado');
-
-  modal.hidden = false;
-  modal.style.display = 'flex';
-
-  count.textContent = pendientes.length === 1
-    ? '1 producto pendiente'
-    : `${pendientes.length} productos pendientes`;
-
-  lista.innerHTML = pendientes.map(([id, p]) => {
-    const nombre = escaparHtml(p?.nombre || '');
-    const imagen = String(p?.imagen || '').trim();
-    const bea = Number(p?.bea || 0).toFixed(2);
-
-    return `
-      <div class="precio-laura-obligatorio-item">
-        <div class="precio-laura-obligatorio-foto-wrap">
-          ${imagen
-            ? `<img src="${imagen}" alt="${nombre}" class="precio-laura-obligatorio-foto">`
-            : `<div class="precio-laura-obligatorio-foto precio-laura-obligatorio-foto-vacia">Sin foto</div>`
-          }
-        </div>
-
-        <div class="precio-laura-obligatorio-info">
-          <div class="precio-laura-obligatorio-nombre">${nombre}</div>
-          <div class="precio-laura-obligatorio-bea">Bea: €${bea}</div>
-        </div>
-
-        <div class="precio-laura-obligatorio-input-wrap">
-          <label for="precioEmiliaObligatorio_${id}">Emilia €</label>
-          <input
-            id="precioEmiliaObligatorio_${id}"
-            class="precio-laura-obligatorio-input"
-            type="number"
-            min="0"
-            step="0.01"
-            inputmode="decimal"
-            placeholder="0.00"
-            value=""
-            oninput="limpiarErrorPrecioEmiliaObligatorio('${id}')"
-          >
-        </div>
-      </div>
-    `;
-  }).join('');
-};
   const count = document.getElementById('preciosEmiliaObligatorioCount');
   const pendientes = obtenerProductosSinPrecioEmilia();
 
